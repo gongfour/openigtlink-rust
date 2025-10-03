@@ -15,6 +15,8 @@
 
 use openigtlink_rust::error::Result;
 use openigtlink_rust::io::{IgtlConnection, IgtlServer};
+use openigtlink_rust::protocol::message::IgtlMessage;
+use openigtlink_rust::protocol::types::{CapabilityMessage, StatusMessage, TransformMessage};
 use std::env;
 
 fn main() {
@@ -52,7 +54,63 @@ fn run() -> Result<()> {
     }
 }
 
-fn handle_client(conn: IgtlConnection) -> Result<()> {
-    println!("Client connected: {}", conn.peer_addr()?);
+fn handle_client(mut conn: IgtlConnection) -> Result<()> {
+    let peer = conn.peer_addr()?;
+    println!("[INFO] Client connected: {}\n", peer);
+
+    // Handle messages in a loop until client disconnects or sends CAPABILITY
+    loop {
+        // Try to receive TRANSFORM message
+        if let Ok(msg) = conn.receive::<TransformMessage>() {
+            let device_name = msg.header.device_name.as_str().unwrap_or("Unknown");
+            println!("[RECV] TRANSFORM from device '{}'", device_name);
+            println!("       Matrix (first row): [{:.2}, {:.2}, {:.2}, {:.2}]",
+                     msg.content.matrix[0][0], msg.content.matrix[0][1],
+                     msg.content.matrix[0][2], msg.content.matrix[0][3]);
+
+            // Respond with STATUS(OK)
+            let status = StatusMessage::ok("Transform received");
+            let response = IgtlMessage::new(status, "Server")?;
+            conn.send(&response)?;
+            println!("[SEND] STATUS (OK) response\n");
+            continue;
+        }
+
+        // Try to receive STATUS message
+        if let Ok(msg) = conn.receive::<StatusMessage>() {
+            let device_name = msg.header.device_name.as_str().unwrap_or("Unknown");
+            println!("[RECV] STATUS from device '{}'", device_name);
+            println!("       Code: {}, Name: '{}', Message: '{}'",
+                     msg.content.code, msg.content.error_name, msg.content.status_string);
+
+            // Respond with CAPABILITY
+            let capability = CapabilityMessage::new(vec![
+                "TRANSFORM".to_string(),
+                "STATUS".to_string(),
+                "CAPABILITY".to_string(),
+            ]);
+            let response = IgtlMessage::new(capability, "Server")?;
+            conn.send(&response)?;
+            println!("[SEND] CAPABILITY response\n");
+            continue;
+        }
+
+        // Try to receive CAPABILITY message
+        if let Ok(msg) = conn.receive::<CapabilityMessage>() {
+            let device_name = msg.header.device_name.as_str().unwrap_or("Unknown");
+            println!("[RECV] CAPABILITY from device '{}'", device_name);
+            println!("       Supported types ({}):", msg.content.types.len());
+            for (i, typ) in msg.content.types.iter().enumerate() {
+                println!("         {}. {}", i + 1, typ);
+            }
+            println!("\n[INFO] Client session completed, closing connection\n");
+            break;
+        }
+
+        // If no known message type could be decoded, break
+        eprintln!("[WARN] Unknown message type or connection closed");
+        break;
+    }
+
     Ok(())
 }
