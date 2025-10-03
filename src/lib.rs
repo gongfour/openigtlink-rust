@@ -25,8 +25,6 @@ pub use error::{IgtlError, Result};
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn test_module_structure() {
         // Basic smoke test to ensure modules are accessible
