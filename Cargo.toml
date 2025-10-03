@@ -1,0 +1,20 @@
+[package]
+name = "openigtlink-rust"
+version = "0.1.0"
+edition = "2021"
+authors = ["Wonjin Kang <kangwonjin.dev@gmail.com>"]
+description = "Rust implementation of the OpenIGTLink protocol for image-guided therapy"
+license = "MIT"
+repository = "https://github.com/gongfour/openigtlink-rust"
+keywords = ["openigtlink", "medical", "networking", "protocol"]
+categories = ["network-programming", "science"]
+
+[dependencies]
+tokio = { version = "1.40", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+bytes = "1.7"
+thiserror = "1.0"
+
+[dev-dependencies]
+tokio-test = "0.4"
+criterion = "0.5"
