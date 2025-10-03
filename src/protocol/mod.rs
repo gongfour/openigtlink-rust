@@ -11,4 +11,4 @@ pub mod types;
 pub use header::{Header, TypeName, DeviceName};
 pub use crc::{calculate_crc, verify_crc};
 pub use message::{Message, IgtlMessage};
-pub use types::{StatusMessage, TransformMessage};
+pub use types::{CapabilityMessage, StatusMessage, TransformMessage};
