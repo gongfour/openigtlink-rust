@@ -69,20 +69,77 @@ fn parse_scenario() -> String {
     }
 }
 
-fn test_transform(_client: &mut IgtlClient) -> Result<()> {
-    println!("[TEST] TRANSFORM message test");
-    // Implementation will be added in next task
+fn test_transform(client: &mut IgtlClient) -> Result<()> {
+    println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    println!("[TEST] Sending TRANSFORM message...");
+
+    // Create a translation transform (10, 20, 30)
+    let transform = TransformMessage::translation(10.0, 20.0, 30.0);
+    println!("[SEND] Translation vector: (10.0, 20.0, 30.0)");
+    println!("       Matrix (first row): [{:.2}, {:.2}, {:.2}, {:.2}]",
+             transform.matrix[0][0], transform.matrix[0][1],
+             transform.matrix[0][2], transform.matrix[0][3]);
+
+    // Wrap in IgtlMessage and send
+    let msg = IgtlMessage::new(transform, "ClientDevice")?;
+    client.send(&msg)?;
+
+    // Receive STATUS response
+    let response: IgtlMessage<StatusMessage> = client.receive()?;
+    println!("[RECV] STATUS response:");
+    println!("       Code: {}", response.content.code);
+    println!("       Name: '{}'", response.content.error_name);
+    println!("       Message: '{}'", response.content.status_string);
+    println!("✓ TRANSFORM test completed\n");
+
     Ok(())
 }
 
-fn test_status(_client: &mut IgtlClient) -> Result<()> {
-    println!("[TEST] STATUS message test");
-    // Implementation will be added in next task
+fn test_status(client: &mut IgtlClient) -> Result<()> {
+    println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    println!("[TEST] Sending STATUS message...");
+
+    // Create an OK status message
+    let status = StatusMessage::ok("Client test message");
+    println!("[SEND] Code: {}, Message: '{}'", status.code, status.status_string);
+
+    // Wrap in IgtlMessage and send
+    let msg = IgtlMessage::new(status, "ClientDevice")?;
+    client.send(&msg)?;
+
+    // Receive CAPABILITY response
+    let response: IgtlMessage<CapabilityMessage> = client.receive()?;
+    println!("[RECV] CAPABILITY response:");
+    println!("       Supported types ({}):", response.content.types.len());
+    for (i, typ) in response.content.types.iter().enumerate() {
+        println!("         {}. {}", i + 1, typ);
+    }
+    println!("✓ STATUS test completed\n");
+
     Ok(())
 }
 
-fn test_capability(_client: &mut IgtlClient) -> Result<()> {
-    println!("[TEST] CAPABILITY message test");
-    // Implementation will be added in next task
+fn test_capability(client: &mut IgtlClient) -> Result<()> {
+    println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    println!("[TEST] Sending CAPABILITY message...");
+
+    // Create a CAPABILITY message with supported types
+    let capability = CapabilityMessage::new(vec![
+        "TRANSFORM".to_string(),
+        "STATUS".to_string(),
+        "CAPABILITY".to_string(),
+    ]);
+    println!("[SEND] Supported types ({}):", capability.types.len());
+    for (i, typ) in capability.types.iter().enumerate() {
+        println!("         {}. {}", i + 1, typ);
+    }
+
+    // Wrap in IgtlMessage and send
+    let msg = IgtlMessage::new(capability, "ClientDevice")?;
+    client.send(&msg)?;
+
+    println!("[INFO] CAPABILITY sent, server will close connection");
+    println!("✓ CAPABILITY test completed\n");
+
     Ok(())
 }
