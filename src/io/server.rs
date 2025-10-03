@@ -84,7 +84,7 @@ impl IgtlConnection {
     /// let server = IgtlServer::bind("127.0.0.1:18944")?;
     /// let mut conn = server.accept()?;
     ///
-    /// let status = StatusMessage::ok();
+    /// let status = StatusMessage::ok("Ready");
     /// let msg = IgtlMessage::new(status, "Server")?;
     /// conn.send(&msg)?;
     /// # Ok::<(), openigtlink_rust::error::IgtlError>(())
