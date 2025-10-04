@@ -17,7 +17,10 @@ pub mod streaming;
 
 // Re-export query message types
 pub use get::*;
-pub use streaming::*;
+pub use streaming::{
+    StartTDataMessage, StopImageMessage, StopNdArrayMessage, StopPositionMessage,
+    StopQtDataMessage, StopTDataMessage, StopTransformMessage,
+};
 
 /// Macro to define empty-body query messages (GET_*, STP_*)
 ///
