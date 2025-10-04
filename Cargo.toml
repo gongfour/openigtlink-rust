@@ -6,8 +6,13 @@ authors = ["Wonjin Kang <kangwonjin.dev@gmail.com>"]
 description = "Rust implementation of the OpenIGTLink protocol for image-guided therapy"
 license = "MIT"
 repository = "https://github.com/gongfour/openigtlink-rust"
+documentation = "https://docs.rs/openigtlink-rust"
 keywords = ["openigtlink", "medical", "networking", "protocol"]
 categories = ["network-programming", "science"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 tokio = { version = "1.40", features = ["full"] }
