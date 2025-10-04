@@ -23,6 +23,10 @@ impl IgtlClient {
     ///
     /// * `addr` - Server address (e.g., "127.0.0.1:18944")
     ///
+    /// # Errors
+    ///
+    /// - [`IgtlError::Io`](crate::error::IgtlError::Io) - Connection failed (server not running, network unreachable, etc.)
+    ///
     /// # Examples
     ///
     /// ```no_run
@@ -41,6 +45,11 @@ impl IgtlClient {
     /// # Arguments
     ///
     /// * `msg` - Message to send
+    ///
+    /// # Errors
+    ///
+    /// - [`IgtlError::Io`](crate::error::IgtlError::Io) - Network write failed (connection lost, broken pipe, etc.)
+    /// - [`IgtlError::BodyTooLarge`](crate::error::IgtlError::BodyTooLarge) - Message exceeds maximum size
     ///
     /// # Examples
     ///
@@ -65,6 +74,14 @@ impl IgtlClient {
     /// Receive a message from the server
     ///
     /// Blocks until a complete message is received.
+    ///
+    /// # Errors
+    ///
+    /// - [`IgtlError::Io`](crate::error::IgtlError::Io) - Network read failed (connection lost, timeout, etc.)
+    /// - [`IgtlError::InvalidHeader`](crate::error::IgtlError::InvalidHeader) - Received malformed header
+    /// - [`IgtlError::CrcMismatch`](crate::error::IgtlError::CrcMismatch) - Data corruption detected
+    /// - [`IgtlError::UnknownMessageType`](crate::error::IgtlError::UnknownMessageType) - Unsupported message type
+    /// - [`IgtlError::InvalidSize`](crate::error::IgtlError::InvalidSize) - Message size mismatch
     ///
     /// # Examples
     ///

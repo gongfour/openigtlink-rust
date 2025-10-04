@@ -23,6 +23,10 @@ impl IgtlServer {
     ///
     /// * `addr` - Local address to bind (e.g., "127.0.0.1:18944")
     ///
+    /// # Errors
+    ///
+    /// - [`IgtlError::Io`](crate::error::IgtlError::Io) - Failed to bind (address in use, insufficient permissions, etc.)
+    ///
     /// # Examples
     ///
     /// ```no_run
@@ -39,6 +43,10 @@ impl IgtlServer {
     /// Accept a new client connection
     ///
     /// Blocks until a client connects.
+    ///
+    /// # Errors
+    ///
+    /// - [`IgtlError::Io`](crate::error::IgtlError::Io) - Failed to accept connection
     ///
     /// # Examples
     ///
@@ -74,6 +82,11 @@ impl IgtlConnection {
     ///
     /// * `msg` - Message to send
     ///
+    /// # Errors
+    ///
+    /// - [`IgtlError::Io`](crate::error::IgtlError::Io) - Network write failed (connection lost, broken pipe, etc.)
+    /// - [`IgtlError::BodyTooLarge`](crate::error::IgtlError::BodyTooLarge) - Message exceeds maximum size
+    ///
     /// # Examples
     ///
     /// ```no_run
@@ -99,6 +112,14 @@ impl IgtlConnection {
     /// Receive a message from the connected client
     ///
     /// Blocks until a complete message is received.
+    ///
+    /// # Errors
+    ///
+    /// - [`IgtlError::Io`](crate::error::IgtlError::Io) - Network read failed (connection lost, timeout, etc.)
+    /// - [`IgtlError::InvalidHeader`](crate::error::IgtlError::InvalidHeader) - Received malformed header
+    /// - [`IgtlError::CrcMismatch`](crate::error::IgtlError::CrcMismatch) - Data corruption detected
+    /// - [`IgtlError::UnknownMessageType`](crate::error::IgtlError::UnknownMessageType) - Unsupported message type
+    /// - [`IgtlError::InvalidSize`](crate::error::IgtlError::InvalidSize) - Message size mismatch
     ///
     /// # Examples
     ///
