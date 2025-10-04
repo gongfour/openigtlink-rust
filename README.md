@@ -25,12 +25,24 @@ openigtlink-rust = "0.1.0"
 
 ## Supported Message Types
 
-- [x] TRANSFORM
-- [x] STATUS
-- [x] CAPABILITY
-- [ ] IMAGE
-- [ ] POSITION
-- [ ] And more...
+- [x] TRANSFORM - Affine transformation matrix (4x4)
+- [x] STATUS - Device/system status messages
+- [x] CAPABILITY - Protocol capability negotiation
+- [x] POSITION - Position + quaternion orientation (compact)
+- [x] STRING - Text data transfer with encoding support
+- [x] SENSOR - Sensor data arrays (up to 255 elements)
+- [x] QTDATA - Quaternion tracking data for surgical tools
+- [x] COMMAND - XML command messages with ID/name
+- [x] POINT - Fiducial points for surgical navigation
+- [ ] IMAGE - 2D/3D image data
+- [ ] NDARRAY - N-dimensional arrays
+- [ ] TDATA - Transform tracking data
+- [ ] POLYDATA - Polygon/mesh data
+- [ ] BIND - Message binding
+- [ ] IMGMETA/LBMETA - Image/label metadata
+- [ ] COLORTABLE - Color lookup tables
+- [ ] TRAJECTORY - Trajectory information
+- [ ] VIDEO/VIDEOMETA - Video streaming
 
 ## Protocol Specification
 

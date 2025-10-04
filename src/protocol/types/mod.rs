@@ -4,6 +4,7 @@
 
 pub mod capability;
 pub mod command;
+pub mod point;
 pub mod position;
 pub mod qtdata;
 pub mod sensor;
@@ -14,6 +15,7 @@ pub mod transform;
 // Re-export message types
 pub use capability::CapabilityMessage;
 pub use command::CommandMessage;
+pub use point::{PointElement, PointMessage};
 pub use position::PositionMessage;
 pub use qtdata::{InstrumentType, QtDataMessage, TrackingElement};
 pub use sensor::SensorMessage;
