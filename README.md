@@ -43,7 +43,8 @@ openigtlink-rust = "0.1.0"
 - [x] BIND - Message binding for grouped transmission
 - [x] IMAGE - 2D/3D medical image data with transformations
 - [x] POLYDATA - 3D polygon/mesh data for surgical navigation
-- [ ] VIDEO/VIDEOMETA - Video streaming
+- [x] VIDEO - Real-time video frame streaming (H264/VP9/HEVC/MJPEG/Raw)
+- [x] VIDEOMETA - Video stream metadata (codec, resolution, framerate, bitrate)
 
 ## Protocol Specification
 

@@ -20,6 +20,8 @@ pub mod string;
 pub mod tdata;
 pub mod trajectory;
 pub mod transform;
+pub mod video;
+pub mod videometa;
 
 // Re-export message types
 pub use bind::{BindEntry, BindMessage};
@@ -40,3 +42,5 @@ pub use string::StringMessage;
 pub use tdata::{TDataMessage, TrackingDataElement, TrackingInstrumentType};
 pub use trajectory::{TrajectoryElement, TrajectoryMessage, TrajectoryType};
 pub use transform::TransformMessage;
+pub use video::{CodecType, VideoMessage};
+pub use videometa::VideoMetaMessage;
