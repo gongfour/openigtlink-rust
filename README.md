@@ -37,11 +37,12 @@ openigtlink-rust = "0.1.0"
 - [x] NDARRAY - N-dimensional numerical arrays
 - [x] TDATA - Transform tracking data (3x4 matrices)
 - [x] TRAJECTORY - 3D trajectory with entry/target points
+- [x] IMGMETA - Image metadata (patient info, modality, etc.)
+- [x] LBMETA - Label/segmentation metadata
+- [x] COLORTABLE - Color lookup tables for visualization
+- [x] BIND - Message binding for grouped transmission
 - [ ] IMAGE - 2D/3D image data
 - [ ] POLYDATA - Polygon/mesh data
-- [ ] BIND - Message binding
-- [ ] IMGMETA/LBMETA - Image/label metadata
-- [ ] COLORTABLE - Color lookup tables
 - [ ] VIDEO/VIDEOMETA - Video streaming
 
 ## Protocol Specification

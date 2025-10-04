@@ -2,6 +2,7 @@
 //!
 //! This module contains implementations of various OpenIGTLink message types.
 
+pub mod bind;
 pub mod capability;
 pub mod colortable;
 pub mod command;
@@ -19,6 +20,7 @@ pub mod trajectory;
 pub mod transform;
 
 // Re-export message types
+pub use bind::{BindEntry, BindMessage};
 pub use capability::CapabilityMessage;
 pub use colortable::{ColorEntry, ColorTableMessage, IndexType};
 pub use command::CommandMessage;
