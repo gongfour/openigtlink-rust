@@ -12,6 +12,7 @@ pub mod sensor;
 pub mod status;
 pub mod string;
 pub mod tdata;
+pub mod trajectory;
 pub mod transform;
 
 // Re-export message types
@@ -25,4 +26,5 @@ pub use sensor::SensorMessage;
 pub use status::StatusMessage;
 pub use string::StringMessage;
 pub use tdata::{TDataMessage, TrackingDataElement, TrackingInstrumentType};
+pub use trajectory::{TrajectoryElement, TrajectoryMessage, TrajectoryType};
 pub use transform::TransformMessage;

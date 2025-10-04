@@ -36,12 +36,12 @@ openigtlink-rust = "0.1.0"
 - [x] POINT - Fiducial points for surgical navigation
 - [x] NDARRAY - N-dimensional numerical arrays
 - [x] TDATA - Transform tracking data (3x4 matrices)
+- [x] TRAJECTORY - 3D trajectory with entry/target points
 - [ ] IMAGE - 2D/3D image data
 - [ ] POLYDATA - Polygon/mesh data
 - [ ] BIND - Message binding
 - [ ] IMGMETA/LBMETA - Image/label metadata
 - [ ] COLORTABLE - Color lookup tables
-- [ ] TRAJECTORY - Trajectory information
 - [ ] VIDEO/VIDEOMETA - Video streaming
 
 ## Protocol Specification
