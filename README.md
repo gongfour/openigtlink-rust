@@ -41,8 +41,8 @@ openigtlink-rust = "0.1.0"
 - [x] LBMETA - Label/segmentation metadata
 - [x] COLORTABLE - Color lookup tables for visualization
 - [x] BIND - Message binding for grouped transmission
-- [ ] IMAGE - 2D/3D image data
-- [ ] POLYDATA - Polygon/mesh data
+- [x] IMAGE - 2D/3D medical image data with transformations
+- [x] POLYDATA - 3D polygon/mesh data for surgical navigation
 - [ ] VIDEO/VIDEOMETA - Video streaming
 
 ## Protocol Specification
