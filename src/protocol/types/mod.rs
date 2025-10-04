@@ -14,6 +14,7 @@ pub mod point;
 pub mod polydata;
 pub mod position;
 pub mod qtdata;
+pub mod query;
 pub mod sensor;
 pub mod status;
 pub mod string;
@@ -36,6 +37,11 @@ pub use point::{PointElement, PointMessage};
 pub use polydata::{Attribute, AttributeType, PolyDataMessage};
 pub use position::PositionMessage;
 pub use qtdata::{InstrumentType, QtDataMessage, TrackingElement};
+pub use query::{
+    GetCapabilityMessage, GetImageMessage, GetImgMetaMessage, GetLbMetaMessage, GetPointMessage,
+    GetStatusMessage, GetTDataMessage, GetTransformMessage, StopImageMessage, StopNdArrayMessage,
+    StopPositionMessage, StopQtDataMessage, StopTDataMessage, StopTransformMessage,
+};
 pub use sensor::SensorMessage;
 pub use status::StatusMessage;
 pub use string::StringMessage;
