@@ -12,6 +12,7 @@ OpenIGTLink is an open network protocol for image-guided therapy environments. T
 - 🚀 **Performance**: Zero-copy parsing and efficient serialization
 - 🔒 **Memory-safe**: No memory leaks or buffer overflows
 - 🔄 **Async/Sync**: Supports both synchronous and asynchronous I/O
+- 🌐 **UDP Support**: Connectionless high-speed transmission for low-latency applications
 - ✅ **Protocol compliance**: Full compatibility with OpenIGTLink Version 2 and 3
 
 ## Installation
@@ -25,26 +26,39 @@ openigtlink-rust = "0.1.0"
 
 ## Supported Message Types
 
-- [x] TRANSFORM - Affine transformation matrix (4x4)
-- [x] STATUS - Device/system status messages
-- [x] CAPABILITY - Protocol capability negotiation
-- [x] POSITION - Position + quaternion orientation (compact)
-- [x] STRING - Text data transfer with encoding support
-- [x] SENSOR - Sensor data arrays (up to 255 elements)
-- [x] QTDATA - Quaternion tracking data for surgical tools
-- [x] COMMAND - XML command messages with ID/name
-- [x] POINT - Fiducial points for surgical navigation
-- [x] NDARRAY - N-dimensional numerical arrays
-- [x] TDATA - Transform tracking data (3x4 matrices)
-- [x] TRAJECTORY - 3D trajectory with entry/target points
-- [x] IMGMETA - Image metadata (patient info, modality, etc.)
-- [x] LBMETA - Label/segmentation metadata
-- [x] COLORTABLE - Color lookup tables for visualization
-- [x] BIND - Message binding for grouped transmission
-- [x] IMAGE - 2D/3D medical image data with transformations
-- [x] POLYDATA - 3D polygon/mesh data for surgical navigation
-- [x] VIDEO - Real-time video frame streaming (H264/VP9/HEVC/MJPEG/Raw)
-- [x] VIDEOMETA - Video stream metadata (codec, resolution, framerate, bitrate)
+All 20 OpenIGTLink message types are fully implemented with comprehensive documentation and examples:
+
+### Core Messages
+- [x] **TRANSFORM** - Affine transformation matrix (4x4)
+- [x] **STATUS** - Device/system status messages *(see example)*
+- [x] **CAPABILITY** - Protocol capability negotiation
+
+### Position & Tracking
+- [x] **POSITION** - Position + quaternion orientation (compact)
+- [x] **QTDATA** - Quaternion tracking data for surgical tools
+- [x] **TDATA** - Transform tracking data (3x4 matrices) *(see example)*
+- [x] **TRAJECTORY** - 3D trajectory with entry/target points
+
+### Medical Imaging
+- [x] **IMAGE** - 2D/3D medical image data with transformations *(see example)*
+- [x] **VIDEO** - Real-time video frame streaming (H264/VP9/HEVC/MJPEG/Raw) *(see example)*
+- [x] **IMGMETA** - Image metadata (patient info, modality, etc.)
+- [x] **VIDEOMETA** - Video stream metadata (codec, resolution, framerate, bitrate)
+
+### Sensors & Data
+- [x] **SENSOR** - Sensor data arrays (up to 255 elements) *(see example)*
+- [x] **NDARRAY** - N-dimensional numerical arrays *(see example)*
+
+### Navigation & Visualization
+- [x] **POINT** - Fiducial points for surgical navigation *(see example)*
+- [x] **POLYDATA** - 3D polygon/mesh data for surgical navigation
+- [x] **LBMETA** - Label/segmentation metadata
+- [x] **COLORTABLE** - Color lookup tables for visualization
+
+### Communication
+- [x] **STRING** - Text data transfer with encoding support *(see example)*
+- [x] **COMMAND** - XML command messages with ID/name
+- [x] **BIND** - Message binding for grouped transmission
 
 ## Protocol Specification
 
@@ -56,37 +70,95 @@ This implementation follows the official OpenIGTLink protocol specification:
 
 ## Examples
 
-This library includes example programs to demonstrate client-server communication.
+This library includes comprehensive examples demonstrating various use cases and features.
 
-### Running the Server
+### Basic Examples
 
+**Client-Server Communication**
 ```bash
-# Start server on default port 18944
+# Start basic server
 cargo run --example server
 
-# Start server on custom port
-cargo run --example server 12345
-```
-
-The server will:
-- Accept client connections
-- Receive TRANSFORM, STATUS, and CAPABILITY messages
-- Send appropriate responses based on message type
-- Log all communication to stdout
-
-### Running the Client
-
-```bash
-# Test all message types sequentially (default)
+# Run basic client tests
 cargo run --example client
-
-# Test specific message type
-cargo run --example client transform
-cargo run --example client status
-cargo run --example client capability
 ```
 
-### Full Test Scenario
+### Medical Imaging
+
+**Image Streaming** - CT/MRI/Ultrasound image transfer
+```bash
+cargo run --example image_streaming ct      # 512x512x100 CT scan
+cargo run --example image_streaming mri     # 256x256x60 MRI scan
+cargo run --example image_streaming ultrasound  # 640x480 30fps
+```
+
+**Video Streaming** - Real-time video transmission
+```bash
+cargo run --example video_streaming mjpeg   # MJPEG 640x480 30fps
+cargo run --example video_streaming h264    # H.264 1920x1080 60fps
+cargo run --example video_streaming raw     # Raw 320x240 15fps
+```
+
+### Tracking & Navigation
+
+**Surgical Tool Tracking** - Multi-tool position tracking at 60Hz
+```bash
+cargo run --example tracking_server
+```
+
+**Fiducial Point Registration** - Patient-to-image registration
+```bash
+cargo run --example point_navigation
+```
+
+**Sensor Data Logging** - Force/IMU sensor data collection
+```bash
+cargo run --example sensor_logger force     # 6-axis force/torque
+cargo run --example sensor_logger imu       # 6-axis IMU
+cargo run --example sensor_logger combined  # 14 channels
+```
+
+### Communication
+
+**Text Commands** - Device control via STRING messages
+```bash
+cargo run --example string_command
+```
+
+**Status Monitoring** - System health and error reporting
+```bash
+cargo run --example status_monitor
+```
+
+**Array Transfer** - N-dimensional numerical arrays
+```bash
+cargo run --example ndarray_transfer
+```
+
+### Advanced Features
+
+**UDP High-Speed Tracking** - Low-latency position updates
+```bash
+cargo run --example udp_tracking udp        # 120Hz tracking
+cargo run --example udp_tracking compare    # TCP vs UDP benchmark
+cargo run --example udp_tracking custom 200 5  # Custom FPS/duration
+```
+
+**Async Multi-Client Server** - Tokio-based concurrent server
+```bash
+cargo run --example async_server
+```
+
+**Error Handling** - Reconnection, timeout, and recovery patterns
+```bash
+cargo run --example error_handling reconnect   # Auto-reconnection
+cargo run --example error_handling timeout     # Timeout handling
+cargo run --example error_handling crc         # CRC error recovery
+cargo run --example error_handling wrong_type  # Type mismatch
+cargo run --example error_handling all         # All scenarios
+```
+
+### Quick Start
 
 To test the complete client-server communication:
 
@@ -158,9 +230,15 @@ Server listening on 127.0.0.1:18944
 [INFO] All tests completed successfully
 ```
 
+## Documentation
+
+- **[API Documentation](https://docs.rs/openigtlink-rust)** - Auto-generated API docs on docs.rs
+- **[Examples](./examples/)** - Practical usage examples with detailed comments
+- **[Protocol Specification](https://github.com/openigtlink/OpenIGTLink/blob/master/Documents/Protocol/index.md)** - Official OpenIGTLink protocol
+
 ## Development Status
 
-This project is currently in active development. The basic infrastructure and core message types are being implemented.
+This project is currently in active development. All core message types are implemented with comprehensive documentation and examples.
 
 ## License
 
