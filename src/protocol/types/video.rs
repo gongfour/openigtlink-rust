@@ -2,6 +2,73 @@
 //!
 //! The VIDEO message is used to transfer video frame data for real-time visualization
 //! during image-guided procedures.
+//!
+//! # Use Cases
+//!
+//! - **Endoscopic Surgery** - Streaming laparoscopic or arthroscopic camera feeds
+//! - **Microscopy** - Real-time surgical microscope video during neurosurgery
+//! - **External Cameras** - Room cameras for documenting procedures
+//! - **Ultrasound Video** - Color Doppler or B-mode ultrasound video streams
+//! - **Robotic Surgery** - Multiple camera angles from surgical robots
+//!
+//! # Supported Codecs
+//!
+//! - **H.264 (AVC)** - Efficient compression for high-quality video
+//! - **MJPEG** - Motion JPEG for lower latency
+//! - **VP9** - Open codec alternative
+//! - **Raw/Uncompressed** - Maximum quality, higher bandwidth
+//!
+//! # Examples
+//!
+//! ## Streaming Laparoscopic Video (H.264)
+//!
+//! ```no_run
+//! use openigtlink_rust::protocol::types::{VideoMessage, VideoCodec};
+//! use openigtlink_rust::io::IgtlClient;
+//!
+//! let mut client = IgtlClient::connect("127.0.0.1:18944")?;
+//!
+//! let mut video = VideoMessage::new();
+//! video.set_device_name("LaparoscopicCamera");
+//! video.set_codec(VideoCodec::H264);
+//! video.set_width(1920);
+//! video.set_height(1080);
+//! video.set_frame_rate(30);
+//!
+//! // Simulated H.264 frame data
+//! let frame_data = vec![0u8; 50000]; // Compressed frame
+//! video.set_frame_data(frame_data);
+//!
+//! client.send(&video)?;
+//! # Ok::<(), openigtlink_rust::IgtlError>(())
+//! ```
+//!
+//! ## Receiving MJPEG Surgical Video
+//!
+//! ```no_run
+//! use openigtlink_rust::io::IgtlServer;
+//! use openigtlink_rust::protocol::types::{VideoMessage, VideoCodec};
+//! use openigtlink_rust::protocol::message::Message;
+//!
+//! let server = IgtlServer::bind("0.0.0.0:18944")?;
+//! let mut client_conn = server.accept()?;
+//!
+//! loop {
+//!     let message = client_conn.receive()?;
+//!
+//!     if message.header.message_type == "VIDEO" {
+//!         let video = VideoMessage::from_bytes(&message.body)?;
+//!         println!("Video frame: {}x{} @ {}fps",
+//!                  video.width, video.height, video.frame_rate);
+//!
+//!         if video.codec == VideoCodec::Mjpeg {
+//!             // Decode MJPEG frame
+//!             println!("MJPEG frame size: {} bytes", video.frame_data.len());
+//!         }
+//!     }
+//! }
+//! # Ok::<(), openigtlink_rust::IgtlError>(())
+//! ```
 
 use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};

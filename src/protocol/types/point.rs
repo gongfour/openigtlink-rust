@@ -2,6 +2,102 @@
 //!
 //! The POINT message type is used to transfer information about fiducials,
 //! which are often used in surgical planning and navigation.
+//!
+//! # Use Cases
+//!
+//! - **Surgical Navigation** - Fiducial markers for patient-to-image registration
+//! - **Biopsy Planning** - Target points for needle insertion
+//! - **Tumor Localization** - Marking tumor boundaries in pre-operative images
+//! - **Anatomical Landmarks** - Identifying critical structures (nerves, vessels)
+//! - **Treatment Verification** - Comparing planned vs. actual positions
+//!
+//! # Point Attributes
+//!
+//! Each point contains:
+//! - **3D Position (x, y, z)** - Coordinates in mm
+//! - **Name** - Identifier (e.g., "Fiducial_1", "TumorCenter")
+//! - **Group** - Logical grouping (e.g., "Fiducials", "Targets")
+//! - **Color (RGBA)** - Visualization color
+//! - **Diameter** - Size for rendering (mm)
+//! - **Owner** - Associated image/coordinate frame
+//!
+//! # Examples
+//!
+//! ## Registering Fiducial Points for Navigation
+//!
+//! ```no_run
+//! use openigtlink_rust::protocol::types::{PointMessage, PointElement};
+//! use openigtlink_rust::io::IgtlClient;
+//!
+//! let mut client = IgtlClient::connect("127.0.0.1:18944")?;
+//!
+//! let mut point_msg = PointMessage::new();
+//! point_msg.set_device_name("NavigationSystem");
+//!
+//! // Fiducial 1: Nasion (nose bridge)
+//! let mut fid1 = PointElement::new();
+//! fid1.name = "Nasion".to_string();
+//! fid1.group_name = "Fiducials".to_string();
+//! fid1.position = [0.0, 85.0, -30.0];  // x, y, z in mm
+//! fid1.rgba = [255, 0, 0, 255];        // Red
+//! fid1.diameter = 5.0;                 // 5mm sphere
+//! fid1.owner = "CTImage".to_string();
+//!
+//! // Fiducial 2: Left ear
+//! let mut fid2 = PointElement::new();
+//! fid2.name = "LeftEar".to_string();
+//! fid2.group_name = "Fiducials".to_string();
+//! fid2.position = [-75.0, 0.0, -20.0];
+//! fid2.rgba = [0, 255, 0, 255];        // Green
+//! fid2.diameter = 5.0;
+//! fid2.owner = "CTImage".to_string();
+//!
+//! // Fiducial 3: Right ear
+//! let mut fid3 = PointElement::new();
+//! fid3.name = "RightEar".to_string();
+//! fid3.group_name = "Fiducials".to_string();
+//! fid3.position = [75.0, 0.0, -20.0];
+//! fid3.rgba = [0, 0, 255, 255];        // Blue
+//! fid3.diameter = 5.0;
+//! fid3.owner = "CTImage".to_string();
+//!
+//! point_msg.add_point(fid1);
+//! point_msg.add_point(fid2);
+//! point_msg.add_point(fid3);
+//!
+//! client.send(&point_msg)?;
+//! # Ok::<(), openigtlink_rust::IgtlError>(())
+//! ```
+//!
+//! ## Receiving Biopsy Target Points
+//!
+//! ```no_run
+//! use openigtlink_rust::io::IgtlServer;
+//! use openigtlink_rust::protocol::types::PointMessage;
+//! use openigtlink_rust::protocol::message::Message;
+//!
+//! let server = IgtlServer::bind("0.0.0.0:18944")?;
+//! let mut client_conn = server.accept()?;
+//!
+//! let message = client_conn.receive()?;
+//!
+//! if message.header.message_type == "POINT" {
+//!     let points = PointMessage::from_bytes(&message.body)?;
+//!
+//!     println!("Received {} points", points.elements.len());
+//!
+//!     for (i, point) in points.elements.iter().enumerate() {
+//!         println!("\nPoint {}: {}", i + 1, point.name);
+//!         println!("  Group: {}", point.group_name);
+//!         println!("  Position: ({:.2}, {:.2}, {:.2}) mm",
+//!                  point.position[0], point.position[1], point.position[2]);
+//!         println!("  Color: RGB({}, {}, {})",
+//!                  point.rgba[0], point.rgba[1], point.rgba[2]);
+//!         println!("  Diameter: {:.2} mm", point.diameter);
+//!     }
+//! }
+//! # Ok::<(), openigtlink_rust::IgtlError>(())
+//! ```
 
 use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};

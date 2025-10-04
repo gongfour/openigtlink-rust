@@ -2,6 +2,80 @@
 //!
 //! The SENSOR message type is used to transfer sensor readings including
 //! position, velocity, acceleration, angle, and other sensor data.
+//!
+//! # Use Cases
+//!
+//! - **Force/Torque Sensors** - Haptic feedback during robotic surgery (6-axis F/T sensors)
+//! - **IMU Sensors** - Inertial measurement units for tool orientation (accelerometer + gyroscope)
+//! - **Pressure Sensors** - Blood pressure monitoring during procedures
+//! - **Temperature Arrays** - Multi-point temperature monitoring in ablation procedures
+//! - **Strain Gauges** - Measuring deformation in surgical instruments
+//!
+//! # Sensor Data Format
+//!
+//! The SENSOR message supports:
+//! - **Multi-channel**: Up to 255 sensor channels per message
+//! - **64-bit floats**: High-precision sensor readings
+//! - **Unit encoding**: Standard SI unit codes (e.g., Newton, Meter/Second)
+//! - **Status field**: Sensor health/validity indicator
+//!
+//! # Examples
+//!
+//! ## Sending 6-Axis Force/Torque Data
+//!
+//! ```no_run
+//! use openigtlink_rust::protocol::types::SensorMessage;
+//! use openigtlink_rust::io::IgtlClient;
+//!
+//! let mut client = IgtlClient::connect("127.0.0.1:18944")?;
+//!
+//! let mut sensor = SensorMessage::new();
+//! sensor.set_device_name("ATI_ForceSensor");
+//!
+//! // 6-axis: Fx, Fy, Fz (forces) + Tx, Ty, Tz (torques)
+//! let readings = vec![
+//!     2.5,   // Fx (N)
+//!     -1.2,  // Fy (N)
+//!     5.8,   // Fz (N)
+//!     0.15,  // Tx (Nm)
+//!     -0.08, // Ty (Nm)
+//!     0.22,  // Tz (Nm)
+//! ];
+//! sensor.set_data(readings);
+//! sensor.set_unit(0x0101); // Newton + Newton-meter
+//! sensor.set_status(1); // Sensor valid
+//!
+//! client.send(&sensor)?;
+//! # Ok::<(), openigtlink_rust::IgtlError>(())
+//! ```
+//!
+//! ## Receiving IMU Sensor Data
+//!
+//! ```no_run
+//! use openigtlink_rust::io::IgtlServer;
+//! use openigtlink_rust::protocol::types::SensorMessage;
+//! use openigtlink_rust::protocol::message::Message;
+//!
+//! let server = IgtlServer::bind("0.0.0.0:18944")?;
+//! let mut client_conn = server.accept()?;
+//!
+//! let message = client_conn.receive()?;
+//!
+//! if message.header.message_type == "SENSOR" {
+//!     let sensor = SensorMessage::from_bytes(&message.body)?;
+//!     println!("Sensor: {}", message.header.device_name);
+//!     println!("Channels: {}", sensor.data.len());
+//!
+//!     // Typical IMU: 3 accel + 3 gyro = 6 channels
+//!     if sensor.data.len() == 6 {
+//!         println!("Acceleration: [{:.2}, {:.2}, {:.2}] m/s²",
+//!                  sensor.data[0], sensor.data[1], sensor.data[2]);
+//!         println!("Gyroscope: [{:.2}, {:.2}, {:.2}] rad/s",
+//!                  sensor.data[3], sensor.data[4], sensor.data[5]);
+//!     }
+//! }
+//! # Ok::<(), openigtlink_rust::IgtlError>(())
+//! ```
 
 use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};

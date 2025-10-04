@@ -2,6 +2,70 @@
 //!
 //! The IMAGE message is used to transfer 2D/3D medical image data.
 //! This is one of the most commonly used OpenIGTLink message types.
+//!
+//! # Use Cases
+//!
+//! - **CT/MRI Image Transfer** - Sending volumetric medical images from scanner to workstation
+//! - **Ultrasound Streaming** - Real-time 2D ultrasound image streaming during procedures
+//! - **X-ray Images** - Transferring radiographic images for real-time guidance
+//! - **Image-Guided Surgery** - Displaying pre-operative images in surgical navigation systems
+//! - **Multi-Modal Registration** - Aligning images from different modalities (CT, MRI, PET)
+//!
+//! # Supported Image Types
+//!
+//! - **Scalar Types**: 8/16/32-bit integers, 32/64-bit floating point
+//! - **Components**: 1 (grayscale), 3 (RGB), 4 (RGBA)
+//! - **Dimensions**: 2D (single slice) or 3D (volume)
+//! - **Coordinate Systems**: RAS (Right-Anterior-Superior), LPS (Left-Posterior-Superior)
+//!
+//! # Examples
+//!
+//! ## Sending a CT Image Slice
+//!
+//! ```no_run
+//! use openigtlink_rust::protocol::types::{ImageMessage, ImageScalarType, Endian, CoordinateSystem};
+//! use openigtlink_rust::io::IgtlClient;
+//!
+//! let mut client = IgtlClient::connect("127.0.0.1:18944")?;
+//!
+//! let mut image = ImageMessage::new();
+//! image.set_device_name("CTScanner");
+//! image.set_scalar_type(ImageScalarType::Uint16);
+//! image.set_dimensions([512, 512, 1]);
+//! image.set_spacing([0.5, 0.5, 1.0]); // 0.5mm pixel spacing
+//! image.set_num_components(1); // Grayscale
+//! image.set_endian(Endian::Little);
+//! image.set_coordinate_system(CoordinateSystem::LPS);
+//!
+//! // Simulated CT data (512x512 16-bit)
+//! let ct_data: Vec<u8> = vec![0; 512 * 512 * 2];
+//! image.set_image_data(ct_data);
+//!
+//! client.send(&image)?;
+//! # Ok::<(), openigtlink_rust::IgtlError>(())
+//! ```
+//!
+//! ## Receiving RGB Ultrasound Image
+//!
+//! ```no_run
+//! use openigtlink_rust::io::IgtlServer;
+//! use openigtlink_rust::protocol::types::ImageMessage;
+//! use openigtlink_rust::protocol::message::Message;
+//!
+//! let server = IgtlServer::bind("0.0.0.0:18944")?;
+//! let mut client_conn = server.accept()?;
+//!
+//! let message = client_conn.receive()?;
+//!
+//! if message.header.message_type == "IMAGE" {
+//!     let image = ImageMessage::from_bytes(&message.body)?;
+//!     println!("Received image: {}x{}x{}",
+//!              image.size[0], image.size[1], image.size[2]);
+//!     println!("Scalar type: {:?}", image.scalar_type);
+//!     println!("Components: {}", image.num_components);
+//! }
+//! # Ok::<(), openigtlink_rust::IgtlError>(())
+//! ```
 
 use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};

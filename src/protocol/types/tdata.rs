@@ -2,6 +2,90 @@
 //!
 //! The TDATA message type is used to transfer 3D positions and orientations
 //! of surgical tools, markers, etc. using transformation matrices.
+//!
+//! # Use Cases
+//!
+//! - **Surgical Tool Tracking** - Real-time tracking of multiple instruments (scalpel, probe, drill)
+//! - **Optical Tracking Systems** - NDI Polaris, Atracsys, or similar optical trackers
+//! - **Electromagnetic Tracking** - Aurora or Ascension electromagnetic trackers
+//! - **Surgical Navigation** - Displaying tool positions relative to patient anatomy
+//! - **Multi-Tool Coordination** - Tracking multiple tools simultaneously in robotic surgery
+//!
+//! # TDATA vs TRANSFORM
+//!
+//! - **TDATA**: Array of named transforms, efficient for tracking multiple tools
+//! - **TRANSFORM**: Single 4x4 matrix, simpler but requires multiple messages
+//!
+//! Use TDATA when tracking ≥2 tools to reduce network overhead.
+//!
+//! # Examples
+//!
+//! ## Tracking Multiple Surgical Instruments
+//!
+//! ```no_run
+//! use openigtlink_rust::protocol::types::{TDataMessage, TDataElement, InstrumentType};
+//! use openigtlink_rust::io::IgtlClient;
+//!
+//! let mut client = IgtlClient::connect("127.0.0.1:18944")?;
+//!
+//! let mut tdata = TDataMessage::new();
+//! tdata.set_device_name("OpticalTracker");
+//!
+//! // Tool 1: Scalpel
+//! let mut scalpel = TDataElement::new();
+//! scalpel.name = "Scalpel".to_string();
+//! scalpel.instrument_type = InstrumentType::Tool5Dof;
+//! scalpel.matrix = [
+//!     1.0, 0.0, 0.0, 100.0,  // X translation: 100mm
+//!     0.0, 1.0, 0.0, 50.0,   // Y translation: 50mm
+//!     0.0, 0.0, 1.0, 200.0,  // Z translation: 200mm
+//! ];
+//!
+//! // Tool 2: Probe
+//! let mut probe = TDataElement::new();
+//! probe.name = "Probe".to_string();
+//! probe.instrument_type = InstrumentType::Tool6Dof;
+//! probe.matrix = [
+//!     1.0, 0.0, 0.0, 150.0,
+//!     0.0, 1.0, 0.0, 75.0,
+//!     0.0, 0.0, 1.0, 180.0,
+//! ];
+//!
+//! tdata.add_element(scalpel);
+//! tdata.add_element(probe);
+//!
+//! client.send(&tdata)?;
+//! # Ok::<(), openigtlink_rust::IgtlError>(())
+//! ```
+//!
+//! ## Receiving Tracking Data at 60Hz
+//!
+//! ```no_run
+//! use openigtlink_rust::io::IgtlServer;
+//! use openigtlink_rust::protocol::types::TDataMessage;
+//! use openigtlink_rust::protocol::message::Message;
+//!
+//! let server = IgtlServer::bind("0.0.0.0:18944")?;
+//! let mut client_conn = server.accept()?;
+//!
+//! loop {
+//!     let message = client_conn.receive()?;
+//!
+//!     if message.header.message_type == "TDATA" {
+//!         let tdata = TDataMessage::from_bytes(&message.body)?;
+//!
+//!         for element in &tdata.elements {
+//!             let x = element.matrix[3];
+//!             let y = element.matrix[7];
+//!             let z = element.matrix[11];
+//!
+//!             println!("{}: position = ({:.2}, {:.2}, {:.2}) mm",
+//!                      element.name, x, y, z);
+//!         }
+//!     }
+//! }
+//! # Ok::<(), openigtlink_rust::IgtlError>(())
+//! ```
 
 use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};
