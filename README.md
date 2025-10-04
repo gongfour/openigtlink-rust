@@ -106,6 +106,12 @@ All 20 OpenIGTLink message types are fully implemented with comprehensive docume
 - [x] **COMMAND** - XML command messages with ID/name
 - [x] **BIND** - Message binding for grouped transmission
 
+### Query & Streaming Control
+- [x] **GET_*** - Query messages (GET_CAPABIL, GET_STATUS, GET_TRANSFORM, etc.)
+- [x] **STT_*** - Start streaming (STT_TDATA with resolution/coordinate)
+- [x] **STP_*** - Stop streaming (STP_TDATA, STP_IMAGE, STP_TRANSFORM, etc.)
+- [x] **RTS_*** - Ready-to-send response (RTS_TDATA with status code)
+
 ## Protocol Specification
 
 This implementation follows the official OpenIGTLink protocol specification:
@@ -202,6 +208,15 @@ cargo run --example error_handling timeout     # Timeout handling
 cargo run --example error_handling crc         # CRC error recovery
 cargo run --example error_handling wrong_type  # Type mismatch
 cargo run --example error_handling all         # All scenarios
+```
+
+**Query & Streaming Control** - C++ OpenIGTLink server compatibility
+```bash
+# Demonstrates GET_CAPABIL, STT_TDATA, and STP_TDATA protocol flow
+cargo run --example query_streaming
+
+# Connect to 3D Slicer or PLUS Toolkit server
+cargo run --example query_streaming -- 192.168.1.100:18944
 ```
 
 ### Quick Start

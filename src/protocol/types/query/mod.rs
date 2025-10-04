@@ -17,6 +17,10 @@ pub mod streaming;
 
 // Re-export query message types
 pub use get::*;
+pub use rts::{
+    RtsCapabilityMessage, RtsImageMessage, RtsStatusMessage, RtsTDataMessage,
+    RtsTransformMessage,
+};
 pub use streaming::{
     StartTDataMessage, StopImageMessage, StopNdArrayMessage, StopPositionMessage,
     StopQtDataMessage, StopTDataMessage, StopTransformMessage,

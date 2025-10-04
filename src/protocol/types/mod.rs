@@ -39,7 +39,8 @@ pub use position::PositionMessage;
 pub use qtdata::{InstrumentType, QtDataMessage, TrackingElement};
 pub use query::{
     GetCapabilityMessage, GetImageMessage, GetImgMetaMessage, GetLbMetaMessage, GetPointMessage,
-    GetStatusMessage, GetTDataMessage, GetTransformMessage, StartTDataMessage, StopImageMessage,
+    GetStatusMessage, GetTDataMessage, GetTransformMessage, RtsCapabilityMessage, RtsImageMessage,
+    RtsStatusMessage, RtsTDataMessage, RtsTransformMessage, StartTDataMessage, StopImageMessage,
     StopNdArrayMessage, StopPositionMessage, StopQtDataMessage, StopTDataMessage,
     StopTransformMessage,
 };
