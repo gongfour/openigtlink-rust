@@ -11,6 +11,7 @@ pub mod qtdata;
 pub mod sensor;
 pub mod status;
 pub mod string;
+pub mod tdata;
 pub mod transform;
 
 // Re-export message types
@@ -23,4 +24,5 @@ pub use qtdata::{InstrumentType, QtDataMessage, TrackingElement};
 pub use sensor::SensorMessage;
 pub use status::StatusMessage;
 pub use string::StringMessage;
+pub use tdata::{TDataMessage, TrackingDataElement, TrackingInstrumentType};
 pub use transform::TransformMessage;
