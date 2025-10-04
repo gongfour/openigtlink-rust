@@ -24,6 +24,52 @@ Add this to your `Cargo.toml`:
 openigtlink-rust = "0.1.0"
 ```
 
+## Building from Source
+
+### Prerequisites
+
+- Rust 1.70 or later
+- Cargo (comes with Rust)
+
+### Clone and Build
+
+```bash
+# Clone the repository
+git clone https://github.com/gongfour/openigtlink-rust.git
+cd openigtlink-rust
+
+# Build the library
+cargo build --release
+
+# Run tests
+cargo test
+
+# Build documentation
+cargo doc --no-deps --open
+
+# Run examples (see Examples section below)
+cargo run --example client
+```
+
+### Development Build
+
+```bash
+# Build in debug mode (faster compilation, slower runtime)
+cargo build
+
+# Run with logging
+RUST_LOG=debug cargo run --example server
+
+# Check code without building
+cargo check
+
+# Format code
+cargo fmt
+
+# Lint code
+cargo clippy
+```
+
 ## Supported Message Types
 
 All 20 OpenIGTLink message types are fully implemented with comprehensive documentation and examples:
