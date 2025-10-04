@@ -34,8 +34,8 @@ openigtlink-rust = "0.1.0"
 - [x] QTDATA - Quaternion tracking data for surgical tools
 - [x] COMMAND - XML command messages with ID/name
 - [x] POINT - Fiducial points for surgical navigation
+- [x] NDARRAY - N-dimensional numerical arrays
 - [ ] IMAGE - 2D/3D image data
-- [ ] NDARRAY - N-dimensional arrays
 - [ ] TDATA - Transform tracking data
 - [ ] POLYDATA - Polygon/mesh data
 - [ ] BIND - Message binding
