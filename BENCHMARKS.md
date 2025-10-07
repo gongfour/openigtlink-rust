@@ -11,7 +11,7 @@ cargo bench
 # Run specific benchmark suite
 cargo bench --bench throughput
 cargo bench --bench compression
-cargo bench --bench network
+cargo bench --bench serialization
 
 # Run specific tests within a suite
 cargo bench transform        # All transform benchmarks
@@ -63,19 +63,25 @@ Measures compression performance with different data sizes and levels.
 cargo bench --bench compression
 ```
 
-### 3. Network (`benches/network.rs`)
+### 3. Serialization (`benches/serialization.rs`)
 
-**⚠️ Note:** Network benchmarks are currently disabled due to limitations:
-- High overhead from creating/destroying servers in Criterion's tight iteration loops
-- Port allocation issues on macOS (error 49: "Can't assign requested address")
-- Measures network stack overhead rather than protocol performance
+Measures message serialization performance (encoding without network I/O).
 
-**Alternative:** Use `examples/performance_test.rs` for real-world network performance testing:
+**Tests:**
+- `status_message_serialize` - Single status message serialization
+- `batch_10_messages_serialize` - Batch serialization of 10 messages
+
+**Note:** Originally network benchmarks, but network I/O is unsuitable for Criterion's tight iteration loops due to port allocation overhead.
+
+**Run:**
+```bash
+cargo bench --bench serialization
+```
+
+**For real network performance testing:**
 ```bash
 cargo run --example performance_test --release
 ```
-
-The network benchmark file now contains lightweight serialization benchmarks instead.
 
 ## Viewing Results
 

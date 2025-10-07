@@ -41,5 +41,5 @@ name = "compression"
 harness = false
 
 [[bench]]
-name = "network"
+name = "serialization"
 harness = false

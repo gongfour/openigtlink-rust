@@ -359,7 +359,7 @@ Run benchmarks:
 ```bash
 cargo bench --bench throughput
 cargo bench --bench compression
-cargo bench --bench network
+cargo bench --bench serialization
 ```
 
 ## Compatibility
