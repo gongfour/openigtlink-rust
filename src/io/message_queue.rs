@@ -4,6 +4,7 @@
 
 use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
+use tracing::{debug, info, trace, warn};
 use crate::error::{IgtlError, Result};
 
 /// Configuration for message queue behavior
@@ -83,6 +84,11 @@ impl MessageQueue {
 
     /// Create a new message queue with custom configuration
     pub fn with_config(config: QueueConfig) -> Self {
+        info!(
+            capacity = ?config.capacity,
+            drop_on_full = config.drop_on_full,
+            "Creating message queue"
+        );
         let (tx, rx) = mpsc::unbounded_channel();
 
         Self {
@@ -107,6 +113,11 @@ impl MessageQueue {
         if let Some(capacity) = self.config.capacity {
             if stats.current_size >= capacity {
                 if self.config.drop_on_full {
+                    warn!(
+                        capacity = capacity,
+                        current_size = stats.current_size,
+                        "Queue full, dropping oldest message"
+                    );
                     // Drop the oldest message by dequeuing it
                     drop(stats); // Release lock before dequeue
                     if let Ok(_) = self.try_dequeue().await {
@@ -119,6 +130,11 @@ impl MessageQueue {
                         )));
                     }
                 } else {
+                    debug!(
+                        capacity = capacity,
+                        current_size = stats.current_size,
+                        "Queue full, rejecting enqueue"
+                    );
                     return Err(IgtlError::Io(std::io::Error::new(
                         std::io::ErrorKind::WouldBlock,
                         "Queue full",
@@ -127,8 +143,11 @@ impl MessageQueue {
             }
         }
 
+        let size = data.len();
+
         // Send message
         self.tx.send(data).map_err(|_| {
+            warn!("Failed to enqueue: queue closed");
             IgtlError::Io(std::io::Error::new(
                 std::io::ErrorKind::BrokenPipe,
                 "Queue closed",
@@ -140,6 +159,12 @@ impl MessageQueue {
         if stats.current_size > stats.peak_size {
             stats.peak_size = stats.current_size;
         }
+
+        trace!(
+            size = size,
+            queue_size = stats.current_size,
+            "Message enqueued"
+        );
 
         Ok(())
     }
@@ -153,16 +178,25 @@ impl MessageQueue {
 
         match rx.recv().await {
             Some(data) => {
+                let size = data.len();
                 drop(rx); // Release lock before updating stats
                 let mut stats = self.stats.lock().await;
                 stats.dequeued += 1;
                 stats.current_size = stats.current_size.saturating_sub(1);
+                trace!(
+                    size = size,
+                    queue_size = stats.current_size,
+                    "Message dequeued"
+                );
                 Ok(data)
             }
-            None => Err(IgtlError::Io(std::io::Error::new(
-                std::io::ErrorKind::BrokenPipe,
-                "Queue closed",
-            ))),
+            None => {
+                warn!("Dequeue failed: queue closed");
+                Err(IgtlError::Io(std::io::Error::new(
+                    std::io::ErrorKind::BrokenPipe,
+                    "Queue closed",
+                )))
+            }
         }
     }
 

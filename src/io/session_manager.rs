@@ -46,6 +46,7 @@ use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{mpsc, RwLock};
+use tracing::{debug, info, trace, warn};
 
 /// Unique identifier for each client session
 pub type ClientId = u64;
@@ -127,7 +128,13 @@ impl SessionManager {
     /// }
     /// ```
     pub async fn new(addr: &str) -> Result<Self> {
+        info!(addr = %addr, "Creating SessionManager");
         let listener = TcpListener::bind(addr).await?;
+        let local_addr = listener.local_addr()?;
+        info!(
+            local_addr = %local_addr,
+            "SessionManager listening for clients"
+        );
         Ok(SessionManager {
             listener,
             clients: Arc::new(RwLock::new(HashMap::new())),
@@ -198,7 +205,10 @@ impl SessionManager {
     /// # }
     /// ```
     pub async fn add_handler(&self, handler: Box<dyn MessageHandler>) {
+        debug!("Registering new message handler");
         self.handlers.write().await.push(handler);
+        let count = self.handlers.read().await.len();
+        info!(handler_count = count, "Message handler registered");
     }
 
     /// Accept new client connections in a loop
@@ -227,18 +237,27 @@ impl SessionManager {
     /// }
     /// ```
     pub async fn accept_clients(&self) {
+        info!("Starting client accept loop");
         loop {
             match self.listener.accept().await {
                 Ok((socket, addr)) => {
                     let client_id = self.next_client_id.fetch_add(1, Ordering::SeqCst);
-                    println!("[SessionManager] Client #{} connected from {}", client_id, addr);
+                    info!(
+                        client_id = client_id,
+                        addr = %addr,
+                        "Client connected"
+                    );
 
                     if let Err(e) = self.handle_client(client_id, socket, addr).await {
-                        eprintln!("[SessionManager] Failed to setup client #{}: {}", client_id, e);
+                        warn!(
+                            client_id = client_id,
+                            error = %e,
+                            "Failed to setup client session"
+                        );
                     }
                 }
                 Err(e) => {
-                    eprintln!("[SessionManager] Accept error: {}", e);
+                    warn!(error = %e, "Failed to accept client connection");
                 }
             }
         }
@@ -251,6 +270,7 @@ impl SessionManager {
         socket: TcpStream,
         addr: SocketAddr,
     ) -> Result<()> {
+        debug!(client_id = client_id, "Setting up client session");
         let (tx, mut rx) = mpsc::unbounded_channel::<Vec<u8>>();
 
         // Register client session
@@ -262,6 +282,12 @@ impl SessionManager {
                 connected_at: std::time::Instant::now(),
             };
             self.clients.write().await.insert(client_id, session);
+            let count = self.clients.read().await.len();
+            info!(
+                client_id = client_id,
+                total_clients = count,
+                "Client session registered"
+            );
         }
 
         // Split socket into read/write halves (consuming ownership)
@@ -283,21 +309,46 @@ impl SessionManager {
         let handlers = self.handlers.clone();
 
         let receiver_task = tokio::spawn(async move {
+            trace!(client_id = client_id, "Client receiver task started");
             loop {
                 // Read header
                 let mut header_buf = vec![0u8; Header::SIZE];
                 if reader.read_exact(&mut header_buf).await.is_err() {
+                    trace!(client_id = client_id, "Client disconnected (header read failed)");
                     break;
                 }
 
                 let header = match Header::decode(&header_buf) {
                     Ok(h) => h,
-                    Err(_) => break,
+                    Err(e) => {
+                        warn!(
+                            client_id = client_id,
+                            error = %e,
+                            "Failed to decode header from client"
+                        );
+                        break;
+                    }
                 };
+
+                let msg_type = header.type_name.as_str().unwrap_or("UNKNOWN");
+                let device_name = header.device_name.as_str().unwrap_or("UNKNOWN");
+
+                debug!(
+                    client_id = client_id,
+                    msg_type = msg_type,
+                    device_name = device_name,
+                    body_size = header.body_size,
+                    "Received message from client"
+                );
 
                 // Read body
                 let mut body_buf = vec![0u8; header.body_size as usize];
                 if reader.read_exact(&mut body_buf).await.is_err() {
+                    warn!(
+                        client_id = client_id,
+                        msg_type = msg_type,
+                        "Client disconnected while reading body"
+                    );
                     break;
                 }
 
@@ -308,6 +359,12 @@ impl SessionManager {
                 // Call message handlers
                 let type_name = header.type_name.as_str().unwrap_or("UNKNOWN");
                 let handlers_guard = handlers.read().await;
+                trace!(
+                    client_id = client_id,
+                    msg_type = type_name,
+                    handler_count = handlers_guard.len(),
+                    "Dispatching message to handlers"
+                );
                 for handler in handlers_guard.iter() {
                     handler.handle_message(client_id, type_name, &full_msg);
                 }
@@ -316,13 +373,22 @@ impl SessionManager {
 
         // Wait for either task to finish (indicates disconnection)
         tokio::select! {
-            _ = sender_task => {},
-            _ = receiver_task => {},
+            _ = sender_task => {
+                trace!(client_id = client_id, "Sender task finished");
+            },
+            _ = receiver_task => {
+                trace!(client_id = client_id, "Receiver task finished");
+            },
         }
 
         // Cleanup: remove client from registry
         self.clients.write().await.remove(&client_id);
-        println!("[SessionManager] Client #{} disconnected", client_id);
+        let remaining = self.clients.read().await.len();
+        info!(
+            client_id = client_id,
+            remaining_clients = remaining,
+            "Client disconnected"
+        );
 
         Ok(())
     }
@@ -348,9 +414,23 @@ impl SessionManager {
         let data = igtl_msg.encode()?;
 
         let clients_guard = self.clients.read().await;
+        let client_count = clients_guard.len();
+
+        debug!(
+            msg_type = std::any::type_name::<T>(),
+            client_count = client_count,
+            size = data.len(),
+            "Broadcasting message to all clients"
+        );
+
         for session in clients_guard.values() {
             let _ = session.send_raw(data.clone()).await;
         }
+
+        trace!(
+            client_count = client_count,
+            "Broadcast completed"
+        );
 
         Ok(())
     }
@@ -375,11 +455,20 @@ impl SessionManager {
         let igtl_msg = IgtlMessage::new(message.clone(), "Server")?;
         let data = igtl_msg.encode()?;
 
+        debug!(
+            client_id = client_id,
+            msg_type = std::any::type_name::<T>(),
+            size = data.len(),
+            "Sending message to client"
+        );
+
         let clients_guard = self.clients.read().await;
         if let Some(session) = clients_guard.get(&client_id) {
             session.send_raw(data).await?;
+            trace!(client_id = client_id, "Message sent successfully");
             Ok(())
         } else {
+            warn!(client_id = client_id, "Client not found");
             Err(IgtlError::Io(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
                 format!("Client {} not found", client_id),
@@ -391,9 +480,10 @@ impl SessionManager {
     pub async fn disconnect(&self, client_id: ClientId) -> Result<()> {
         let mut clients = self.clients.write().await;
         if clients.remove(&client_id).is_some() {
-            println!("[SessionManager] Forcibly disconnected client #{}", client_id);
+            info!(client_id = client_id, "Forcibly disconnected client");
             Ok(())
         } else {
+            warn!(client_id = client_id, "Cannot disconnect: client not found");
             Err(IgtlError::Io(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
                 format!("Client {} not found", client_id),
@@ -406,7 +496,7 @@ impl SessionManager {
         let mut clients = self.clients.write().await;
         let count = clients.len();
         clients.clear();
-        println!("[SessionManager] Shutdown: disconnected {} clients", count);
+        info!(disconnected_clients = count, "SessionManager shutdown complete");
     }
 }
 

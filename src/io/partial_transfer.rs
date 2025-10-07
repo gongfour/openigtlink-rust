@@ -7,6 +7,7 @@ use crate::error::{IgtlError, Result};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use tracing::{debug, info, trace, warn};
 
 /// Configuration for partial message transfer
 #[derive(Debug, Clone)]
@@ -171,6 +172,12 @@ impl PartialTransferManager {
 
     /// Create a new transfer manager with custom configuration
     pub fn with_config(config: TransferConfig) -> Self {
+        info!(
+            chunk_size = config.chunk_size,
+            allow_resume = config.allow_resume,
+            timeout_secs = ?config.timeout_secs,
+            "Creating partial transfer manager"
+        );
         Self {
             transfers: Arc::new(Mutex::new(HashMap::new())),
             next_id: Arc::new(Mutex::new(1)),
@@ -190,6 +197,13 @@ impl PartialTransferManager {
         let id = TransferId(*next_id);
         *next_id += 1;
         drop(next_id);
+
+        info!(
+            transfer_id = id.value(),
+            total_bytes = total_bytes,
+            chunk_size = self.config.chunk_size,
+            "Starting new transfer"
+        );
 
         let now = std::time::Instant::now();
         let info = TransferInfo {
@@ -223,6 +237,7 @@ impl PartialTransferManager {
         let mut transfers = self.transfers.lock().await;
 
         let info = transfers.get_mut(&id).ok_or_else(|| {
+            warn!(transfer_id = id.value(), "Transfer not found");
             IgtlError::Io(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
                 "Transfer not found",
@@ -230,6 +245,15 @@ impl PartialTransferManager {
         })?;
 
         if let TransferState::InProgress { total_bytes, .. } = info.state {
+            let progress = (bytes_transferred as f64 / total_bytes as f64) * 100.0;
+            trace!(
+                transfer_id = id.value(),
+                bytes_transferred = bytes_transferred,
+                total_bytes = total_bytes,
+                chunk_index = chunk_index,
+                progress_pct = format!("{:.1}%", progress),
+                "Transfer progress updated"
+            );
             info.state = TransferState::InProgress {
                 bytes_transferred,
                 total_bytes,
@@ -237,6 +261,7 @@ impl PartialTransferManager {
             };
             info.updated_at = std::time::Instant::now();
         } else {
+            warn!(transfer_id = id.value(), "Transfer is not in progress");
             return Err(IgtlError::Io(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
                 "Transfer is not in progress",
@@ -251,6 +276,7 @@ impl PartialTransferManager {
         let mut transfers = self.transfers.lock().await;
 
         let info = transfers.get_mut(&id).ok_or_else(|| {
+            warn!(transfer_id = id.value(), "Transfer not found");
             IgtlError::Io(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
                 "Transfer not found",
@@ -258,6 +284,19 @@ impl PartialTransferManager {
         })?;
 
         if let TransferState::InProgress { total_bytes, .. } = info.state {
+            let elapsed = info.elapsed().as_secs_f64();
+            let speed_mbps = if elapsed > 0.0 {
+                (total_bytes as f64) / elapsed / 1_000_000.0
+            } else {
+                0.0
+            };
+            info!(
+                transfer_id = id.value(),
+                total_bytes = total_bytes,
+                elapsed_secs = format!("{:.2}", elapsed),
+                speed_mbps = format!("{:.2}", speed_mbps),
+                "Transfer completed"
+            );
             info.state = TransferState::Completed { total_bytes };
             info.updated_at = std::time::Instant::now();
         }
@@ -270,6 +309,7 @@ impl PartialTransferManager {
         let mut transfers = self.transfers.lock().await;
 
         let info = transfers.get_mut(&id).ok_or_else(|| {
+            warn!(transfer_id = id.value(), "Transfer not found");
             IgtlError::Io(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
                 "Transfer not found",
@@ -282,10 +322,18 @@ impl PartialTransferManager {
             ..
         } = info.state
         {
+            let resumable = info.config.allow_resume;
+            warn!(
+                transfer_id = id.value(),
+                bytes_transferred = bytes_transferred,
+                total_bytes = total_bytes,
+                resumable = resumable,
+                "Transfer interrupted"
+            );
             info.state = TransferState::Interrupted {
                 bytes_transferred,
                 total_bytes,
-                resumable: info.config.allow_resume,
+                resumable,
             };
             info.updated_at = std::time::Instant::now();
         }
@@ -298,6 +346,7 @@ impl PartialTransferManager {
         let mut transfers = self.transfers.lock().await;
 
         let info = transfers.get_mut(&id).ok_or_else(|| {
+            warn!(transfer_id = id.value(), "Transfer not found");
             IgtlError::Io(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
                 "Transfer not found",
@@ -311,6 +360,13 @@ impl PartialTransferManager {
                 resumable: true,
             } => {
                 let chunk_index = bytes_transferred / info.config.chunk_size;
+                info!(
+                    transfer_id = id.value(),
+                    resuming_from = bytes_transferred,
+                    total_bytes = total_bytes,
+                    chunk_index = chunk_index,
+                    "Resuming transfer"
+                );
                 info.state = TransferState::InProgress {
                     bytes_transferred,
                     total_bytes,
@@ -319,16 +375,22 @@ impl PartialTransferManager {
                 info.updated_at = std::time::Instant::now();
                 Ok(bytes_transferred)
             }
-            TransferState::Interrupted { resumable: false, .. } => Err(IgtlError::Io(
-                std::io::Error::new(
+            TransferState::Interrupted { resumable: false, .. } => {
+                warn!(transfer_id = id.value(), "Transfer is not resumable");
+                Err(IgtlError::Io(
+                    std::io::Error::new(
+                        std::io::ErrorKind::InvalidInput,
+                        "Transfer is not resumable",
+                    ),
+                ))
+            }
+            _ => {
+                warn!(transfer_id = id.value(), "Transfer is not interrupted");
+                Err(IgtlError::Io(std::io::Error::new(
                     std::io::ErrorKind::InvalidInput,
-                    "Transfer is not resumable",
-                ),
-            )),
-            _ => Err(IgtlError::Io(std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                "Transfer is not interrupted",
-            ))),
+                    "Transfer is not interrupted",
+                )))
+            }
         }
     }
 
@@ -337,6 +399,11 @@ impl PartialTransferManager {
         let mut transfers = self.transfers.lock().await;
 
         if let Some(info) = transfers.get_mut(&id) {
+            warn!(
+                transfer_id = id.value(),
+                error = %error,
+                "Transfer failed"
+            );
             info.state = TransferState::Failed { error };
             info.updated_at = std::time::Instant::now();
         }
@@ -375,9 +442,23 @@ impl PartialTransferManager {
         let config = &self.config;
         if let Some(timeout_secs) = config.timeout_secs {
             let timeout = std::time::Duration::from_secs(timeout_secs);
-            self.transfers.lock().await.retain(|_, info| {
-                info.idle_time() < timeout
+            let mut transfers = self.transfers.lock().await;
+            let before_count = transfers.len();
+            transfers.retain(|id, info| {
+                let keep = info.idle_time() < timeout;
+                if !keep {
+                    debug!(
+                        transfer_id = id.value(),
+                        idle_time_secs = info.idle_time().as_secs(),
+                        "Removing timed out transfer"
+                    );
+                }
+                keep
             });
+            let removed = before_count - transfers.len();
+            if removed > 0 {
+                info!(removed_count = removed, "Cleaned up timed out transfers");
+            }
         }
     }
 }

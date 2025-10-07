@@ -5,6 +5,8 @@
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 
+use tracing::{debug, info, trace, warn};
+
 use crate::error::Result;
 use crate::protocol::header::Header;
 use crate::protocol::message::{IgtlMessage, Message};
@@ -36,7 +38,13 @@ impl IgtlServer {
     /// # Ok::<(), openigtlink_rust::error::IgtlError>(())
     /// ```
     pub fn bind(addr: &str) -> Result<Self> {
+        info!(addr = %addr, "Binding OpenIGTLink server");
         let listener = TcpListener::bind(addr)?;
+        let local_addr = listener.local_addr()?;
+        info!(
+            local_addr = %local_addr,
+            "OpenIGTLink server listening"
+        );
         Ok(IgtlServer { listener })
     }
 
@@ -58,7 +66,12 @@ impl IgtlServer {
     /// # Ok::<(), openigtlink_rust::error::IgtlError>(())
     /// ```
     pub fn accept(&self) -> Result<IgtlConnection> {
-        let (stream, _addr) = self.listener.accept()?;
+        trace!("Waiting for client connection");
+        let (stream, addr) = self.listener.accept()?;
+        info!(
+            peer_addr = %addr,
+            "Client connected"
+        );
         Ok(IgtlConnection {
             stream,
             verify_crc: true, // Default: verify CRC
@@ -91,6 +104,12 @@ impl IgtlConnection {
     /// Disabling CRC verification should only be done in trusted environments
     /// where data corruption is unlikely (e.g., loopback, local network).
     pub fn set_verify_crc(&mut self, verify: bool) {
+        if verify != self.verify_crc {
+            info!(verify = verify, "CRC verification setting changed");
+            if !verify {
+                warn!("CRC verification disabled - use only in trusted environments");
+            }
+        }
         self.verify_crc = verify;
     }
 
@@ -131,8 +150,25 @@ impl IgtlConnection {
     /// ```
     pub fn send<T: Message>(&mut self, msg: &IgtlMessage<T>) -> Result<()> {
         let data = msg.encode()?;
+        let msg_type = msg.header.type_name.as_str().unwrap_or("UNKNOWN");
+        let device_name = msg.header.device_name.as_str().unwrap_or("UNKNOWN");
+
+        debug!(
+            msg_type = msg_type,
+            device_name = device_name,
+            size = data.len(),
+            "Sending message to client"
+        );
+
         self.stream.write_all(&data)?;
         self.stream.flush()?;
+
+        trace!(
+            msg_type = msg_type,
+            bytes_sent = data.len(),
+            "Message sent successfully"
+        );
+
         Ok(())
     }
 
@@ -162,21 +198,59 @@ impl IgtlConnection {
     /// # Ok::<(), openigtlink_rust::error::IgtlError>(())
     /// ```
     pub fn receive<T: Message>(&mut self) -> Result<IgtlMessage<T>> {
+        trace!("Waiting for message header from client");
+
         // Read header (58 bytes)
         let mut header_buf = vec![0u8; Header::SIZE];
         self.stream.read_exact(&mut header_buf)?;
 
         let header = Header::decode(&header_buf)?;
 
+        let msg_type = header.type_name.as_str().unwrap_or("UNKNOWN");
+        let device_name = header.device_name.as_str().unwrap_or("UNKNOWN");
+
+        debug!(
+            msg_type = msg_type,
+            device_name = device_name,
+            body_size = header.body_size,
+            version = header.version,
+            "Received message header from client"
+        );
+
         // Read body
         let mut body_buf = vec![0u8; header.body_size as usize];
         self.stream.read_exact(&mut body_buf)?;
+
+        trace!(
+            msg_type = msg_type,
+            bytes_read = body_buf.len(),
+            "Message body received from client"
+        );
 
         // Decode full message with CRC verification setting
         let mut full_msg = header_buf;
         full_msg.extend_from_slice(&body_buf);
 
-        IgtlMessage::decode_with_options(&full_msg, self.verify_crc)
+        let result = IgtlMessage::decode_with_options(&full_msg, self.verify_crc);
+
+        match &result {
+            Ok(_) => {
+                debug!(
+                    msg_type = msg_type,
+                    device_name = device_name,
+                    "Message decoded successfully"
+                );
+            }
+            Err(e) => {
+                warn!(
+                    msg_type = msg_type,
+                    error = %e,
+                    "Failed to decode message from client"
+                );
+            }
+        }
+
+        result
     }
 
     /// Set read timeout for the underlying TCP stream
