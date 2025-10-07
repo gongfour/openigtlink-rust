@@ -65,16 +65,17 @@ cargo bench --bench compression
 
 ### 3. Network (`benches/network.rs`)
 
-Measures end-to-end network performance with async I/O.
+**⚠️ Note:** Network benchmarks are currently disabled due to limitations:
+- High overhead from creating/destroying servers in Criterion's tight iteration loops
+- Port allocation issues on macOS (error 49: "Can't assign requested address")
+- Measures network stack overhead rather than protocol performance
 
-**Tests:**
-- `async_roundtrip_status` - Full client-server round-trip latency
-- `async_throughput_10_messages` - Throughput for 10 consecutive messages
-
-**Run:**
+**Alternative:** Use `examples/performance_test.rs` for real-world network performance testing:
 ```bash
-cargo bench --bench network
+cargo run --example performance_test --release
 ```
+
+The network benchmark file now contains lightweight serialization benchmarks instead.
 
 ## Viewing Results
 
@@ -131,7 +132,6 @@ Expected performance on modern hardware (2020+ MacBook Pro / Linux):
 | Image decode (256x256) | ~190-200 µs (320+ MiB/s) |
 | Image encode (1024x1024) | ~3.0-3.2 ms (320+ MiB/s) |
 | Compression (1MB) | ~5-10 ms (depends on level) |
-| Network round-trip | ~1-2 ms (localhost) |
 
 ## Tips
 
@@ -189,12 +189,12 @@ sudo apt install gnuplot
 sudo pacman -S gnuplot
 ```
 
-### Network Benchmarks Fail
+### Network Performance Testing
 
-Network benchmarks create local servers. If they fail:
-- Check if port 0 (random port) is available
-- Ensure no firewall is blocking localhost connections
-- Try running again (port collision is rare but possible)
+Network benchmarks are disabled in the Criterion suite. For network performance:
+- Use `cargo run --example performance_test --release`
+- Or implement custom integration tests with realistic workloads
+- Criterion's tight iteration loops don't work well with socket lifecycle
 
 ## CI/CD Integration
 
