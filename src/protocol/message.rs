@@ -62,13 +62,9 @@ impl<T: Message> IgtlMessage<T> {
     /// # Returns
     /// New message with generated header
     pub fn new(content: T, device_name: &str) -> Result<Self> {
-        use std::time::{SystemTime, UNIX_EPOCH};
-        use crate::protocol::header::{TypeName, DeviceName};
+        use crate::protocol::header::{TypeName, DeviceName, Timestamp};
 
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
+        let timestamp = Timestamp::now();
 
         let content_bytes = content.encode_content()?;
         let body_size = content_bytes.len() as u64;
@@ -269,12 +265,12 @@ mod tests {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
-            .as_secs();
+            .as_secs() as u32;
 
         let one_year_ago = now - (365 * 24 * 60 * 60);
 
-        assert!(msg.header.timestamp >= one_year_ago);
-        assert!(msg.header.timestamp <= now + 1); // +1 for clock skew
+        assert!(msg.header.timestamp.seconds >= one_year_ago);
+        assert!(msg.header.timestamp.seconds <= now + 1); // +1 for clock skew
     }
 
     #[test]

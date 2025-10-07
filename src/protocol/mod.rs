@@ -8,7 +8,7 @@ pub mod message;
 pub mod types;
 
 // Re-export commonly used types
-pub use header::{Header, TypeName, DeviceName};
+pub use header::{Header, TypeName, DeviceName, Timestamp};
 pub use crc::{calculate_crc, verify_crc};
 pub use message::{Message, IgtlMessage};
 pub use types::{CapabilityMessage, StatusMessage, TransformMessage};
