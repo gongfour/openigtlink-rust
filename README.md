@@ -261,37 +261,37 @@ cargo run --example tls_communication
 
 **Compression** - Reduce bandwidth usage
 ```bash
-cargo run --example compression_demo
+cargo run --example compression
 # Demonstrates 98-99% compression ratios for medical images
 ```
 
 **Auto-reconnection** - Network resilience
 ```bash
-cargo run --example reconnect_demo
+cargo run --example reconnect
 # Exponential backoff with jitter
 ```
 
 **Message Queuing** - Backpressure control
 ```bash
-cargo run --example message_queue_demo
+cargo run --example message_queue
 # Bounded/unbounded queues with capacity limits
 ```
 
 **Partial Transfer** - Resume interrupted transfers
 ```bash
-cargo run --example partial_transfer_demo
+cargo run --example partial_transfer
 # Resume large data transfers from checkpoint
 ```
 
 **Session Management** - Multi-client server
 ```bash
-cargo run --example session_manager_demo
+cargo run --example session_manager
 # Handle multiple concurrent clients
 ```
 
 **Structured Logging** - Production debugging
 ```bash
-RUST_LOG=debug cargo run --example logging_demo
+RUST_LOG=debug cargo run --example logging
 # Tracing integration with filtering
 ```
 
