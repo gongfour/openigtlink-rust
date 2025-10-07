@@ -59,7 +59,10 @@ impl IgtlServer {
     /// ```
     pub fn accept(&self) -> Result<IgtlConnection> {
         let (stream, _addr) = self.listener.accept()?;
-        Ok(IgtlConnection { stream })
+        Ok(IgtlConnection {
+            stream,
+            verify_crc: true, // Default: verify CRC
+        })
     }
 
     /// Get the local address this server is bound to
@@ -73,9 +76,33 @@ impl IgtlServer {
 /// Provides methods to send and receive OpenIGTLink messages over the connection.
 pub struct IgtlConnection {
     stream: TcpStream,
+    verify_crc: bool,
 }
 
 impl IgtlConnection {
+    /// Enable or disable CRC verification for received messages
+    ///
+    /// # Arguments
+    ///
+    /// * `verify` - true to enable CRC verification (default), false to disable
+    ///
+    /// # Safety
+    ///
+    /// Disabling CRC verification should only be done in trusted environments
+    /// where data corruption is unlikely (e.g., loopback, local network).
+    pub fn set_verify_crc(&mut self, verify: bool) {
+        self.verify_crc = verify;
+    }
+
+    /// Get current CRC verification setting
+    ///
+    /// # Returns
+    ///
+    /// true if CRC verification is enabled, false otherwise
+    pub fn verify_crc(&self) -> bool {
+        self.verify_crc
+    }
+
     /// Send a message to the connected client
     ///
     /// # Arguments
@@ -145,11 +172,11 @@ impl IgtlConnection {
         let mut body_buf = vec![0u8; header.body_size as usize];
         self.stream.read_exact(&mut body_buf)?;
 
-        // Decode full message
+        // Decode full message with CRC verification setting
         let mut full_msg = header_buf;
         full_msg.extend_from_slice(&body_buf);
 
-        IgtlMessage::decode(&full_msg)
+        IgtlMessage::decode_with_options(&full_msg, self.verify_crc)
     }
 
     /// Set read timeout for the underlying TCP stream

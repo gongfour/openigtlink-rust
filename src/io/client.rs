@@ -14,6 +14,7 @@ use crate::protocol::message::{IgtlMessage, Message};
 /// Uses blocking I/O with `std::net::TcpStream` for simple, synchronous communication.
 pub struct IgtlClient {
     stream: TcpStream,
+    verify_crc: bool,
 }
 
 impl IgtlClient {
@@ -37,7 +38,44 @@ impl IgtlClient {
     /// ```
     pub fn connect(addr: &str) -> Result<Self> {
         let stream = TcpStream::connect(addr)?;
-        Ok(IgtlClient { stream })
+        Ok(IgtlClient {
+            stream,
+            verify_crc: true, // Default: verify CRC
+        })
+    }
+
+    /// Enable or disable CRC verification for received messages
+    ///
+    /// # Arguments
+    ///
+    /// * `verify` - true to enable CRC verification (default), false to disable
+    ///
+    /// # Safety
+    ///
+    /// Disabling CRC verification should only be done in trusted environments
+    /// where data corruption is unlikely (e.g., loopback, local network).
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use openigtlink_rust::io::IgtlClient;
+    ///
+    /// let mut client = IgtlClient::connect("127.0.0.1:18944")?;
+    /// // Disable CRC for performance in trusted environment
+    /// client.set_verify_crc(false);
+    /// # Ok::<(), openigtlink_rust::error::IgtlError>(())
+    /// ```
+    pub fn set_verify_crc(&mut self, verify: bool) {
+        self.verify_crc = verify;
+    }
+
+    /// Get current CRC verification setting
+    ///
+    /// # Returns
+    ///
+    /// true if CRC verification is enabled, false otherwise
+    pub fn verify_crc(&self) -> bool {
+        self.verify_crc
     }
 
     /// Send a message to the server
@@ -105,11 +143,11 @@ impl IgtlClient {
         let mut body_buf = vec![0u8; header.body_size as usize];
         self.stream.read_exact(&mut body_buf)?;
 
-        // Decode full message
+        // Decode full message with CRC verification setting
         let mut full_msg = header_buf;
         full_msg.extend_from_slice(&body_buf);
 
-        IgtlMessage::decode(&full_msg)
+        IgtlMessage::decode_with_options(&full_msg, self.verify_crc)
     }
 
     /// Set read timeout for the underlying TCP stream

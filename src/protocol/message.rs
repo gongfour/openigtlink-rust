@@ -278,7 +278,7 @@ impl<T: Message> IgtlMessage<T> {
         Ok(buf)
     }
 
-    /// Decode a complete message from bytes
+    /// Decode a complete message from bytes with CRC verification
     ///
     /// Automatically detects Version 2 or Version 3 format based on header.
     ///
@@ -288,6 +288,37 @@ impl<T: Message> IgtlMessage<T> {
     /// # Returns
     /// Decoded message or error
     pub fn decode(data: &[u8]) -> Result<Self> {
+        Self::decode_with_options(data, true)
+    }
+
+    /// Decode a complete message from bytes with optional CRC verification
+    ///
+    /// Allows skipping CRC verification for performance in trusted environments.
+    ///
+    /// # Arguments
+    /// * `data` - Byte slice containing the complete message
+    /// * `verify_crc` - Whether to verify CRC (true = verify, false = skip)
+    ///
+    /// # Returns
+    /// Decoded message or error
+    ///
+    /// # Safety
+    /// Disabling CRC verification (`verify_crc = false`) should only be done in
+    /// trusted environments where data corruption is unlikely (e.g., loopback, local network).
+    /// Using this in production over unreliable networks may lead to silent data corruption.
+    ///
+    /// # Examples
+    /// ```no_run
+    /// # use openigtlink_rust::protocol::{IgtlMessage, types::TransformMessage};
+    /// # let data = vec![0u8; 106];
+    /// // Decode with CRC verification (recommended)
+    /// let msg = IgtlMessage::<TransformMessage>::decode_with_options(&data, true)?;
+    ///
+    /// // Decode without CRC verification (use with caution)
+    /// let msg_fast = IgtlMessage::<TransformMessage>::decode_with_options(&data, false)?;
+    /// # Ok::<(), openigtlink_rust::error::IgtlError>(())
+    /// ```
+    pub fn decode_with_options(data: &[u8], verify_crc: bool) -> Result<Self> {
         use crate::protocol::crc::calculate_crc;
         use crate::error::IgtlError;
 
@@ -314,13 +345,15 @@ impl<T: Message> IgtlMessage<T> {
 
         let body_bytes = &data[body_start..body_end];
 
-        // 3. Verify CRC
-        let calculated_crc = calculate_crc(body_bytes);
-        if calculated_crc != header.crc {
-            return Err(IgtlError::CrcMismatch {
-                expected: header.crc,
-                actual: calculated_crc,
-            });
+        // 3. Verify CRC (if requested)
+        if verify_crc {
+            let calculated_crc = calculate_crc(body_bytes);
+            if calculated_crc != header.crc {
+                return Err(IgtlError::CrcMismatch {
+                    expected: header.crc,
+                    actual: calculated_crc,
+                });
+            }
         }
 
         // 4. Parse body based on version
@@ -929,5 +962,106 @@ mod tests {
         let metadata = decoded.get_metadata().unwrap();
         assert_eq!(metadata.get("name"), Some(&"日本語".to_string()));
         assert_eq!(metadata.get("emoji"), Some(&"🎉✨".to_string()));
+    }
+
+    // CRC Verification Tests
+
+    #[test]
+    fn test_decode_with_crc_verification_enabled() {
+        let transform = TransformMessage::identity();
+        let msg = IgtlMessage::new(transform.clone(), "TestDevice").unwrap();
+
+        let encoded = msg.encode().unwrap();
+
+        // Should decode successfully with CRC verification
+        let decoded = IgtlMessage::<TransformMessage>::decode_with_options(&encoded, true).unwrap();
+        assert_eq!(decoded.content, transform);
+    }
+
+    #[test]
+    fn test_decode_with_crc_verification_disabled() {
+        let transform = TransformMessage::identity();
+        let msg = IgtlMessage::new(transform.clone(), "TestDevice").unwrap();
+
+        let mut encoded = msg.encode().unwrap();
+
+        // Corrupt the data
+        encoded[Header::SIZE] ^= 0xFF;
+
+        // Should fail with CRC verification enabled
+        let result_with_crc = IgtlMessage::<TransformMessage>::decode_with_options(&encoded, true);
+        assert!(matches!(result_with_crc, Err(crate::error::IgtlError::CrcMismatch { .. })));
+
+        // Should succeed with CRC verification disabled (even with corrupted data)
+        let result_without_crc = IgtlMessage::<TransformMessage>::decode_with_options(&encoded, false);
+        assert!(result_without_crc.is_ok());
+    }
+
+    #[test]
+    fn test_decode_default_uses_crc_verification() {
+        let transform = TransformMessage::identity();
+        let msg = IgtlMessage::new(transform, "TestDevice").unwrap();
+
+        let mut encoded = msg.encode().unwrap();
+
+        // Corrupt the data
+        encoded[Header::SIZE] ^= 0xFF;
+
+        // Default decode() should verify CRC and fail
+        let result = IgtlMessage::<TransformMessage>::decode(&encoded);
+        assert!(matches!(result, Err(crate::error::IgtlError::CrcMismatch { .. })));
+    }
+
+    #[test]
+    fn test_crc_skip_performance() {
+        // This test demonstrates that skipping CRC works correctly
+        let status = StatusMessage::ok("Performance test");
+        let msg = IgtlMessage::new(status.clone(), "TestDevice").unwrap();
+
+        let encoded = msg.encode().unwrap();
+
+        // Both should decode to the same content (when data is not corrupted)
+        let decoded_with_crc = IgtlMessage::<StatusMessage>::decode_with_options(&encoded, true).unwrap();
+        let decoded_without_crc = IgtlMessage::<StatusMessage>::decode_with_options(&encoded, false).unwrap();
+
+        assert_eq!(decoded_with_crc.content, decoded_without_crc.content);
+        assert_eq!(decoded_with_crc.content, status);
+    }
+
+    #[test]
+    fn test_version3_crc_skip_with_extended_header() {
+        let transform = TransformMessage::identity();
+        let mut msg = IgtlMessage::new(transform.clone(), "TestDevice").unwrap();
+
+        msg.set_extended_header(vec![0x01, 0x02, 0x03, 0x04]);
+
+        let encoded = msg.encode().unwrap();
+
+        // Should work with CRC disabled
+        let decoded = IgtlMessage::<TransformMessage>::decode_with_options(&encoded, false).unwrap();
+        assert_eq!(decoded.header.version, 3);
+        let expected: &[u8] = &[0x01, 0x02, 0x03, 0x04];
+        assert_eq!(decoded.get_extended_header(), Some(expected));
+        assert_eq!(decoded.content, transform);
+    }
+
+    #[test]
+    fn test_version3_crc_skip_with_metadata() {
+        let status = StatusMessage::ok("Test");
+        let mut msg = IgtlMessage::new(status.clone(), "TestDevice").unwrap();
+
+        msg.add_metadata("key1".to_string(), "value1".to_string());
+        msg.add_metadata("key2".to_string(), "value2".to_string());
+
+        let encoded = msg.encode().unwrap();
+
+        // Should work with CRC disabled
+        let decoded = IgtlMessage::<StatusMessage>::decode_with_options(&encoded, false).unwrap();
+        assert_eq!(decoded.header.version, 3);
+
+        let metadata = decoded.get_metadata().unwrap();
+        assert_eq!(metadata.get("key1"), Some(&"value1".to_string()));
+        assert_eq!(metadata.get("key2"), Some(&"value2".to_string()));
+        assert_eq!(decoded.content, status);
     }
 }
