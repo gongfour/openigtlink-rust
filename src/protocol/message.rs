@@ -125,10 +125,75 @@ impl<T: Message> IgtlMessage<T> {
         }
     }
 
+    /// Set metadata key-value pairs (Version 3 feature)
+    ///
+    /// When metadata is set, the message version is automatically upgraded to 3.
+    ///
+    /// # Arguments
+    /// * `metadata` - HashMap of key-value pairs
+    ///
+    /// # Examples
+    /// ```no_run
+    /// # use openigtlink_rust::protocol::{IgtlMessage, types::TransformMessage};
+    /// # use std::collections::HashMap;
+    /// let transform = TransformMessage::identity();
+    /// let mut msg = IgtlMessage::new(transform, "Device").unwrap();
+    /// let mut metadata = HashMap::new();
+    /// metadata.insert("priority".to_string(), "high".to_string());
+    /// msg.set_metadata(metadata);
+    /// ```
+    pub fn set_metadata(&mut self, metadata: HashMap<String, String>) {
+        self.metadata = Some(metadata);
+        // Upgrade to version 3 when metadata is used
+        if self.header.version < 3 {
+            self.header.version = 3;
+        }
+    }
+
+    /// Add a single metadata key-value pair (Version 3 feature)
+    ///
+    /// # Arguments
+    /// * `key` - Metadata key
+    /// * `value` - Metadata value
+    pub fn add_metadata(&mut self, key: String, value: String) {
+        if self.metadata.is_none() {
+            self.metadata = Some(HashMap::new());
+            if self.header.version < 3 {
+                self.header.version = 3;
+            }
+        }
+        self.metadata.as_mut().unwrap().insert(key, value);
+    }
+
+    /// Get metadata reference (Version 3 feature)
+    ///
+    /// # Returns
+    /// Optional reference to metadata HashMap
+    pub fn get_metadata(&self) -> Option<&HashMap<String, String>> {
+        self.metadata.as_ref()
+    }
+
+    /// Remove metadata and optionally downgrade to Version 2
+    pub fn clear_metadata(&mut self) {
+        self.metadata = None;
+        // Downgrade to version 2 if no version 3 features are used
+        if self.extended_header.is_none() && self.header.version == 3 {
+            self.header.version = 2;
+        }
+    }
+
     /// Encode the complete message to bytes
     ///
     /// Version 2 format: Header (58) + Content
-    /// Version 3 format: Header (58) + ExtHdrSize (2) + ExtHdr (var) + Content + Metadata (not implemented yet)
+    /// Version 3 format: Header (58) + ExtHdrSize (2) + ExtHdr (var) + Content + Metadata (var)
+    ///
+    /// Metadata format (Version 3):
+    /// - MetadataSize (2 bytes, big-endian)
+    /// - For each pair:
+    ///   - KeySize (2 bytes)
+    ///   - Key (KeySize bytes, UTF-8)
+    ///   - ValueSize (2 bytes)
+    ///   - Value (ValueSize bytes, UTF-8)
     ///
     /// # Returns
     /// Complete message as byte vector
@@ -138,32 +203,74 @@ impl<T: Message> IgtlMessage<T> {
         // 1. Encode content
         let content_bytes = self.content.encode_content()?;
 
-        // 2. Build body based on version
+        // 2. Encode metadata if present
+        let metadata_bytes = if self.header.version >= 3 && self.metadata.is_some() {
+            let metadata = self.metadata.as_ref().unwrap();
+            let mut meta_buf = Vec::new();
+
+            // Metadata header size (2 bytes)
+            let meta_header_size = (metadata.len() as u16).to_be_bytes();
+            meta_buf.extend_from_slice(&meta_header_size);
+
+            // Each key-value pair
+            for (key, value) in metadata.iter() {
+                // Key size and data
+                let key_bytes = key.as_bytes();
+                meta_buf.extend_from_slice(&(key_bytes.len() as u16).to_be_bytes());
+                meta_buf.extend_from_slice(key_bytes);
+
+                // Value size and data
+                let value_bytes = value.as_bytes();
+                meta_buf.extend_from_slice(&(value_bytes.len() as u16).to_be_bytes());
+                meta_buf.extend_from_slice(value_bytes);
+            }
+
+            meta_buf
+        } else {
+            Vec::new()
+        };
+
+        // 3. Build body based on version
         let body_bytes = if self.header.version >= 3 && self.extended_header.is_some() {
             // Version 3 with extended header
             let ext_header = self.extended_header.as_ref().unwrap();
             let ext_header_size = ext_header.len() as u16;
 
-            let mut body = Vec::with_capacity(2 + ext_header.len() + content_bytes.len());
+            let mut body = Vec::with_capacity(
+                2 + ext_header.len() + content_bytes.len() + metadata_bytes.len()
+            );
             // Extended header size (2 bytes, big-endian)
             body.extend_from_slice(&ext_header_size.to_be_bytes());
             // Extended header data
             body.extend_from_slice(ext_header);
             // Content
             body.extend_from_slice(&content_bytes);
+            // Metadata
+            body.extend_from_slice(&metadata_bytes);
+
+            body
+        } else if self.header.version >= 3 && !metadata_bytes.is_empty() {
+            // Version 3 without extended header but with metadata
+            let mut body = Vec::with_capacity(2 + content_bytes.len() + metadata_bytes.len());
+            // Extended header size = 0
+            body.extend_from_slice(&0u16.to_be_bytes());
+            // Content
+            body.extend_from_slice(&content_bytes);
+            // Metadata
+            body.extend_from_slice(&metadata_bytes);
 
             body
         } else {
-            // Version 2 or Version 3 without extended header
+            // Version 2 or Version 3 without extended header/metadata
             content_bytes
         };
 
-        // 3. Update header with correct body_size and CRC
+        // 4. Update header with correct body_size and CRC
         let mut header = self.header.clone();
         header.body_size = body_bytes.len() as u64;
         header.crc = calculate_crc(&body_bytes);
 
-        // 4. Combine header + body
+        // 5. Combine header + body
         let mut buf = Vec::with_capacity(Header::SIZE + body_bytes.len());
         buf.extend_from_slice(&header.encode());
         buf.extend_from_slice(&body_bytes);
@@ -217,7 +324,7 @@ impl<T: Message> IgtlMessage<T> {
         }
 
         // 4. Parse body based on version
-        let (extended_header, content_bytes) = if header.version >= 3 && body_bytes.len() >= 2 {
+        let (extended_header, remaining_bytes, has_ext_header_field) = if header.version >= 3 && body_bytes.len() >= 2 {
             // Try to parse as Version 3 with extended header
             let ext_header_size = u16::from_be_bytes([body_bytes[0], body_bytes[1]]) as usize;
 
@@ -225,10 +332,10 @@ impl<T: Message> IgtlMessage<T> {
                 // Version 3 with non-empty extended header
                 let ext_header_data = body_bytes[2..2 + ext_header_size].to_vec();
                 let content_start = 2 + ext_header_size;
-                (Some(ext_header_data), &body_bytes[content_start..])
+                (Some(ext_header_data), &body_bytes[content_start..], true)
             } else if ext_header_size == 0 && body_bytes.len() >= 2 {
                 // Version 3 with empty extended header (size field = 0)
-                (Some(Vec::new()), &body_bytes[2..])
+                (Some(Vec::new()), &body_bytes[2..], true)
             } else {
                 // Invalid extended header size
                 return Err(IgtlError::InvalidSize {
@@ -238,18 +345,134 @@ impl<T: Message> IgtlMessage<T> {
             }
         } else {
             // Version 2 - entire body is content
-            (None, body_bytes)
+            (None, body_bytes, false)
         };
 
-        // 5. Decode content
+        // 5. Try to determine content size and parse metadata (Version 3 only)
+        let (content_bytes, metadata) = if header.version >= 3 && has_ext_header_field {
+            // For Version 3 with ext_header_size field (whether 0 or not)
+            // We need to figure out where content ends and metadata begins
+            // Strategy: Try to decode content. If successful, re-encode to find actual size.
+
+            // First, try decoding the entire remaining_bytes as content
+            match T::decode_content(remaining_bytes) {
+                Ok(content) => {
+                    // Content decoded successfully
+                    // Re-encode to find actual content size
+                    let actual_content_size = content.encode_content()?.len();
+
+                    if remaining_bytes.len() > actual_content_size {
+                        // There's metadata after the content
+                        let content_part = &remaining_bytes[..actual_content_size];
+                        let metadata_part = &remaining_bytes[actual_content_size..];
+
+                        // Parse metadata
+                        let parsed_metadata = Self::decode_metadata(metadata_part)?;
+                        (content_part, parsed_metadata)
+                    } else {
+                        // No metadata
+                        (remaining_bytes, None)
+                    }
+                }
+                Err(IgtlError::InvalidSize { expected, .. }) if remaining_bytes.len() > expected => {
+                    // Content decode failed due to size mismatch (fixed-size message with metadata)
+                    // This means we have: Content (expected bytes) + Metadata (rest)
+                    let content_part = &remaining_bytes[..expected];
+                    let metadata_part = &remaining_bytes[expected..];
+
+                    // Verify content decodes correctly
+                    if T::decode_content(content_part).is_ok() {
+                        // Parse metadata
+                        let parsed_metadata = Self::decode_metadata(metadata_part)?;
+                        (content_part, parsed_metadata)
+                    } else {
+                        // Content still doesn't decode - treat all as content
+                        (remaining_bytes, None)
+                    }
+                }
+                Err(_) => {
+                    // Some other error - treat all as content
+                    (remaining_bytes, None)
+                }
+            }
+        } else {
+            // Version 2 - no metadata
+            (remaining_bytes, None)
+        };
+
+        // 6. Decode content
         let content = T::decode_content(content_bytes)?;
 
         Ok(IgtlMessage {
             header,
             extended_header,
             content,
-            metadata: None,
+            metadata,
         })
+    }
+
+    /// Decode metadata from bytes (helper function)
+    fn decode_metadata(data: &[u8]) -> Result<Option<HashMap<String, String>>> {
+        use crate::error::IgtlError;
+
+        if data.len() < 2 {
+            return Ok(None);
+        }
+
+        let metadata_count = u16::from_be_bytes([data[0], data[1]]) as usize;
+
+        if metadata_count == 0 {
+            return Ok(None);
+        }
+
+        let mut metadata = HashMap::new();
+        let mut offset = 2;
+
+        for _ in 0..metadata_count {
+            // Read key size
+            if offset + 2 > data.len() {
+                return Err(IgtlError::InvalidSize {
+                    expected: offset + 2,
+                    actual: data.len(),
+                });
+            }
+            let key_size = u16::from_be_bytes([data[offset], data[offset + 1]]) as usize;
+            offset += 2;
+
+            // Read key
+            if offset + key_size > data.len() {
+                return Err(IgtlError::InvalidSize {
+                    expected: offset + key_size,
+                    actual: data.len(),
+                });
+            }
+            let key = String::from_utf8(data[offset..offset + key_size].to_vec())?;
+            offset += key_size;
+
+            // Read value size
+            if offset + 2 > data.len() {
+                return Err(IgtlError::InvalidSize {
+                    expected: offset + 2,
+                    actual: data.len(),
+                });
+            }
+            let value_size = u16::from_be_bytes([data[offset], data[offset + 1]]) as usize;
+            offset += 2;
+
+            // Read value
+            if offset + value_size > data.len() {
+                return Err(IgtlError::InvalidSize {
+                    expected: offset + value_size,
+                    actual: data.len(),
+                });
+            }
+            let value = String::from_utf8(data[offset..offset + value_size].to_vec())?;
+            offset += value_size;
+
+            metadata.insert(key, value);
+        }
+
+        Ok(Some(metadata))
     }
 }
 
@@ -559,5 +782,152 @@ mod tests {
         assert_eq!(decoded.header.version, 2);
         assert_eq!(decoded.get_extended_header(), None);
         assert_eq!(decoded.content, capability);
+    }
+
+    // Version 3 Metadata Tests
+
+    #[test]
+    fn test_metadata_set_get() {
+        let transform = TransformMessage::identity();
+        let mut msg = IgtlMessage::new(transform, "TestDevice").unwrap();
+
+        // Initially no metadata
+        assert_eq!(msg.get_metadata(), None);
+        assert_eq!(msg.header.version, 2);
+
+        // Set metadata
+        let mut metadata = HashMap::new();
+        metadata.insert("priority".to_string(), "high".to_string());
+        metadata.insert("sequence".to_string(), "42".to_string());
+        msg.set_metadata(metadata.clone());
+
+        // Should upgrade to version 3
+        assert_eq!(msg.header.version, 3);
+        assert_eq!(msg.get_metadata(), Some(&metadata));
+    }
+
+    #[test]
+    fn test_metadata_add() {
+        let status = StatusMessage::ok("Test");
+        let mut msg = IgtlMessage::new(status, "TestDevice").unwrap();
+
+        assert_eq!(msg.header.version, 2);
+
+        // Add metadata one by one
+        msg.add_metadata("key1".to_string(), "value1".to_string());
+        assert_eq!(msg.header.version, 3);
+
+        msg.add_metadata("key2".to_string(), "value2".to_string());
+
+        let metadata = msg.get_metadata().unwrap();
+        assert_eq!(metadata.get("key1"), Some(&"value1".to_string()));
+        assert_eq!(metadata.get("key2"), Some(&"value2".to_string()));
+    }
+
+    #[test]
+    fn test_metadata_clear() {
+        let transform = TransformMessage::identity();
+        let mut msg = IgtlMessage::new(transform, "TestDevice").unwrap();
+
+        // Set metadata
+        msg.add_metadata("test".to_string(), "value".to_string());
+        assert_eq!(msg.header.version, 3);
+
+        // Clear metadata
+        msg.clear_metadata();
+        assert_eq!(msg.get_metadata(), None);
+        // Should downgrade to version 2 (no extended header either)
+        assert_eq!(msg.header.version, 2);
+    }
+
+    #[test]
+    fn test_version3_encode_decode_with_metadata() {
+        let transform = TransformMessage::identity();
+        let mut msg = IgtlMessage::new(transform.clone(), "TestDevice").unwrap();
+
+        // Add metadata
+        let mut metadata = HashMap::new();
+        metadata.insert("priority".to_string(), "high".to_string());
+        metadata.insert("timestamp".to_string(), "123456".to_string());
+        msg.set_metadata(metadata.clone());
+
+        // Encode
+        let encoded = msg.encode().unwrap();
+
+        // Decode
+        let decoded = IgtlMessage::<TransformMessage>::decode(&encoded).unwrap();
+
+        // Verify version
+        assert_eq!(decoded.header.version, 3);
+
+        // Verify metadata
+        let decoded_metadata = decoded.get_metadata().unwrap();
+        assert_eq!(decoded_metadata.get("priority"), Some(&"high".to_string()));
+        assert_eq!(decoded_metadata.get("timestamp"), Some(&"123456".to_string()));
+
+        // Verify content
+        assert_eq!(decoded.content, transform);
+    }
+
+    #[test]
+    fn test_version3_with_extended_header_and_metadata() {
+        let status = StatusMessage::ok("Test message");
+        let mut msg = IgtlMessage::new(status.clone(), "TestDevice").unwrap();
+
+        // Add both extended header and metadata
+        msg.set_extended_header(vec![0xAA, 0xBB, 0xCC, 0xDD]);
+        msg.add_metadata("key1".to_string(), "value1".to_string());
+        msg.add_metadata("key2".to_string(), "value2".to_string());
+
+        let encoded = msg.encode().unwrap();
+        let decoded = IgtlMessage::<StatusMessage>::decode(&encoded).unwrap();
+
+        // Verify version
+        assert_eq!(decoded.header.version, 3);
+
+        // Verify extended header
+        let expected_ext_header: &[u8] = &[0xAA, 0xBB, 0xCC, 0xDD];
+        assert_eq!(decoded.get_extended_header(), Some(expected_ext_header));
+
+        // Verify metadata
+        let metadata = decoded.get_metadata().unwrap();
+        assert_eq!(metadata.get("key1"), Some(&"value1".to_string()));
+        assert_eq!(metadata.get("key2"), Some(&"value2".to_string()));
+
+        // Verify content
+        assert_eq!(decoded.content, status);
+    }
+
+    #[test]
+    fn test_metadata_empty() {
+        let transform = TransformMessage::identity();
+        let mut msg = IgtlMessage::new(transform.clone(), "TestDevice").unwrap();
+
+        // Set empty metadata
+        msg.set_metadata(HashMap::new());
+
+        let encoded = msg.encode().unwrap();
+        let decoded = IgtlMessage::<TransformMessage>::decode(&encoded).unwrap();
+
+        // Should not have metadata (empty HashMap)
+        assert_eq!(decoded.get_metadata(), None);
+        assert_eq!(decoded.content, transform);
+    }
+
+    #[test]
+    fn test_metadata_utf8_values() {
+        let status = StatusMessage::ok("Test");
+        let mut msg = IgtlMessage::new(status.clone(), "TestDevice").unwrap();
+
+        // Add UTF-8 metadata
+        msg.add_metadata("name".to_string(), "日本語".to_string());
+        msg.add_metadata("emoji".to_string(), "🎉✨".to_string());
+
+        let encoded = msg.encode().unwrap();
+        let decoded = IgtlMessage::<StatusMessage>::decode(&encoded).unwrap();
+
+        let metadata = decoded.get_metadata().unwrap();
+        assert_eq!(metadata.get("name"), Some(&"日本語".to_string()));
+        assert_eq!(metadata.get("emoji"), Some(&"🎉✨".to_string()));
     }
 }
