@@ -172,6 +172,71 @@ impl IgtlConnection {
         Ok(())
     }
 
+    /// Enable or disable TCP_NODELAY (Nagle's algorithm)
+    ///
+    /// See [`IgtlClient::set_nodelay`](crate::io::IgtlClient::set_nodelay) for details.
+    pub fn set_nodelay(&self, nodelay: bool) -> Result<()> {
+        self.stream.set_nodelay(nodelay)?;
+        Ok(())
+    }
+
+    /// Set the size of the TCP receive buffer (SO_RCVBUF)
+    ///
+    /// See [`IgtlClient::set_recv_buffer_size`](crate::io::IgtlClient::set_recv_buffer_size) for details.
+    pub fn set_recv_buffer_size(&self, size: usize) -> Result<()> {
+        use std::os::fd::AsRawFd;
+
+        let fd = self.stream.as_raw_fd();
+        let size = size as libc::c_int;
+
+        unsafe {
+            let ret = libc::setsockopt(
+                fd,
+                libc::SOL_SOCKET,
+                libc::SO_RCVBUF,
+                &size as *const _ as *const libc::c_void,
+                std::mem::size_of::<libc::c_int>() as libc::socklen_t,
+            );
+
+            if ret != 0 {
+                return Err(std::io::Error::last_os_error().into());
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Set the size of the TCP send buffer (SO_SNDBUF)
+    ///
+    /// See [`IgtlClient::set_send_buffer_size`](crate::io::IgtlClient::set_send_buffer_size) for details.
+    pub fn set_send_buffer_size(&self, size: usize) -> Result<()> {
+        use std::os::fd::AsRawFd;
+
+        let fd = self.stream.as_raw_fd();
+        let size = size as libc::c_int;
+
+        unsafe {
+            let ret = libc::setsockopt(
+                fd,
+                libc::SOL_SOCKET,
+                libc::SO_SNDBUF,
+                &size as *const _ as *const libc::c_void,
+                std::mem::size_of::<libc::c_int>() as libc::socklen_t,
+            );
+
+            if ret != 0 {
+                return Err(std::io::Error::last_os_error().into());
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Get the current TCP_NODELAY setting
+    pub fn nodelay(&self) -> Result<bool> {
+        Ok(self.stream.nodelay()?)
+    }
+
     /// Get the remote peer address
     pub fn peer_addr(&self) -> Result<std::net::SocketAddr> {
         Ok(self.stream.peer_addr()?)
