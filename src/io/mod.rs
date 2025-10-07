@@ -5,6 +5,8 @@
 
 pub mod client;
 pub mod server;
+pub mod async_client;
+pub mod async_server;
 pub mod session_manager;
 pub mod udp;
 pub mod message_queue;
@@ -12,6 +14,10 @@ pub mod partial_transfer;
 
 pub use client::IgtlClient;
 pub use server::{IgtlConnection, IgtlServer};
+pub use async_client::{AsyncIgtlClient, AsyncIgtlReader, AsyncIgtlWriter};
+pub use async_server::{
+    AsyncIgtlConnection, AsyncIgtlConnectionReader, AsyncIgtlConnectionWriter, AsyncIgtlServer,
+};
 pub use session_manager::{ClientId, ClientInfo, MessageHandler, SessionManager};
 pub use udp::{UdpClient, UdpServer};
 pub use message_queue::{MessageQueue, QueueConfig, QueueStats};
