@@ -7,6 +7,8 @@ pub mod client;
 pub mod server;
 pub mod async_client;
 pub mod async_server;
+pub mod tls_client;
+pub mod tls_server;
 pub mod session_manager;
 pub mod udp;
 pub mod message_queue;
@@ -18,6 +20,8 @@ pub use async_client::{AsyncIgtlClient, AsyncIgtlReader, AsyncIgtlWriter};
 pub use async_server::{
     AsyncIgtlConnection, AsyncIgtlConnectionReader, AsyncIgtlConnectionWriter, AsyncIgtlServer,
 };
+pub use tls_client::{insecure_tls_config, TlsIgtlClient};
+pub use tls_server::{TlsIgtlConnection, TlsIgtlServer};
 pub use session_manager::{ClientId, ClientInfo, MessageHandler, SessionManager};
 pub use udp::{UdpClient, UdpServer};
 pub use message_queue::{MessageQueue, QueueConfig, QueueStats};
