@@ -338,12 +338,7 @@ cargo bench
 ### API Documentation
 - **[docs.rs](https://docs.rs/openigtlink-rust)** - Auto-generated API documentation
 - **[Examples](./examples/)** - 27 practical examples with detailed comments
-
-### Technical Documentation
-- **[C++ Comparison](./docs/cpp_comparison.md)** - Feature parity analysis with C++ implementation
-- **[Query & Streaming Analysis](./docs/query_streaming_analysis.md)** - Query/streaming protocol details
-- **[Protocol Extensions](./docs/protocol_extensions.md)** - Proposed backward-compatible protocol enhancements
-- **[Python Wrapping](./docs/python_wrapping_analysis.md)** - Python binding strategy
+- **[Query & Streaming Guide](./docs/query_usage.md)** - Using query and streaming control messages
 
 ### External References
 - **[Protocol Specification](https://github.com/openigtlink/OpenIGTLink/blob/master/Documents/Protocol/index.md)** - Official OpenIGTLink protocol
@@ -395,8 +390,8 @@ This project is feature-complete and production-ready:
 - ✅ Real-world examples
 
 Future work:
-- Python bindings (see [docs/python_wrapping_analysis.md](./docs/python_wrapping_analysis.md))
-- Protocol extensions (see [docs/protocol_extensions.md](./docs/protocol_extensions.md))
+- Python bindings
+- Protocol extensions
 
 ## Contributing
 

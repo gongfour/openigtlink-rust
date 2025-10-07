@@ -1,3 +1,6 @@
 /target
 /target/
 Cargo.lock
+
+# Planning and future work (not tracked)
+/planning
