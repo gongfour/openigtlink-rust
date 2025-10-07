@@ -5,7 +5,7 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use openigtlink_rust::protocol::{
     message::IgtlMessage,
-    types::{ImageMessage, ScalarType, StatusMessage, TransformMessage},
+    types::{ImageMessage, ImageScalarType, StatusMessage, TransformMessage},
 };
 
 fn bench_transform_encode(c: &mut Criterion) {
@@ -65,10 +65,11 @@ fn bench_image_encode_by_size(c: &mut Criterion) {
         let size = width * height;
         group.throughput(Throughput::Bytes((size) as u64));
 
-        let mut image = ImageMessage::new();
-        image.set_dimensions([width as u16, height as u16, 1]);
-        image.set_scalar_type(ScalarType::Uint8);
-        image.set_image_data(vec![128u8; size]);
+        let image = ImageMessage::new(
+            ImageScalarType::Uint8,
+            [width as u16, height as u16, 1],
+            vec![128u8; size],
+        ).unwrap();
         let msg = IgtlMessage::new(image, "Benchmark").unwrap();
 
         group.bench_with_input(BenchmarkId::from_parameter(name), &msg, |b, msg| {
@@ -93,10 +94,11 @@ fn bench_image_decode_by_size(c: &mut Criterion) {
         let size = width * height;
         group.throughput(Throughput::Bytes((size) as u64));
 
-        let mut image = ImageMessage::new();
-        image.set_dimensions([width as u16, height as u16, 1]);
-        image.set_scalar_type(ScalarType::Uint8);
-        image.set_image_data(vec![128u8; size]);
+        let image = ImageMessage::new(
+            ImageScalarType::Uint8,
+            [width as u16, height as u16, 1],
+            vec![128u8; size],
+        ).unwrap();
         let msg = IgtlMessage::new(image, "Benchmark").unwrap();
         let data = msg.encode().unwrap();
 

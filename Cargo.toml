@@ -31,3 +31,15 @@ rustls-native-certs = "0.8"
 [dev-dependencies]
 tokio-test = "0.4"
 criterion = "0.5"
+
+[[bench]]
+name = "throughput"
+harness = false
+
+[[bench]]
+name = "compression"
+harness = false
+
+[[bench]]
+name = "network"
+harness = false
