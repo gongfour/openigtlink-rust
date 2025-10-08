@@ -17,7 +17,7 @@
 //! ```
 
 use openigtlink_rust::error::Result;
-use openigtlink_rust::io::{IgtlClient, UdpClient};
+use openigtlink_rust::io::{builder::ClientBuilder, UdpClient};
 use openigtlink_rust::protocol::message::IgtlMessage;
 use openigtlink_rust::protocol::types::TransformMessage;
 use std::env;
@@ -174,7 +174,7 @@ fn compare_tcp_udp() -> Result<()> {
     println!("\n[TEST 2] TCP Latency Measurement");
     println!("  Connecting to server...");
 
-    let tcp_result = IgtlClient::connect(target);
+    let tcp_result = ClientBuilder::new().tcp(target).sync().build();
 
     if let Ok(mut tcp_client) = tcp_result {
         println!("  ✓ Connected");

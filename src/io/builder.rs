@@ -44,14 +44,18 @@
 //! ```no_run
 //! use openigtlink_rust::io::builder::ClientBuilder;
 //!
+//! # fn main() -> Result<(), openigtlink_rust::error::IgtlError> {
 //! // Synchronous TCP client (blocking I/O)
 //! let client = ClientBuilder::new()
 //!     .tcp("127.0.0.1:18944")
 //!     .sync()
 //!     .build()?;
+//! # Ok(())
+//! # }
 //!
 //! // Asynchronous TCP client (Tokio)
 //! # async fn example() -> Result<(), openigtlink_rust::error::IgtlError> {
+//! # use openigtlink_rust::io::builder::ClientBuilder;
 //! let client = ClientBuilder::new()
 //!     .tcp("127.0.0.1:18944")
 //!     .async_mode()
@@ -65,16 +69,18 @@
 //!
 //! ```no_run
 //! use openigtlink_rust::io::builder::ClientBuilder;
-//! use openigtlink_rust::io::tls_client::insecure_tls_config;
 //! use std::sync::Arc;
 //!
 //! # async fn example() -> Result<(), openigtlink_rust::error::IgtlError> {
 //! // TLS client for secure hospital networks
-//! let tls_config = Arc::new(insecure_tls_config());
+//! let tls_config = rustls::ClientConfig::builder()
+//!     .with_root_certificates(rustls::RootCertStore::empty())
+//!     .with_no_client_auth();
+//!
 //! let client = ClientBuilder::new()
 //!     .tcp("hospital-server.local:18944")
 //!     .async_mode()
-//!     .with_tls(tls_config)
+//!     .with_tls(Arc::new(tls_config))
 //!     .build()
 //!     .await?;
 //! # Ok(())
@@ -104,19 +110,21 @@
 //!
 //! ```no_run
 //! use openigtlink_rust::io::builder::ClientBuilder;
-//! use openigtlink_rust::io::tls_client::insecure_tls_config;
 //! use openigtlink_rust::io::reconnect::ReconnectConfig;
 //! use std::sync::Arc;
 //!
 //! # async fn example() -> Result<(), openigtlink_rust::error::IgtlError> {
 //! // Production-ready client with encryption AND auto-reconnect
-//! let tls_config = Arc::new(insecure_tls_config());
+//! let tls_config = rustls::ClientConfig::builder()
+//!     .with_root_certificates(rustls::RootCertStore::empty())
+//!     .with_no_client_auth();
+//!
 //! let reconnect_config = ReconnectConfig::with_max_attempts(100);
 //!
 //! let client = ClientBuilder::new()
 //!     .tcp("production-server:18944")
 //!     .async_mode()
-//!     .with_tls(tls_config)
+//!     .with_tls(Arc::new(tls_config))
 //!     .with_reconnect(reconnect_config)
 //!     .verify_crc(true)
 //!     .build()
@@ -156,9 +164,10 @@
 
 use crate::error::Result;
 use crate::io::reconnect::ReconnectConfig;
+use crate::io::sync_client::SyncTcpClient;
 use crate::io::unified_client::{AsyncIgtlClient, SyncIgtlClient};
 use crate::io::unified_async_client::UnifiedAsyncClient;
-use crate::io::{IgtlClient, UdpClient};
+use crate::io::UdpClient;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use tokio_rustls::rustls;
@@ -386,7 +395,7 @@ impl ClientBuilder<TcpConfigured, SyncMode> {
     /// # Ok::<(), openigtlink_rust::error::IgtlError>(())
     /// ```
     pub fn build(self) -> Result<SyncIgtlClient> {
-        let mut client = IgtlClient::connect(&self.protocol.addr)?;
+        let mut client = SyncTcpClient::connect(&self.protocol.addr)?;
         client.set_verify_crc(self.verify_crc);
         Ok(SyncIgtlClient::TcpSync(client))
     }

@@ -22,7 +22,7 @@
 //! ```
 
 use openigtlink_rust::error::Result;
-use openigtlink_rust::io::IgtlClient;
+use openigtlink_rust::io::{ClientBuilder, SyncIgtlClient};
 use openigtlink_rust::protocol::message::IgtlMessage;
 use openigtlink_rust::protocol::types::{CodecType, VideoMessage};
 use std::env;
@@ -40,7 +40,10 @@ fn run() -> Result<()> {
     let codec = parse_codec();
 
     // Connect to server
-    let mut client = IgtlClient::connect("127.0.0.1:18944")?;
+    let mut client = ClientBuilder::new()
+        .tcp("127.0.0.1:18944")
+        .sync()
+        .build()?;
     println!("[INFO] Connected to OpenIGTLink server\n");
 
     // Execute streaming scenario
@@ -80,7 +83,7 @@ fn parse_codec() -> CodecType {
 ///
 /// MJPEG (Motion JPEG) is simple and has low latency, suitable for
 /// surgical cameras and endoscopy where minimal delay is critical.
-fn stream_mjpeg(client: &mut IgtlClient) -> Result<()> {
+fn stream_mjpeg(client: &mut SyncIgtlClient) -> Result<()> {
     println!("=== MJPEG Video Streaming ===");
     println!("Resolution: 640x480");
     println!("Frame Rate: 30 fps");
@@ -138,7 +141,7 @@ fn stream_mjpeg(client: &mut IgtlClient) -> Result<()> {
 ///
 /// H.264 provides excellent compression for high-resolution video,
 /// ideal for recording surgical procedures or telemedicine.
-fn stream_h264(client: &mut IgtlClient) -> Result<()> {
+fn stream_h264(client: &mut SyncIgtlClient) -> Result<()> {
     println!("=== H.264 Video Streaming ===");
     println!("Resolution: 1920x1080 (Full HD)");
     println!("Frame Rate: 60 fps");
@@ -198,7 +201,7 @@ fn stream_h264(client: &mut IgtlClient) -> Result<()> {
 ///
 /// Raw video is uncompressed, useful for debugging or when
 /// compression artifacts must be avoided.
-fn stream_raw(client: &mut IgtlClient) -> Result<()> {
+fn stream_raw(client: &mut SyncIgtlClient) -> Result<()> {
     println!("=== Raw Uncompressed Video Streaming ===");
     println!("Resolution: 320x240");
     println!("Frame Rate: 15 fps");

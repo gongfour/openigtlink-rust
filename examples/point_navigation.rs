@@ -16,7 +16,7 @@
 //! ```
 
 use openigtlink_rust::error::Result;
-use openigtlink_rust::io::IgtlClient;
+use openigtlink_rust::io::{ClientBuilder, SyncIgtlClient};
 use openigtlink_rust::protocol::message::IgtlMessage;
 use openigtlink_rust::protocol::types::{PointElement, PointMessage};
 
@@ -29,7 +29,10 @@ fn main() {
 
 fn run() -> Result<()> {
     // Connect to server
-    let mut client = IgtlClient::connect("127.0.0.1:18944")?;
+    let mut client = ClientBuilder::new()
+        .tcp("127.0.0.1:18944")
+        .sync()
+        .build()?;
     println!("[INFO] Connected to OpenIGTLink server\n");
 
     println!("=== Surgical Navigation: Fiducial Point Registration ===");
@@ -57,7 +60,7 @@ fn run() -> Result<()> {
 /// - Distribute points across surgical field (avoid coplanar)
 /// - Minimum 3 points required (4-6 points recommended)
 /// - Include points near surgical target for accuracy
-fn register_fiducials(client: &mut IgtlClient) -> Result<()> {
+fn register_fiducials(client: &mut SyncIgtlClient) -> Result<()> {
     println!("[STEP 1] Defining anatomical fiducial points from CT image...\n");
 
     // Define anatomical fiducial points

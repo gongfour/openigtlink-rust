@@ -11,7 +11,7 @@
 //! ```
 
 use openigtlink_rust::error::Result;
-use openigtlink_rust::io::IgtlClient;
+use openigtlink_rust::io::{ClientBuilder, SyncIgtlClient};
 use openigtlink_rust::protocol::message::IgtlMessage;
 use openigtlink_rust::protocol::types::{NdArrayMessage, ScalarType};
 use std::thread;
@@ -28,7 +28,10 @@ fn run() -> Result<()> {
     println!("=== NDARRAY Message: Multi-Dimensional Array Transfer ===\n");
 
     // Connect to server
-    let mut client = IgtlClient::connect("127.0.0.1:18944")?;
+    let mut client = ClientBuilder::new()
+        .tcp("127.0.0.1:18944")
+        .sync()
+        .build()?;
     println!("[INFO] Connected to OpenIGTLink server\n");
 
     // Scenario 1: 1D array (signal/waveform)
@@ -53,7 +56,7 @@ fn run() -> Result<()> {
 }
 
 /// Send 1D array: Simulated ECG waveform (Float32)
-fn send_1d_waveform(client: &mut IgtlClient) -> Result<()> {
+fn send_1d_waveform(client: &mut SyncIgtlClient) -> Result<()> {
     // Generate 100-sample ECG-like waveform
     let sample_count = 100;
     let mut data = Vec::new();
@@ -96,7 +99,7 @@ fn send_1d_waveform(client: &mut IgtlClient) -> Result<()> {
 }
 
 /// Send 2D array: 4x4 transformation matrix (Float64)
-fn send_2d_matrix(client: &mut IgtlClient) -> Result<()> {
+fn send_2d_matrix(client: &mut SyncIgtlClient) -> Result<()> {
     // Create 4x4 identity matrix with translation
     #[rustfmt::skip]
     let matrix: [f64; 16] = [
@@ -130,7 +133,7 @@ fn send_2d_matrix(client: &mut IgtlClient) -> Result<()> {
 }
 
 /// Send 3D array: RGB lookup table (Uint8)
-fn send_3d_lut(client: &mut IgtlClient) -> Result<()> {
+fn send_3d_lut(client: &mut SyncIgtlClient) -> Result<()> {
     // Create 16x16x3 RGB color lookup table
     let lut_size = 16;
     let mut data = Vec::new();

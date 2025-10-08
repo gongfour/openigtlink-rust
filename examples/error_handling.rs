@@ -24,7 +24,7 @@
 //! ```
 
 use openigtlink_rust::error::{IgtlError, Result};
-use openigtlink_rust::io::IgtlClient;
+use openigtlink_rust::io::{ClientBuilder, SyncIgtlClient};
 use openigtlink_rust::protocol::message::IgtlMessage;
 use openigtlink_rust::protocol::types::{StatusMessage, TransformMessage};
 use std::env;
@@ -89,7 +89,11 @@ fn test_reconnect_logic() -> Result<()> {
     loop {
         println!("  Attempt {}/{}", retry_count + 1, MAX_RETRIES);
 
-        match IgtlClient::connect("127.0.0.1:18944") {
+        match ClientBuilder::new()
+            .tcp("127.0.0.1:18944")
+            .sync()
+            .build()
+        {
             Ok(mut client) => {
                 println!("  ✓ Connection established!");
 
@@ -133,7 +137,11 @@ fn test_timeout_handling() -> Result<()> {
 
     println!("[INFO] Connecting to server...");
 
-    match IgtlClient::connect("127.0.0.1:18944") {
+    match ClientBuilder::new()
+        .tcp("127.0.0.1:18944")
+        .sync()
+        .build()
+    {
         Ok(mut client) => {
             println!("  ✓ Connected");
 
@@ -220,7 +228,11 @@ fn test_wrong_message_type() -> Result<()> {
     println!("[INFO] Demonstrating graceful degradation for type mismatches");
     println!();
 
-    match IgtlClient::connect("127.0.0.1:18944") {
+    match ClientBuilder::new()
+        .tcp("127.0.0.1:18944")
+        .sync()
+        .build()
+    {
         Ok(mut client) => {
             println!("  ✓ Connected to server");
 

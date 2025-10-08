@@ -47,15 +47,17 @@
 //!
 //! ```no_run
 //! use openigtlink_rust::io::unified_async_client::UnifiedAsyncClient;
-//! use openigtlink_rust::io::tls_client::insecure_tls_config;
 //! use std::sync::Arc;
 //!
 //! # async fn example() -> Result<(), openigtlink_rust::error::IgtlError> {
-//! let tls_config = Arc::new(insecure_tls_config());
+//! let tls_config = rustls::ClientConfig::builder()
+//!     .with_root_certificates(rustls::RootCertStore::empty())
+//!     .with_no_client_auth();
+//!
 //! let client = UnifiedAsyncClient::connect_with_tls(
 //!     "hospital-server.local",
 //!     18944,
-//!     tls_config
+//!     Arc::new(tls_config)
 //! ).await?;
 //! # Ok(())
 //! # }
@@ -81,16 +83,18 @@
 //!
 //! ```no_run
 //! use openigtlink_rust::io::unified_async_client::UnifiedAsyncClient;
-//! use openigtlink_rust::io::tls_client::insecure_tls_config;
 //! use openigtlink_rust::io::reconnect::ReconnectConfig;
 //! use std::sync::Arc;
 //!
 //! # async fn example() -> Result<(), openigtlink_rust::error::IgtlError> {
-//! let tls_config = Arc::new(insecure_tls_config());
+//! let tls_config = rustls::ClientConfig::builder()
+//!     .with_root_certificates(rustls::RootCertStore::empty())
+//!     .with_no_client_auth();
+//!
 //! let mut client = UnifiedAsyncClient::connect_with_tls(
 //!     "production-server",
 //!     18944,
-//!     tls_config
+//!     Arc::new(tls_config)
 //! ).await?;
 //!
 //! // Add auto-reconnection to TLS client
@@ -107,15 +111,18 @@
 //!
 //! ```no_run
 //! use openigtlink_rust::io::builder::ClientBuilder;
-//! use openigtlink_rust::io::tls_client::insecure_tls_config;
 //! use openigtlink_rust::io::reconnect::ReconnectConfig;
 //! use std::sync::Arc;
 //!
 //! # async fn example() -> Result<(), openigtlink_rust::error::IgtlError> {
+//! let tls_config = rustls::ClientConfig::builder()
+//!     .with_root_certificates(rustls::RootCertStore::empty())
+//!     .with_no_client_auth();
+//!
 //! let client = ClientBuilder::new()
 //!     .tcp("production-server:18944")
 //!     .async_mode()
-//!     .with_tls(Arc::new(insecure_tls_config()))
+//!     .with_tls(Arc::new(tls_config))
 //!     .with_reconnect(ReconnectConfig::with_max_attempts(100))
 //!     .verify_crc(true)
 //!     .build()

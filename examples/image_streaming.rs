@@ -22,7 +22,7 @@
 //! ```
 
 use openigtlink_rust::error::Result;
-use openigtlink_rust::io::IgtlClient;
+use openigtlink_rust::io::{ClientBuilder, SyncIgtlClient};
 use openigtlink_rust::protocol::message::IgtlMessage;
 use openigtlink_rust::protocol::types::{
     CoordinateSystem, ImageMessage, ImageScalarType,
@@ -42,7 +42,10 @@ fn run() -> Result<()> {
     let scenario = parse_scenario();
 
     // Connect to server
-    let mut client = IgtlClient::connect("127.0.0.1:18944")?;
+    let mut client = ClientBuilder::new()
+        .tcp("127.0.0.1:18944")
+        .sync()
+        .build()?;
     println!("[INFO] Connected to OpenIGTLink server\n");
 
     // Execute imaging scenario
@@ -81,7 +84,7 @@ fn parse_scenario() -> String {
 /// - Bit depth: 16-bit unsigned (Hounsfield units)
 /// - Pixel spacing: 0.7mm x 0.7mm
 /// - Slice thickness: 1.0mm
-fn stream_ct_scan(client: &mut IgtlClient) -> Result<()> {
+fn stream_ct_scan(client: &mut SyncIgtlClient) -> Result<()> {
     println!("=== CT Scan Streaming ===");
     println!("Resolution: 512x512x100");
     println!("Scalar Type: Uint16 (Hounsfield units)");
@@ -124,7 +127,7 @@ fn stream_ct_scan(client: &mut IgtlClient) -> Result<()> {
 /// - Bit depth: 32-bit float (normalized intensity)
 /// - Pixel spacing: 1.0mm x 1.0mm
 /// - Slice thickness: 2.0mm
-fn stream_mri_scan(client: &mut IgtlClient) -> Result<()> {
+fn stream_mri_scan(client: &mut SyncIgtlClient) -> Result<()> {
     println!("=== MRI Scan Streaming ===");
     println!("Resolution: 256x256x60");
     println!("Scalar Type: Float32 (normalized intensity)");
@@ -166,7 +169,7 @@ fn stream_mri_scan(client: &mut IgtlClient) -> Result<()> {
 /// - Frame rate: 30 fps
 /// - Bit depth: 8-bit grayscale
 /// - Duration: 5 seconds (150 frames)
-fn stream_ultrasound(client: &mut IgtlClient) -> Result<()> {
+fn stream_ultrasound(client: &mut SyncIgtlClient) -> Result<()> {
     println!("=== Ultrasound Streaming ===");
     println!("Resolution: 640x480");
     println!("Scalar Type: Uint8");

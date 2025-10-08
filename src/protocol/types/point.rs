@@ -27,45 +27,47 @@
 //!
 //! ```no_run
 //! use openigtlink_rust::protocol::types::{PointMessage, PointElement};
-//! use openigtlink_rust::io::IgtlClient;
+//! use openigtlink_rust::protocol::message::IgtlMessage;
+//! use openigtlink_rust::io::ClientBuilder;
 //!
-//! let mut client = IgtlClient::connect("127.0.0.1:18944")?;
-//!
-//! let mut point_msg = PointMessage::new();
-//! point_msg.set_device_name("NavigationSystem");
+//! let mut client = ClientBuilder::new()
+//!     .tcp("127.0.0.1:18944")
+//!     .sync()
+//!     .build()?;
 //!
 //! // Fiducial 1: Nasion (nose bridge)
-//! let mut fid1 = PointElement::new();
-//! fid1.name = "Nasion".to_string();
-//! fid1.group_name = "Fiducials".to_string();
-//! fid1.position = [0.0, 85.0, -30.0];  // x, y, z in mm
-//! fid1.rgba = [255, 0, 0, 255];        // Red
-//! fid1.diameter = 5.0;                 // 5mm sphere
-//! fid1.owner = "CTImage".to_string();
+//! let fid1 = PointElement::with_details(
+//!     "Nasion",
+//!     "Fiducials",
+//!     [255, 0, 0, 255],        // Red
+//!     [0.0, 85.0, -30.0],      // x, y, z in mm
+//!     5.0,                      // 5mm sphere
+//!     "CTImage"
+//! );
 //!
 //! // Fiducial 2: Left ear
-//! let mut fid2 = PointElement::new();
-//! fid2.name = "LeftEar".to_string();
-//! fid2.group_name = "Fiducials".to_string();
-//! fid2.position = [-75.0, 0.0, -20.0];
-//! fid2.rgba = [0, 255, 0, 255];        // Green
-//! fid2.diameter = 5.0;
-//! fid2.owner = "CTImage".to_string();
+//! let fid2 = PointElement::with_details(
+//!     "LeftEar",
+//!     "Fiducials",
+//!     [0, 255, 0, 255],        // Green
+//!     [-75.0, 0.0, -20.0],
+//!     5.0,
+//!     "CTImage"
+//! );
 //!
 //! // Fiducial 3: Right ear
-//! let mut fid3 = PointElement::new();
-//! fid3.name = "RightEar".to_string();
-//! fid3.group_name = "Fiducials".to_string();
-//! fid3.position = [75.0, 0.0, -20.0];
-//! fid3.rgba = [0, 0, 255, 255];        // Blue
-//! fid3.diameter = 5.0;
-//! fid3.owner = "CTImage".to_string();
+//! let fid3 = PointElement::with_details(
+//!     "RightEar",
+//!     "Fiducials",
+//!     [0, 0, 255, 255],        // Blue
+//!     [75.0, 0.0, -20.0],
+//!     5.0,
+//!     "CTImage"
+//! );
 //!
-//! point_msg.add_point(fid1);
-//! point_msg.add_point(fid2);
-//! point_msg.add_point(fid3);
-//!
-//! client.send(&point_msg)?;
+//! let point_msg = PointMessage::new(vec![fid1, fid2, fid3]);
+//! let msg = IgtlMessage::new(point_msg, "NavigationSystem")?;
+//! client.send(&msg)?;
 //! # Ok::<(), openigtlink_rust::IgtlError>(())
 //! ```
 //!
@@ -74,27 +76,22 @@
 //! ```no_run
 //! use openigtlink_rust::io::IgtlServer;
 //! use openigtlink_rust::protocol::types::PointMessage;
-//! use openigtlink_rust::protocol::message::Message;
 //!
 //! let server = IgtlServer::bind("0.0.0.0:18944")?;
 //! let mut client_conn = server.accept()?;
 //!
-//! let message = client_conn.receive()?;
+//! let message = client_conn.receive::<PointMessage>()?;
 //!
-//! if message.header.message_type == "POINT" {
-//!     let points = PointMessage::from_bytes(&message.body)?;
+//! println!("Received {} points", message.content.points.len());
 //!
-//!     println!("Received {} points", points.elements.len());
-//!
-//!     for (i, point) in points.elements.iter().enumerate() {
-//!         println!("\nPoint {}: {}", i + 1, point.name);
-//!         println!("  Group: {}", point.group_name);
-//!         println!("  Position: ({:.2}, {:.2}, {:.2}) mm",
-//!                  point.position[0], point.position[1], point.position[2]);
-//!         println!("  Color: RGB({}, {}, {})",
-//!                  point.rgba[0], point.rgba[1], point.rgba[2]);
-//!         println!("  Diameter: {:.2} mm", point.diameter);
-//!     }
+//! for (i, point) in message.content.points.iter().enumerate() {
+//!     println!("\nPoint {}: {}", i + 1, point.name);
+//!     println!("  Group: {}", point.group);
+//!     println!("  Position: ({:.2}, {:.2}, {:.2}) mm",
+//!              point.position[0], point.position[1], point.position[2]);
+//!     println!("  Color: RGB({}, {}, {})",
+//!              point.rgba[0], point.rgba[1], point.rgba[2]);
+//!     println!("  Diameter: {:.2} mm", point.diameter);
 //! }
 //! # Ok::<(), openigtlink_rust::IgtlError>(())
 //! ```

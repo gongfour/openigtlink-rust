@@ -4,6 +4,60 @@
 
 use openigtlink_rust::io::builder::ClientBuilder;
 use openigtlink_rust::io::reconnect::ReconnectConfig;
+use std::sync::Arc;
+use tokio_rustls::rustls;
+
+/// Insecure certificate verifier for testing
+/// WARNING: Never use this in production!
+#[derive(Debug)]
+struct NoCertificateVerification;
+
+impl rustls::client::danger::ServerCertVerifier for NoCertificateVerification {
+    fn verify_server_cert(
+        &self,
+        _end_entity: &rustls::pki_types::CertificateDer<'_>,
+        _intermediates: &[rustls::pki_types::CertificateDer<'_>],
+        _server_name: &rustls::pki_types::ServerName<'_>,
+        _ocsp_response: &[u8],
+        _now: rustls::pki_types::UnixTime,
+    ) -> Result<rustls::client::danger::ServerCertVerified, rustls::Error> {
+        Ok(rustls::client::danger::ServerCertVerified::assertion())
+    }
+
+    fn verify_tls12_signature(
+        &self,
+        _message: &[u8],
+        _cert: &rustls::pki_types::CertificateDer<'_>,
+        _dss: &rustls::DigitallySignedStruct,
+    ) -> Result<rustls::client::danger::HandshakeSignatureValid, rustls::Error> {
+        Ok(rustls::client::danger::HandshakeSignatureValid::assertion())
+    }
+
+    fn verify_tls13_signature(
+        &self,
+        _message: &[u8],
+        _cert: &rustls::pki_types::CertificateDer<'_>,
+        _dss: &rustls::DigitallySignedStruct,
+    ) -> Result<rustls::client::danger::HandshakeSignatureValid, rustls::Error> {
+        Ok(rustls::client::danger::HandshakeSignatureValid::assertion())
+    }
+
+    fn supported_verify_schemes(&self) -> Vec<rustls::SignatureScheme> {
+        vec![
+            rustls::SignatureScheme::RSA_PKCS1_SHA256,
+            rustls::SignatureScheme::ECDSA_NISTP256_SHA256,
+            rustls::SignatureScheme::ED25519,
+        ]
+    }
+}
+
+/// Create an insecure TLS config for testing
+fn insecure_tls_config() -> rustls::ClientConfig {
+    rustls::ClientConfig::builder()
+        .dangerous()
+        .with_custom_certificate_verifier(Arc::new(NoCertificateVerification))
+        .with_no_client_auth()
+}
 
 #[test]
 fn test_tcp_sync_builder() {
@@ -29,10 +83,8 @@ async fn test_tcp_async_builder() {
 
 #[tokio::test]
 async fn test_tcp_async_with_tls_builder() {
-    use openigtlink_rust::io::tls_client::insecure_tls_config;
-
     // Test that TLS builder works
-    let tls_config = std::sync::Arc::new(insecure_tls_config());
+    let tls_config = Arc::new(insecure_tls_config());
 
     let result = ClientBuilder::new()
         .tcp("127.0.0.1:18944")
@@ -63,10 +115,8 @@ async fn test_tcp_async_with_reconnect_builder() {
 
 #[tokio::test]
 async fn test_tcp_async_tls_reconnect_builder() {
-    use openigtlink_rust::io::tls_client::insecure_tls_config;
-
     // Test that TLS + reconnect combination works
-    let tls_config = std::sync::Arc::new(insecure_tls_config());
+    let tls_config = Arc::new(insecure_tls_config());
     let reconnect_config = ReconnectConfig::with_max_attempts(1);
 
     let result = ClientBuilder::new()

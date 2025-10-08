@@ -23,23 +23,27 @@
 //! ## Streaming Laparoscopic Video (H.264)
 //!
 //! ```no_run
-//! use openigtlink_rust::protocol::types::{VideoMessage, VideoCodec};
-//! use openigtlink_rust::io::IgtlClient;
+//! use openigtlink_rust::protocol::types::{VideoMessage, CodecType};
+//! use openigtlink_rust::protocol::message::IgtlMessage;
+//! use openigtlink_rust::io::ClientBuilder;
 //!
-//! let mut client = IgtlClient::connect("127.0.0.1:18944")?;
-//!
-//! let mut video = VideoMessage::new();
-//! video.set_device_name("LaparoscopicCamera");
-//! video.set_codec(VideoCodec::H264);
-//! video.set_width(1920);
-//! video.set_height(1080);
-//! video.set_frame_rate(30);
+//! let mut client = ClientBuilder::new()
+//!     .tcp("127.0.0.1:18944")
+//!     .sync()
+//!     .build()?;
 //!
 //! // Simulated H.264 frame data
 //! let frame_data = vec![0u8; 50000]; // Compressed frame
-//! video.set_frame_data(frame_data);
 //!
-//! client.send(&video)?;
+//! let video = VideoMessage::new(
+//!     CodecType::H264,
+//!     1920,
+//!     1080,
+//!     frame_data
+//! );
+//!
+//! let msg = IgtlMessage::new(video, "LaparoscopicCamera")?;
+//! client.send(&msg)?;
 //! # Ok::<(), openigtlink_rust::IgtlError>(())
 //! ```
 //!
@@ -47,24 +51,20 @@
 //!
 //! ```no_run
 //! use openigtlink_rust::io::IgtlServer;
-//! use openigtlink_rust::protocol::types::{VideoMessage, VideoCodec};
-//! use openigtlink_rust::protocol::message::Message;
+//! use openigtlink_rust::protocol::types::{VideoMessage, CodecType};
 //!
 //! let server = IgtlServer::bind("0.0.0.0:18944")?;
 //! let mut client_conn = server.accept()?;
 //!
 //! loop {
-//!     let message = client_conn.receive()?;
+//!     let message = client_conn.receive::<VideoMessage>()?;
 //!
-//!     if message.header.message_type == "VIDEO" {
-//!         let video = VideoMessage::from_bytes(&message.body)?;
-//!         println!("Video frame: {}x{} @ {}fps",
-//!                  video.width, video.height, video.frame_rate);
+//!     println!("Video frame: {}x{}",
+//!              message.content.width, message.content.height);
 //!
-//!         if video.codec == VideoCodec::Mjpeg {
-//!             // Decode MJPEG frame
-//!             println!("MJPEG frame size: {} bytes", video.frame_data.len());
-//!         }
+//!     if message.content.codec == CodecType::MJPEG {
+//!         // Decode MJPEG frame
+//!         println!("MJPEG frame size: {} bytes", message.content.frame_data.len());
 //!     }
 //! }
 //! # Ok::<(), openigtlink_rust::IgtlError>(())

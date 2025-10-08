@@ -63,10 +63,6 @@ pub const MAX_UDP_DATAGRAM_SIZE: usize = 65507;
 /// client.send_to(&msg, "192.168.1.100:18944")?;
 /// # Ok::<(), openigtlink_rust::error::IgtlError>(())
 /// ```
-#[deprecated(
-    since = "0.2.0",
-    note = "Use ClientBuilder instead: ClientBuilder::new().udp(addr).build()"
-)]
 pub struct UdpClient {
     socket: UdpSocket,
 }
@@ -231,17 +227,23 @@ impl UdpClient {
 /// use openigtlink_rust::protocol::types::TransformMessage;
 /// use openigtlink_rust::protocol::message::IgtlMessage;
 ///
+/// # fn main() -> Result<(), openigtlink_rust::error::IgtlError> {
 /// let server = UdpServer::bind("0.0.0.0:18944")?;
 ///
+/// # let mut count = 0;
 /// loop {
 ///     let (msg, sender) = server.receive::<TransformMessage>()?;
 ///     println!("Received from {}", sender);
 ///
 ///     // Echo back
-///     let response = IgtlMessage::new(msg.body, "Server")?;
+///     let response = IgtlMessage::new(msg.content, "Server")?;
 ///     server.send_to(&response, sender)?;
+///
+///     # count += 1;
+///     # if count >= 1 { break; }
 /// }
-/// # Ok::<(), openigtlink_rust::error::IgtlError>(())
+/// # Ok(())
+/// # }
 /// ```
 pub struct UdpServer {
     socket: UdpSocket,

@@ -403,8 +403,11 @@ mod tests {
         tokio::time::sleep(Duration::from_millis(10)).await;
 
         // Connect client
-        use crate::io::AsyncIgtlClient;
-        let mut client = AsyncIgtlClient::connect(&addr.to_string())
+        use crate::io::ClientBuilder;
+        let mut client = ClientBuilder::new()
+            .tcp(&addr.to_string())
+            .async_mode()
+            .build()
             .await
             .unwrap();
 
@@ -435,8 +438,11 @@ mod tests {
 
         tokio::time::sleep(Duration::from_millis(10)).await;
 
-        use crate::io::AsyncIgtlClient;
-        let mut client = AsyncIgtlClient::connect(&addr.to_string())
+        use crate::io::ClientBuilder;
+        let mut client = ClientBuilder::new()
+            .tcp(&addr.to_string())
+            .async_mode()
+            .build()
             .await
             .unwrap();
 

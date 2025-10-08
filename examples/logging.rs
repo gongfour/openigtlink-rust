@@ -19,7 +19,7 @@
 //! ```
 
 use openigtlink_rust::{
-    io::{IgtlClient, IgtlServer},
+    io::{builder::ClientBuilder, IgtlServer},
     protocol::{message::IgtlMessage, types::StatusMessage},
 };
 use std::thread;
@@ -73,7 +73,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Client starting connection");
 
     // Connect to server - this will log connection attempt and success
-    let mut client = IgtlClient::connect("127.0.0.1:18944")?;
+    let mut client = ClientBuilder::new()
+        .tcp("127.0.0.1:18944")
+        .sync()
+        .build()?;
 
     info!("Client connected, preparing to send message");
 

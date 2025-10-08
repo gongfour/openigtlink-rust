@@ -23,38 +23,36 @@
 //! ## Tracking Multiple Surgical Instruments
 //!
 //! ```no_run
-//! use openigtlink_rust::protocol::types::{TDataMessage, TDataElement, InstrumentType};
-//! use openigtlink_rust::io::IgtlClient;
+//! use openigtlink_rust::protocol::types::{TDataMessage, TrackingDataElement, TrackingInstrumentType};
+//! use openigtlink_rust::protocol::message::IgtlMessage;
+//! use openigtlink_rust::io::ClientBuilder;
 //!
-//! let mut client = IgtlClient::connect("127.0.0.1:18944")?;
-//!
-//! let mut tdata = TDataMessage::new();
-//! tdata.set_device_name("OpticalTracker");
+//! let mut client = ClientBuilder::new()
+//!     .tcp("127.0.0.1:18944")
+//!     .sync()
+//!     .build()?;
 //!
 //! // Tool 1: Scalpel
-//! let mut scalpel = TDataElement::new();
-//! scalpel.name = "Scalpel".to_string();
-//! scalpel.instrument_type = InstrumentType::Tool5Dof;
-//! scalpel.matrix = [
-//!     1.0, 0.0, 0.0, 100.0,  // X translation: 100mm
-//!     0.0, 1.0, 0.0, 50.0,   // Y translation: 50mm
-//!     0.0, 0.0, 1.0, 200.0,  // Z translation: 200mm
-//! ];
+//! let scalpel = TrackingDataElement::with_translation(
+//!     "Scalpel",
+//!     TrackingInstrumentType::Instrument5D,
+//!     100.0,  // X translation: 100mm
+//!     50.0,   // Y translation: 50mm
+//!     200.0   // Z translation: 200mm
+//! );
 //!
 //! // Tool 2: Probe
-//! let mut probe = TDataElement::new();
-//! probe.name = "Probe".to_string();
-//! probe.instrument_type = InstrumentType::Tool6Dof;
-//! probe.matrix = [
-//!     1.0, 0.0, 0.0, 150.0,
-//!     0.0, 1.0, 0.0, 75.0,
-//!     0.0, 0.0, 1.0, 180.0,
-//! ];
+//! let probe = TrackingDataElement::with_translation(
+//!     "Probe",
+//!     TrackingInstrumentType::Instrument6D,
+//!     150.0,
+//!     75.0,
+//!     180.0
+//! );
 //!
-//! tdata.add_element(scalpel);
-//! tdata.add_element(probe);
-//!
-//! client.send(&tdata)?;
+//! let tdata = TDataMessage::new(vec![scalpel, probe]);
+//! let msg = IgtlMessage::new(tdata, "OpticalTracker")?;
+//! client.send(&msg)?;
 //! # Ok::<(), openigtlink_rust::IgtlError>(())
 //! ```
 //!
@@ -63,25 +61,20 @@
 //! ```no_run
 //! use openigtlink_rust::io::IgtlServer;
 //! use openigtlink_rust::protocol::types::TDataMessage;
-//! use openigtlink_rust::protocol::message::Message;
 //!
 //! let server = IgtlServer::bind("0.0.0.0:18944")?;
 //! let mut client_conn = server.accept()?;
 //!
 //! loop {
-//!     let message = client_conn.receive()?;
+//!     let message = client_conn.receive::<TDataMessage>()?;
 //!
-//!     if message.header.message_type == "TDATA" {
-//!         let tdata = TDataMessage::from_bytes(&message.body)?;
+//!     for element in &message.content.elements {
+//!         let x = element.matrix[0][3];
+//!         let y = element.matrix[1][3];
+//!         let z = element.matrix[2][3];
 //!
-//!         for element in &tdata.elements {
-//!             let x = element.matrix[3];
-//!             let y = element.matrix[7];
-//!             let z = element.matrix[11];
-//!
-//!             println!("{}: position = ({:.2}, {:.2}, {:.2}) mm",
-//!                      element.name, x, y, z);
-//!         }
+//!         println!("{}: position = ({:.2}, {:.2}, {:.2}) mm",
+//!                  element.name, x, y, z);
 //!     }
 //! }
 //! # Ok::<(), openigtlink_rust::IgtlError>(())

@@ -4,10 +4,10 @@
 
 use openigtlink_rust::{
     compression::{compress, decompress, CompressionLevel, CompressionStats, CompressionType},
-    io::{AsyncIgtlClient, AsyncIgtlServer},
+    io::{builder::ClientBuilder, AsyncIgtlServer},
     protocol::{
         message::IgtlMessage,
-        types::{ImageMessage, ScalarType, StatusMessage, TransformMessage},
+        types::{ImageMessage, ImageScalarType, StatusMessage, TransformMessage},
     },
 };
 use std::time::{Duration, Instant};
@@ -51,10 +51,11 @@ fn test_transform_throughput() {
 fn test_image_throughput() {
     println!("2. Image Message Throughput (512x512 grayscale)");
 
-    let mut image = ImageMessage::new();
-    image.set_dimensions([512, 512, 1]);
-    image.set_scalar_type(ScalarType::Uint8);
-    image.set_image_data(vec![128u8; 512 * 512]);
+    let image = ImageMessage::new(
+        ImageScalarType::Uint8,
+        [512, 512, 1],
+        vec![128u8; 512 * 512],
+    ).unwrap();
     let msg = IgtlMessage::new(image, "PerfTest").unwrap();
 
     let iterations = 1_000;
@@ -128,7 +129,11 @@ async fn test_network_latency() -> Result<(), Box<dyn std::error::Error>> {
     tokio::time::sleep(Duration::from_millis(10)).await;
 
     // Client
-    let mut client = AsyncIgtlClient::connect(&addr.to_string()).await?;
+    let mut client = ClientBuilder::new()
+        .tcp(&addr.to_string())
+        .async_mode()
+        .build()
+        .await?;
 
     let status = StatusMessage::ok("Ping");
     let msg = IgtlMessage::new(status, "PerfTest")?;

@@ -23,25 +23,26 @@
 //! ## Sending a CT Image Slice
 //!
 //! ```no_run
-//! use openigtlink_rust::protocol::types::{ImageMessage, ImageScalarType, Endian, CoordinateSystem};
-//! use openigtlink_rust::io::IgtlClient;
+//! use openigtlink_rust::protocol::types::{ImageMessage, ImageScalarType, CoordinateSystem};
+//! use openigtlink_rust::protocol::message::IgtlMessage;
+//! use openigtlink_rust::io::ClientBuilder;
 //!
-//! let mut client = IgtlClient::connect("127.0.0.1:18944")?;
-//!
-//! let mut image = ImageMessage::new();
-//! image.set_device_name("CTScanner");
-//! image.set_scalar_type(ImageScalarType::Uint16);
-//! image.set_dimensions([512, 512, 1]);
-//! image.set_spacing([0.5, 0.5, 1.0]); // 0.5mm pixel spacing
-//! image.set_num_components(1); // Grayscale
-//! image.set_endian(Endian::Little);
-//! image.set_coordinate_system(CoordinateSystem::LPS);
+//! let mut client = ClientBuilder::new()
+//!     .tcp("127.0.0.1:18944")
+//!     .sync()
+//!     .build()?;
 //!
 //! // Simulated CT data (512x512 16-bit)
 //! let ct_data: Vec<u8> = vec![0; 512 * 512 * 2];
-//! image.set_image_data(ct_data);
 //!
-//! client.send(&image)?;
+//! let image = ImageMessage::new(
+//!     ImageScalarType::Uint16,
+//!     [512, 512, 1],
+//!     ct_data
+//! )?.with_coordinate(CoordinateSystem::LPS);
+//!
+//! let msg = IgtlMessage::new(image, "CTScanner")?;
+//! client.send(&msg)?;
 //! # Ok::<(), openigtlink_rust::IgtlError>(())
 //! ```
 //!
@@ -50,20 +51,16 @@
 //! ```no_run
 //! use openigtlink_rust::io::IgtlServer;
 //! use openigtlink_rust::protocol::types::ImageMessage;
-//! use openigtlink_rust::protocol::message::Message;
 //!
 //! let server = IgtlServer::bind("0.0.0.0:18944")?;
 //! let mut client_conn = server.accept()?;
 //!
-//! let message = client_conn.receive()?;
+//! let message = client_conn.receive::<ImageMessage>()?;
 //!
-//! if message.header.message_type == "IMAGE" {
-//!     let image = ImageMessage::from_bytes(&message.body)?;
-//!     println!("Received image: {}x{}x{}",
-//!              image.size[0], image.size[1], image.size[2]);
-//!     println!("Scalar type: {:?}", image.scalar_type);
-//!     println!("Components: {}", image.num_components);
-//! }
+//! println!("Received image: {}x{}x{}",
+//!          message.content.size[0], message.content.size[1], message.content.size[2]);
+//! println!("Scalar type: {:?}", message.content.scalar_type);
+//! println!("Components: {}", message.content.num_components);
 //! # Ok::<(), openigtlink_rust::IgtlError>(())
 //! ```
 

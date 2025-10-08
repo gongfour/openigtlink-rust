@@ -4,7 +4,7 @@
 //! for non-blocking, high-concurrency communication.
 
 use openigtlink_rust::{
-    io::{AsyncIgtlClient, AsyncIgtlServer},
+    io::{builder::ClientBuilder, AsyncIgtlServer},
     protocol::{message::IgtlMessage, types::StatusMessage},
 };
 use tokio::time::Duration;
@@ -56,7 +56,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create client task
     let client_handle = tokio::spawn(async move {
         println!("[Client] Connecting to server...");
-        let mut client = AsyncIgtlClient::connect(&server_addr.to_string())
+        let mut client = ClientBuilder::new()
+            .tcp(&server_addr.to_string())
+            .async_mode()
+            .build()
             .await
             .unwrap();
         println!("[Client] Connected to server\n");

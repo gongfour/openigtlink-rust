@@ -16,7 +16,7 @@
 //! ```
 
 use openigtlink_rust::error::Result;
-use openigtlink_rust::io::IgtlClient;
+use openigtlink_rust::io::{ClientBuilder, SyncIgtlClient};
 use openigtlink_rust::protocol::message::IgtlMessage;
 use openigtlink_rust::protocol::types::{TDataMessage, TrackingDataElement, TrackingInstrumentType};
 use std::f32::consts::PI;
@@ -32,7 +32,10 @@ fn main() {
 
 fn run() -> Result<()> {
     // Connect to server
-    let mut client = IgtlClient::connect("127.0.0.1:18944")?;
+    let mut client = ClientBuilder::new()
+        .tcp("127.0.0.1:18944")
+        .sync()
+        .build()?;
     println!("[INFO] Connected to OpenIGTLink server\n");
 
     println!("=== Surgical Tool Tracking Simulation ===");
@@ -53,7 +56,7 @@ fn run() -> Result<()> {
 /// - Scalpel: Circular cutting motion
 /// - Probe: Palpation motion (up/down)
 /// - Catheter: Linear insertion
-fn simulate_tracking(client: &mut IgtlClient) -> Result<()> {
+fn simulate_tracking(client: &mut SyncIgtlClient) -> Result<()> {
     let update_rate: usize = 60; // Hz
     let duration_sec = 10;
     let total_frames = update_rate * duration_sec;

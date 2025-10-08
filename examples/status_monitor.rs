@@ -11,7 +11,7 @@
 //! ```
 
 use openigtlink_rust::error::Result;
-use openigtlink_rust::io::IgtlClient;
+use openigtlink_rust::io::{ClientBuilder, SyncIgtlClient};
 use openigtlink_rust::protocol::message::IgtlMessage;
 use openigtlink_rust::protocol::types::StatusMessage;
 use std::thread;
@@ -28,7 +28,10 @@ fn run() -> Result<()> {
     println!("=== STATUS Message: Device Monitoring ===\n");
 
     // Connect to server
-    let mut client = IgtlClient::connect("127.0.0.1:18944")?;
+    let mut client = ClientBuilder::new()
+        .tcp("127.0.0.1:18944")
+        .sync()
+        .build()?;
     println!("[INFO] Connected to monitoring server\n");
 
     // Simulate device lifecycle with status updates
@@ -96,7 +99,7 @@ fn run() -> Result<()> {
 }
 
 /// Send OK status (code=1)
-fn send_status_ok(client: &mut IgtlClient, message: &str) -> Result<()> {
+fn send_status_ok(client: &mut SyncIgtlClient, message: &str) -> Result<()> {
     let status = StatusMessage::ok(message);
 
     println!("  ✓ OK: {}", message);
@@ -110,7 +113,7 @@ fn send_status_ok(client: &mut IgtlClient, message: &str) -> Result<()> {
 }
 
 /// Send warning status (code=2, custom)
-fn send_status_warning(client: &mut IgtlClient, message: &str) -> Result<()> {
+fn send_status_warning(client: &mut SyncIgtlClient, message: &str) -> Result<()> {
     let status = StatusMessage {
         code: 2, // Custom warning code
         subcode: 0,
@@ -129,7 +132,7 @@ fn send_status_warning(client: &mut IgtlClient, message: &str) -> Result<()> {
 }
 
 /// Send error status (code=0)
-fn send_status_error(client: &mut IgtlClient, error_name: &str, message: &str) -> Result<()> {
+fn send_status_error(client: &mut SyncIgtlClient, error_name: &str, message: &str) -> Result<()> {
     let status = StatusMessage::error(error_name, message);
 
     println!("  ✗ ERROR: {}", message);

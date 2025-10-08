@@ -4,7 +4,7 @@
 //! and reconnects with exponential backoff.
 
 use openigtlink_rust::{
-    io::{AsyncIgtlServer, ReconnectClient, ReconnectConfig},
+    io::{builder::ClientBuilder, AsyncIgtlServer, ReconnectConfig},
     protocol::{message::IgtlMessage, types::StatusMessage},
 };
 use std::sync::Arc;
@@ -82,7 +82,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     println!("[Client] Creating reconnecting client...");
-    let mut client = ReconnectClient::connect("127.0.0.1:18946", config).await?;
+    let mut client = ClientBuilder::new()
+        .tcp("127.0.0.1:18946")
+        .async_mode()
+        .with_reconnect(config)
+        .build()
+        .await?;
     println!("[Client] Initial connection established\n");
 
     // Send messages through multiple server restarts

@@ -25,12 +25,13 @@
 //!
 //! ```no_run
 //! use openigtlink_rust::protocol::types::SensorMessage;
-//! use openigtlink_rust::io::IgtlClient;
+//! use openigtlink_rust::protocol::message::IgtlMessage;
+//! use openigtlink_rust::io::ClientBuilder;
 //!
-//! let mut client = IgtlClient::connect("127.0.0.1:18944")?;
-//!
-//! let mut sensor = SensorMessage::new();
-//! sensor.set_device_name("ATI_ForceSensor");
+//! let mut client = ClientBuilder::new()
+//!     .tcp("127.0.0.1:18944")
+//!     .sync()
+//!     .build()?;
 //!
 //! // 6-axis: Fx, Fy, Fz (forces) + Tx, Ty, Tz (torques)
 //! let readings = vec![
@@ -41,11 +42,10 @@
 //!     -0.08, // Ty (Nm)
 //!     0.22,  // Tz (Nm)
 //! ];
-//! sensor.set_data(readings);
-//! sensor.set_unit(0x0101); // Newton + Newton-meter
-//! sensor.set_status(1); // Sensor valid
+//! let sensor = SensorMessage::with_unit(1, 0x0101, readings)?;
 //!
-//! client.send(&sensor)?;
+//! let msg = IgtlMessage::new(sensor, "ATI_ForceSensor")?;
+//! client.send(&msg)?;
 //! # Ok::<(), openigtlink_rust::IgtlError>(())
 //! ```
 //!
@@ -54,25 +54,21 @@
 //! ```no_run
 //! use openigtlink_rust::io::IgtlServer;
 //! use openigtlink_rust::protocol::types::SensorMessage;
-//! use openigtlink_rust::protocol::message::Message;
 //!
 //! let server = IgtlServer::bind("0.0.0.0:18944")?;
 //! let mut client_conn = server.accept()?;
 //!
-//! let message = client_conn.receive()?;
+//! let message = client_conn.receive::<SensorMessage>()?;
 //!
-//! if message.header.message_type == "SENSOR" {
-//!     let sensor = SensorMessage::from_bytes(&message.body)?;
-//!     println!("Sensor: {}", message.header.device_name);
-//!     println!("Channels: {}", sensor.data.len());
+//! println!("Sensor: {:?}", message.header.device_name);
+//! println!("Channels: {}", message.content.data.len());
 //!
-//!     // Typical IMU: 3 accel + 3 gyro = 6 channels
-//!     if sensor.data.len() == 6 {
-//!         println!("Acceleration: [{:.2}, {:.2}, {:.2}] m/s²",
-//!                  sensor.data[0], sensor.data[1], sensor.data[2]);
-//!         println!("Gyroscope: [{:.2}, {:.2}, {:.2}] rad/s",
-//!                  sensor.data[3], sensor.data[4], sensor.data[5]);
-//!     }
+//! // Typical IMU: 3 accel + 3 gyro = 6 channels
+//! if message.content.data.len() == 6 {
+//!     println!("Acceleration: [{:.2}, {:.2}, {:.2}] m/s²",
+//!              message.content.data[0], message.content.data[1], message.content.data[2]);
+//!     println!("Gyroscope: [{:.2}, {:.2}, {:.2}] rad/s",
+//!              message.content.data[3], message.content.data[4], message.content.data[5]);
 //! }
 //! # Ok::<(), openigtlink_rust::IgtlError>(())
 //! ```

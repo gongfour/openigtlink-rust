@@ -1,10 +1,9 @@
 //! Unified client types for OpenIGTLink
 //!
-//! This module provides simplified client types that avoid combinatorial explosion
-//! of variants by using internal optional features.
+//! This module provides simplified client enums that delegate to internal implementations.
 
 use crate::error::Result;
-use crate::io::IgtlClient;
+use crate::io::sync_client::SyncTcpClient;
 use crate::io::unified_async_client::UnifiedAsyncClient;
 use crate::protocol::message::{IgtlMessage, Message};
 
@@ -12,19 +11,16 @@ use crate::protocol::message::{IgtlMessage, Message};
 ///
 /// Simple wrapper around the synchronous TCP client.
 ///
-/// # Examples
-///
+/// **Recommended**: Use [`ClientBuilder`](crate::io::builder::ClientBuilder):
 /// ```no_run
-/// use openigtlink_rust::io::unified_client::SyncIgtlClient;
-/// use openigtlink_rust::io::IgtlClient;
+/// use openigtlink_rust::io::builder::ClientBuilder;
 ///
-/// let tcp_client = IgtlClient::connect("127.0.0.1:18944")?;
-/// let client = SyncIgtlClient::TcpSync(tcp_client);
+/// let client = ClientBuilder::new().tcp("127.0.0.1:18944").sync().build()?;
 /// # Ok::<(), openigtlink_rust::error::IgtlError>(())
 /// ```
 pub enum SyncIgtlClient {
     /// Standard TCP synchronous client
-    TcpSync(IgtlClient),
+    TcpSync(SyncTcpClient),
 }
 
 impl SyncIgtlClient {
@@ -63,6 +59,20 @@ impl SyncIgtlClient {
             SyncIgtlClient::TcpSync(client) => client.set_verify_crc(verify),
         }
     }
+
+    /// Set read timeout for socket operations
+    ///
+    /// # Arguments
+    /// * `timeout` - Optional timeout duration. None for no timeout
+    ///
+    /// # Returns
+    /// Ok(()) on success, error if the socket operation fails
+    #[inline(always)]
+    pub fn set_read_timeout(&self, timeout: Option<std::time::Duration>) -> Result<()> {
+        match self {
+            SyncIgtlClient::TcpSync(client) => client.set_read_timeout(timeout),
+        }
+    }
 }
 
 /// Asynchronous OpenIGTLink client
@@ -70,15 +80,12 @@ impl SyncIgtlClient {
 /// Unified client that supports optional TLS and reconnection features
 /// through internal state rather than separate variants.
 ///
-/// # Examples
-///
+/// **Recommended**: Use [`ClientBuilder`](crate::io::builder::ClientBuilder):
 /// ```no_run
-/// use openigtlink_rust::io::unified_client::AsyncIgtlClient;
-/// use openigtlink_rust::io::unified_async_client::UnifiedAsyncClient;
+/// use openigtlink_rust::io::builder::ClientBuilder;
 ///
 /// # async fn example() -> Result<(), openigtlink_rust::error::IgtlError> {
-/// let client = UnifiedAsyncClient::connect("127.0.0.1:18944").await?;
-/// let mut unified = AsyncIgtlClient::Unified(client);
+/// let client = ClientBuilder::new().tcp("127.0.0.1:18944").async_mode().build().await?;
 /// # Ok(())
 /// # }
 /// ```
@@ -121,6 +128,17 @@ impl AsyncIgtlClient {
     pub fn set_verify_crc(&mut self, verify: bool) {
         match self {
             AsyncIgtlClient::Unified(client) => client.set_verify_crc(verify),
+        }
+    }
+
+    /// Get the number of reconnection attempts that have occurred
+    ///
+    /// # Returns
+    /// The total count of successful reconnections
+    #[inline(always)]
+    pub fn reconnect_count(&self) -> usize {
+        match self {
+            AsyncIgtlClient::Unified(client) => client.reconnect_count(),
         }
     }
 }

@@ -22,7 +22,7 @@
 //! ```
 
 use openigtlink_rust::error::Result;
-use openigtlink_rust::io::IgtlClient;
+use openigtlink_rust::io::{ClientBuilder, SyncIgtlClient};
 use openigtlink_rust::protocol::message::IgtlMessage;
 use openigtlink_rust::protocol::types::SensorMessage;
 use std::env;
@@ -40,7 +40,10 @@ fn run() -> Result<()> {
     let sensor_type = parse_sensor_type();
 
     // Connect to server
-    let mut client = IgtlClient::connect("127.0.0.1:18944")?;
+    let mut client = ClientBuilder::new()
+        .tcp("127.0.0.1:18944")
+        .sync()
+        .build()?;
     println!("[INFO] Connected to OpenIGTLink server\n");
 
     // Execute sensor logging scenario
@@ -75,7 +78,7 @@ fn parse_sensor_type() -> String {
 ///
 /// Simulates an ATI Force/Torque sensor commonly used in robotic surgery
 /// for haptic feedback.
-fn log_force_sensor(client: &mut IgtlClient) -> Result<()> {
+fn log_force_sensor(client: &mut SyncIgtlClient) -> Result<()> {
     println!("=== Force/Torque Sensor Logging ===");
     println!("Channels: 6 (Fx, Fy, Fz, Tx, Ty, Tz)");
     println!("Sample Rate: 100 Hz");
@@ -130,7 +133,7 @@ fn log_force_sensor(client: &mut IgtlClient) -> Result<()> {
 ///
 /// Simulates a 6-DOF IMU (3-axis accelerometer + 3-axis gyroscope)
 /// used for surgical instrument orientation tracking.
-fn log_imu_sensor(client: &mut IgtlClient) -> Result<()> {
+fn log_imu_sensor(client: &mut SyncIgtlClient) -> Result<()> {
     println!("=== IMU Sensor Logging ===");
     println!("Channels: 6 (Accel X,Y,Z + Gyro X,Y,Z)");
     println!("Sample Rate: 100 Hz");
@@ -185,7 +188,7 @@ fn log_imu_sensor(client: &mut IgtlClient) -> Result<()> {
 ///
 /// Simulates a multi-sensor system with 8 force channels + 6 IMU channels
 /// (14 total channels) for comprehensive surgical instrument monitoring.
-fn log_combined_sensors(client: &mut IgtlClient) -> Result<()> {
+fn log_combined_sensors(client: &mut SyncIgtlClient) -> Result<()> {
     println!("=== Combined Sensor Array Logging ===");
     println!("Channels: 14 (8 force + 6 IMU)");
     println!("Sample Rate: 100 Hz");

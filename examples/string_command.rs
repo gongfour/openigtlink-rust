@@ -11,7 +11,7 @@
 //! ```
 
 use openigtlink_rust::error::Result;
-use openigtlink_rust::io::IgtlClient;
+use openigtlink_rust::io::{ClientBuilder, SyncIgtlClient};
 use openigtlink_rust::protocol::message::IgtlMessage;
 use openigtlink_rust::protocol::types::StringMessage;
 use std::thread;
@@ -28,7 +28,10 @@ fn run() -> Result<()> {
     println!("=== STRING Message: Device Command & Control ===\n");
 
     // Connect to server
-    let mut client = IgtlClient::connect("127.0.0.1:18944")?;
+    let mut client = ClientBuilder::new()
+        .tcp("127.0.0.1:18944")
+        .sync()
+        .build()?;
     println!("[INFO] Connected to OpenIGTLink server\n");
 
     // Scenario 1: System lifecycle commands
@@ -94,7 +97,7 @@ fn run() -> Result<()> {
 /// * `client` - Connected OpenIGTLink client
 /// * `command` - Command string to send
 /// * `description` - Human-readable description
-fn send_command(client: &mut IgtlClient, command: &str, description: &str) -> Result<()> {
+fn send_command(client: &mut SyncIgtlClient, command: &str, description: &str) -> Result<()> {
     // Create STRING message with UTF-8 encoding
     let string_msg = StringMessage::utf8(command);
 

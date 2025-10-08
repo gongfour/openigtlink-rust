@@ -18,9 +18,11 @@ use tracing::{debug, trace, warn};
 /// Encoded message as byte vector
 ///
 /// # Examples
-/// ```no_run
-/// # use openigtlink_rust::protocol::{IgtlMessage, types::TransformMessage};
-/// # use openigtlink_rust::io::common::encode_message;
+/// ```ignore
+/// // This is an internal function, not part of the public API
+/// use openigtlink_rust::protocol::message::IgtlMessage;
+/// use openigtlink_rust::protocol::types::TransformMessage;
+/// use openigtlink_rust::io::common::encode_message;
 /// let transform = TransformMessage::identity();
 /// let msg = IgtlMessage::new(transform, "Device1").unwrap();
 /// let data = encode_message(&msg).unwrap();
@@ -61,11 +63,13 @@ pub(crate) fn encode_message<T: Message>(msg: &IgtlMessage<T>) -> Result<Vec<u8>
 /// Decoded message or error
 ///
 /// # Examples
-/// ```no_run
-/// # use openigtlink_rust::protocol::types::TransformMessage;
-/// # use openigtlink_rust::io::common::decode_message;
-/// # let data: &[u8] = &[];
-/// let msg = decode_message::<TransformMessage>(data, true).unwrap();
+/// ```ignore
+/// // This is an internal function, not part of the public API
+/// use openigtlink_rust::protocol::types::TransformMessage;
+/// use openigtlink_rust::protocol::message::IgtlMessage;
+/// use openigtlink_rust::io::common::decode_message;
+/// let data: &[u8] = &[];
+/// let msg: IgtlMessage<TransformMessage> = decode_message(data, true).unwrap();
 /// ```
 #[inline]
 #[allow(dead_code)]

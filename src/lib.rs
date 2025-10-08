@@ -20,43 +20,56 @@
 //! ```no_run
 //! use openigtlink_rust::io::IgtlServer;
 //! use openigtlink_rust::protocol::types::StatusMessage;
+//! use openigtlink_rust::protocol::message::IgtlMessage;
 //!
 //! let server = IgtlServer::bind("127.0.0.1:18944")?;
 //! let mut client_conn = server.accept()?;
 //!
 //! let status = StatusMessage::ok("Server ready");
-//! client_conn.send(&status)?;
+//! let msg = IgtlMessage::new(status, "Server")?;
+//! client_conn.send(&msg)?;
 //! # Ok::<(), openigtlink_rust::IgtlError>(())
 //! ```
 //!
 //! **Client:**
 //! ```no_run
-//! use openigtlink_rust::io::IgtlClient;
+//! use openigtlink_rust::io::ClientBuilder;
 //! use openigtlink_rust::protocol::types::TransformMessage;
+//! use openigtlink_rust::protocol::message::IgtlMessage;
 //!
-//! let mut client = IgtlClient::connect("127.0.0.1:18944")?;
+//! let mut client = ClientBuilder::new()
+//!     .tcp("127.0.0.1:18944")
+//!     .sync()
+//!     .build()?;
 //!
 //! let transform = TransformMessage::identity();
-//! client.send(&transform)?;
+//! let msg = IgtlMessage::new(transform, "Device")?;
+//! client.send(&msg)?;
 //!
-//! let response = client.receive()?;
+//! let response = client.receive::<TransformMessage>()?;
 //! # Ok::<(), openigtlink_rust::IgtlError>(())
 //! ```
 //!
 //! ## Sending Medical Images
 //!
 //! ```no_run
-//! use openigtlink_rust::protocol::types::{ImageMessage, ScalarType};
-//! use openigtlink_rust::io::IgtlClient;
+//! use openigtlink_rust::protocol::types::{ImageMessage, ImageScalarType};
+//! use openigtlink_rust::protocol::message::IgtlMessage;
+//! use openigtlink_rust::io::ClientBuilder;
 //!
-//! let mut client = IgtlClient::connect("127.0.0.1:18944")?;
+//! let mut client = ClientBuilder::new()
+//!     .tcp("127.0.0.1:18944")
+//!     .sync()
+//!     .build()?;
 //!
-//! let mut image = ImageMessage::new();
-//! image.set_dimensions([512, 512, 1]);
-//! image.set_scalar_type(ScalarType::Uint8);
-//! image.set_image_data(vec![0u8; 512 * 512]);
+//! let image = ImageMessage::new(
+//!     ImageScalarType::Uint8,
+//!     [512, 512, 1],
+//!     vec![0u8; 512 * 512]
+//! )?;
 //!
-//! client.send(&image)?;
+//! let msg = IgtlMessage::new(image, "Device")?;
+//! client.send(&msg)?;
 //! # Ok::<(), openigtlink_rust::IgtlError>(())
 //! ```
 //!
@@ -176,14 +189,17 @@
 //! ## Example 1: Sending Transform Data
 //!
 //! ```no_run
-//! use openigtlink_rust::io::IgtlClient;
+//! use openigtlink_rust::io::ClientBuilder;
 //! use openigtlink_rust::protocol::types::TransformMessage;
+//! use openigtlink_rust::protocol::message::IgtlMessage;
 //!
-//! let mut client = IgtlClient::connect("192.168.1.100:18944")?;
+//! let mut client = ClientBuilder::new()
+//!     .tcp("192.168.1.100:18944")
+//!     .sync()
+//!     .build()?;
 //!
 //! // Create transformation matrix (4x4)
 //! let mut transform = TransformMessage::identity();
-//! transform.set_device_name("RobotArm");
 //!
 //! // Set translation (in mm)
 //! transform.matrix[0][3] = 100.0; // X
@@ -191,31 +207,36 @@
 //! transform.matrix[2][3] = 200.0; // Z
 //!
 //! // Send to server
-//! client.send(&transform)?;
+//! let msg = IgtlMessage::new(transform, "RobotArm")?;
+//! client.send(&msg)?;
 //! # Ok::<(), openigtlink_rust::IgtlError>(())
 //! ```
 //!
 //! ## Example 2: Streaming Medical Images
 //!
 //! ```no_run
-//! use openigtlink_rust::io::IgtlClient;
-//! use openigtlink_rust::protocol::types::{ImageMessage, ScalarType};
+//! use openigtlink_rust::io::ClientBuilder;
+//! use openigtlink_rust::protocol::types::{ImageMessage, ImageScalarType};
+//! use openigtlink_rust::protocol::message::IgtlMessage;
 //!
-//! let mut client = IgtlClient::connect("localhost:18944")?;
+//! let mut client = ClientBuilder::new()
+//!     .tcp("localhost:18944")
+//!     .sync()
+//!     .build()?;
 //!
 //! // Simulate ultrasound image stream (640x480 grayscale)
 //! for frame_num in 0..100 {
-//!     let mut image = ImageMessage::new();
-//!     image.set_device_name("UltrasoundProbe");
-//!     image.set_dimensions([640, 480, 1]);
-//!     image.set_scalar_type(ScalarType::Uint8);
-//!     image.set_spacing([0.1, 0.1, 1.0]); // mm per pixel
-//!
 //!     // Generate synthetic image data
 //!     let image_data = vec![((frame_num % 256) as u8); 640 * 480];
-//!     image.set_image_data(image_data);
 //!
-//!     client.send(&image)?;
+//!     let image = ImageMessage::new(
+//!         ImageScalarType::Uint8,
+//!         [640, 480, 1],
+//!         image_data
+//!     )?;
+//!
+//!     let msg = IgtlMessage::new(image, "UltrasoundProbe")?;
+//!     client.send(&msg)?;
 //!     std::thread::sleep(std::time::Duration::from_millis(33)); // ~30 fps
 //! }
 //! # Ok::<(), openigtlink_rust::IgtlError>(())
@@ -224,21 +245,22 @@
 //! ## Example 3: Multi-Channel Sensor Data
 //!
 //! ```no_run
-//! use openigtlink_rust::io::IgtlClient;
+//! use openigtlink_rust::io::ClientBuilder;
 //! use openigtlink_rust::protocol::types::SensorMessage;
+//! use openigtlink_rust::protocol::message::IgtlMessage;
 //!
-//! let mut client = IgtlClient::connect("localhost:18944")?;
+//! let mut client = ClientBuilder::new()
+//!     .tcp("localhost:18944")
+//!     .sync()
+//!     .build()?;
 //!
 //! // 6-axis force/torque sensor
-//! let mut sensor = SensorMessage::new();
-//! sensor.set_device_name("ForceSensor");
-//!
 //! // Forces (Fx, Fy, Fz) and Torques (Tx, Ty, Tz)
 //! let readings = vec![1.2, -0.5, 3.8, 0.1, 0.05, -0.2];
-//! sensor.set_data(readings);
-//! sensor.set_unit(0x0101); // Newton (force) + Newton-meter (torque)
+//! let sensor = SensorMessage::with_unit(1, 0x0101, readings)?;
 //!
-//! client.send(&sensor)?;
+//! let msg = IgtlMessage::new(sensor, "ForceSensor")?;
+//! client.send(&msg)?;
 //! # Ok::<(), openigtlink_rust::IgtlError>(())
 //! ```
 //!
@@ -247,34 +269,38 @@
 //! ```no_run
 //! use openigtlink_rust::io::IgtlServer;
 //! use openigtlink_rust::protocol::types::StatusMessage;
+//! use openigtlink_rust::protocol::message::IgtlMessage;
 //!
 //! let server = IgtlServer::bind("0.0.0.0:18944")?;
 //! let mut client_conn = server.accept()?;
 //!
 //! // Receive message
-//! let message = client_conn.receive()?;
+//! let message = client_conn.receive::<StatusMessage>()?;
 //!
 //! // Send acknowledgment
 //! let status = StatusMessage::ok("Data received successfully");
-//! client_conn.send(&status)?;
+//! let msg = IgtlMessage::new(status, "Server")?;
+//! client_conn.send(&msg)?;
 //! # Ok::<(), openigtlink_rust::IgtlError>(())
 //! ```
 //!
 //! ## Example 5: Error Handling and Recovery
 //!
 //! ```no_run
-//! use openigtlink_rust::io::IgtlClient;
+//! use openigtlink_rust::io::ClientBuilder;
 //! use openigtlink_rust::protocol::types::TransformMessage;
+//! use openigtlink_rust::protocol::message::IgtlMessage;
 //! use openigtlink_rust::IgtlError;
 //!
 //! fn send_with_retry(addr: &str) -> Result<(), IgtlError> {
 //!     let max_retries = 3;
 //!
 //!     for attempt in 0..max_retries {
-//!         match IgtlClient::connect(addr) {
+//!         match ClientBuilder::new().tcp(addr).sync().build() {
 //!             Ok(mut client) => {
 //!                 let transform = TransformMessage::identity();
-//!                 return client.send(&transform);
+//!                 let msg = IgtlMessage::new(transform, "Device")?;
+//!                 return client.send(&msg);
 //!             }
 //!             Err(e) if attempt < max_retries - 1 => {
 //!                 eprintln!("Connection failed (attempt {}): {}", attempt + 1, e);
@@ -300,12 +326,12 @@
 //! - **InvalidData** - Invalid message body
 //!
 //! ```no_run
-//! use openigtlink_rust::io::IgtlClient;
+//! use openigtlink_rust::io::ClientBuilder;
 //! use openigtlink_rust::IgtlError;
 //!
-//! match IgtlClient::connect("localhost:18944") {
+//! match ClientBuilder::new().tcp("localhost:18944").sync().build() {
 //!     Ok(client) => println!("Connected"),
-//!     Err(IgtlError::IoError(e)) => eprintln!("Network error: {}", e),
+//!     Err(IgtlError::Io(e)) => eprintln!("Network error: {}", e),
 //!     Err(e) => eprintln!("Other error: {}", e),
 //! }
 //! ```

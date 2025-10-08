@@ -30,7 +30,7 @@
 //! - Any C++ OpenIGTLink v2/v3 compliant server
 
 use openigtlink_rust::error::{IgtlError, Result};
-use openigtlink_rust::io::IgtlClient;
+use openigtlink_rust::io::{ClientBuilder, SyncIgtlClient};
 use openigtlink_rust::protocol::message::IgtlMessage;
 use openigtlink_rust::protocol::types::{
     CapabilityMessage, GetCapabilityMessage, RtsTDataMessage, StartTDataMessage,
@@ -68,7 +68,10 @@ fn run() -> Result<()> {
 
     // Step 1: Connect to C++ OpenIGTLink server
     println!("[1] Connecting to server at {}...", server_addr);
-    let mut client = IgtlClient::connect(&server_addr)?;
+    let mut client = ClientBuilder::new()
+        .tcp(&server_addr)
+        .sync()
+        .build()?;
     println!("    ✓ Connected successfully\n");
 
     // Step 2: Query server capabilities (GET_CAPABIL → CAPABILITY)
@@ -95,7 +98,7 @@ fn run() -> Result<()> {
 }
 
 /// Query server capabilities using GET_CAPABIL message
-fn query_capabilities(client: &mut IgtlClient) -> Result<()> {
+fn query_capabilities(client: &mut SyncIgtlClient) -> Result<()> {
     // Send GET_CAPABIL query message
     let get_capability = GetCapabilityMessage;
     let msg = IgtlMessage::new(get_capability, "QueryClient")?;
@@ -116,7 +119,7 @@ fn query_capabilities(client: &mut IgtlClient) -> Result<()> {
 }
 
 /// Start tracking data streaming using STT_TDATA message
-fn start_tracking_stream(client: &mut IgtlClient) -> Result<()> {
+fn start_tracking_stream(client: &mut SyncIgtlClient) -> Result<()> {
     // Create STT_TDATA message
     // - resolution: 50ms (20 Hz update rate)
     // - coordinate_name: "RAS" (Right-Anterior-Superior anatomical coordinate system)
@@ -151,7 +154,7 @@ fn start_tracking_stream(client: &mut IgtlClient) -> Result<()> {
 }
 
 /// Receive tracking data stream (TDATA messages)
-fn receive_tracking_data(client: &mut IgtlClient) -> Result<()> {
+fn receive_tracking_data(client: &mut SyncIgtlClient) -> Result<()> {
     const MAX_MESSAGES: usize = 10;
 
     println!("    Receiving {} TDATA messages...", MAX_MESSAGES);
@@ -196,7 +199,7 @@ fn receive_tracking_data(client: &mut IgtlClient) -> Result<()> {
 }
 
 /// Stop tracking data streaming using STP_TDATA message
-fn stop_tracking_stream(client: &mut IgtlClient) -> Result<()> {
+fn stop_tracking_stream(client: &mut SyncIgtlClient) -> Result<()> {
     // Send STP_TDATA message
     let stop_stream = StopTDataMessage;
     let msg = IgtlMessage::new(stop_stream, "QueryClient")?;

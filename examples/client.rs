@@ -16,7 +16,7 @@
 //! ```
 
 use openigtlink_rust::error::Result;
-use openigtlink_rust::io::IgtlClient;
+use openigtlink_rust::io::{ClientBuilder, SyncIgtlClient};
 use openigtlink_rust::protocol::message::IgtlMessage;
 use openigtlink_rust::protocol::types::{CapabilityMessage, StatusMessage, TransformMessage};
 use std::env;
@@ -32,7 +32,10 @@ fn run() -> Result<()> {
     let scenario = parse_scenario();
 
     // Connect to server
-    let mut client = IgtlClient::connect("127.0.0.1:18944")?;
+    let mut client = ClientBuilder::new()
+        .tcp("127.0.0.1:18944")
+        .sync()
+        .build()?;
     println!("[INFO] Connected to server\n");
 
     // Execute test scenario
@@ -69,7 +72,7 @@ fn parse_scenario() -> String {
     }
 }
 
-fn test_transform(client: &mut IgtlClient) -> Result<()> {
+fn test_transform(client: &mut SyncIgtlClient) -> Result<()> {
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     println!("[TEST] Sending TRANSFORM message...");
 
@@ -95,7 +98,7 @@ fn test_transform(client: &mut IgtlClient) -> Result<()> {
     Ok(())
 }
 
-fn test_status(client: &mut IgtlClient) -> Result<()> {
+fn test_status(client: &mut SyncIgtlClient) -> Result<()> {
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     println!("[TEST] Sending STATUS message...");
 
@@ -119,7 +122,7 @@ fn test_status(client: &mut IgtlClient) -> Result<()> {
     Ok(())
 }
 
-fn test_capability(client: &mut IgtlClient) -> Result<()> {
+fn test_capability(client: &mut SyncIgtlClient) -> Result<()> {
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     println!("[TEST] Sending CAPABILITY message...");
 
