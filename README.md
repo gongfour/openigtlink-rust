@@ -55,6 +55,10 @@ cargo run --example client
 Create clients with exactly the features you need using the **type-state builder pattern**:
 
 ```rust
+use openigtlink_rust::io::{builder::ClientBuilder, ReconnectConfig};
+use std::sync::Arc;
+use tokio_rustls::rustls;
+
 // Simple TCP client
 let client = ClientBuilder::new()
     .tcp("127.0.0.1:18944")
@@ -63,9 +67,6 @@ let client = ClientBuilder::new()
     .await?;
 
 // TLS-encrypted client
-use std::sync::Arc;
-use tokio_rustls::rustls;
-
 let tls_config = Arc::new(
     rustls::ClientConfig::builder()
         .with_root_certificates(rustls::RootCertStore::empty())
@@ -79,10 +80,11 @@ let client = ClientBuilder::new()
     .await?;
 
 // Auto-reconnecting client
+let reconnect_config = ReconnectConfig::with_max_attempts(10);
 let client = ClientBuilder::new()
     .tcp("127.0.0.1:18944")
     .async_mode()
-    .with_reconnect(ReconnectConfig::with_max_attempts(10))
+    .with_reconnect(reconnect_config.clone())
     .build()
     .await?;
 

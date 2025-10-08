@@ -6,7 +6,7 @@
 //! # Features
 //!
 //! - **Type-safe message handling** - Leverages Rust's type system for protocol correctness
-//! - **Comprehensive message types** - 21 message types fully implemented
+//! - **Comprehensive message types** - 20 message types fully implemented
 //! - **Synchronous and asynchronous I/O** - Works with both sync and async Rust
 //! - **Full protocol compliance** - OpenIGTLink Version 2 and 3
 //! - **Memory safe** - No buffer overflows or memory leaks
@@ -81,7 +81,7 @@
 //!
 //! - **`protocol`** - Core protocol implementation
 //!   - `header` - OpenIGTLink message header (58 bytes)
-//!   - `types` - All 21 message type implementations
+//!   - `types` - All 20 message type implementations
 //!   - `crc` - CRC-64 checksum validation
 //!
 //! - **`io`** - Network I/O layer
