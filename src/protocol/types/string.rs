@@ -21,7 +21,8 @@ pub struct StringMessage {
     /// Common values:
     /// - 3: US-ASCII (ANSI-X3.4-1968) - recommended
     /// - 106: UTF-8
-    /// See: <http://www.iana.org/assignments/character-sets>
+    ///
+    ///   See: <http://www.iana.org/assignments/character-sets>
     pub encoding: u16,
 
     /// The text content

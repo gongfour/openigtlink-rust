@@ -219,6 +219,7 @@ async fn main() -> Result<()> {
         let consumer = tokio::spawn(async move {
             let mut count = 0;
             while count < 90 {
+                #[allow(clippy::redundant_pattern_matching)]
                 if let Ok(_) = consumer_queue.dequeue().await {
                     count += 1;
                 }
@@ -252,7 +253,7 @@ async fn main() -> Result<()> {
         let producer_queue = queue.clone();
         let producer = tokio::spawn(async move {
             let mut blocked_count = 0;
-            for i in 0..50 {
+            for _i in 0..50 {
                 let transform = TransformMessage::identity();
                 let msg =
                     IgtlMessage::new(transform, "FastProducer").expect("Failed to create message");

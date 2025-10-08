@@ -289,8 +289,6 @@ impl TlsIgtlConnection {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     // Note: Full TLS testing requires certificate generation
     // See examples/tls_communication.rs for integration tests
 

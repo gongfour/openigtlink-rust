@@ -223,7 +223,7 @@ fn generate_ct_slice(slice_num: usize) -> Vec<u8> {
             // Simulate tissue density (Hounsfield units)
             // -1024 (air) to 3071 (dense bone)
             let mut value = ((1.0 - distance) * 1500.0 + 500.0) as i16;
-            value = value.max(-1024).min(3071);
+            value = value.clamp(-1024, 3071);
 
             // Add slice-dependent variation
             value += (slice_num as i16 * 10) % 200;

@@ -70,10 +70,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     AnyMessage::Transform(transform_msg) => {
                         println!("  Transform matrix:");
                         let m = &transform_msg.content.matrix;
-                        for i in 0..4 {
+                        for row in m.iter().take(4) {
                             println!(
                                 "    [{:8.4}, {:8.4}, {:8.4}, {:8.4}]",
-                                m[i][0], m[i][1], m[i][2], m[i][3]
+                                row[0], row[1], row[2], row[3]
                             );
                         }
                     }
@@ -110,7 +110,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         );
                     }
                     AnyMessage::String(string_msg) => {
-                        println!("  String encoding: {}", string_msg.content.encoding as u16);
+                        println!("  String encoding: {}", string_msg.content.encoding);
                         println!("  Content: '{}'", string_msg.content.string);
                     }
                     AnyMessage::Capability(capability_msg) => {
@@ -155,7 +155,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             );
                         }
                     }
-                    AnyMessage::Unknown { header, body } => {
+                    AnyMessage::Unknown { header: _, body } => {
                         println!("  ⚠️  Unknown message type!");
                         println!("  Raw body size: {} bytes", body.len());
                         println!(

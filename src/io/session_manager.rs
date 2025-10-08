@@ -519,7 +519,6 @@ pub struct ClientInfo {
 mod tests {
     use super::*;
     use crate::protocol::types::StatusMessage;
-    use tokio::time::Duration;
 
     #[tokio::test]
     async fn test_session_manager_create() {

@@ -299,7 +299,7 @@ fn generate_h264_frame(frame_num: usize, width: u16, height: u16) -> Vec<u8> {
 ///
 /// Creates uncompressed RGB24 pixel data
 fn generate_raw_frame(frame_num: usize, width: u16, height: u16) -> Vec<u8> {
-    let mut data = Vec::with_capacity((width as usize * height as usize * 3) as usize);
+    let mut data = Vec::with_capacity(width as usize * height as usize * 3);
 
     for y in 0..height {
         for x in 0..width {

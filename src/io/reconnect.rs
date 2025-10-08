@@ -141,11 +141,9 @@ impl ReconnectConfig {
         // Add jitter if enabled (0-25% random variation)
         if self.use_jitter {
             use std::collections::hash_map::RandomState;
-            use std::hash::{BuildHasher, Hash, Hasher};
+            use std::hash::BuildHasher;
 
-            let mut hasher = RandomState::new().build_hasher();
-            attempt.hash(&mut hasher);
-            let hash = hasher.finish();
+            let hash = RandomState::new().hash_one(attempt);
             let jitter = (hash % 25) as f64 / 100.0; // 0-25%
 
             let jitter_ms = (delay.as_millis() as f64 * jitter) as u64;

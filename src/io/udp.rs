@@ -411,7 +411,7 @@ mod tests {
         let _client = UdpClient::bind("127.0.0.1:0").unwrap();
 
         // This would fail during encoding if we tried to create a message > 65507 bytes
-        // For now, just verify the constant is correct
-        assert!(MAX_UDP_DATAGRAM_SIZE < 65536);
+        // Verify the constant is within valid UDP datagram size
+        const _: () = assert!(MAX_UDP_DATAGRAM_SIZE < 65536);
     }
 }

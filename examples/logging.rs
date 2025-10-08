@@ -24,8 +24,8 @@ use openigtlink_rust::{
 };
 use std::thread;
 use std::time::Duration;
-use tracing::{info, Level};
-use tracing_subscriber::{fmt, EnvFilter};
+use tracing::info;
+use tracing_subscriber::EnvFilter;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize tracing subscriber with environment filter

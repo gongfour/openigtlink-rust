@@ -74,9 +74,9 @@ fn test_stt_tdata_encoding() {
     assert_eq!(body[7], 0x00, "Coordinate name byte 3 should be null");
 
     // Verify remaining bytes are null-padded
-    for i in 8..36 {
+    for (i, byte) in body.iter().enumerate().take(36).skip(8) {
         assert_eq!(
-            body[i], 0x00,
+            *byte, 0x00,
             "Coordinate name byte {} should be null-padded",
             i
         );

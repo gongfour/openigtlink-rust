@@ -79,13 +79,13 @@ pub enum CompressionLevel {
 
 impl CompressionLevel {
     /// Convert to flate2 Compression level
-    fn to_flate2(&self) -> Compression {
+    fn to_flate2(self) -> Compression {
         match self {
             Self::None => Compression::none(),
             Self::Fast => Compression::fast(),
             Self::Default => Compression::default(),
             Self::Best => Compression::best(),
-            Self::Custom(level) => Compression::new(*level),
+            Self::Custom(level) => Compression::new(level),
         }
     }
 
@@ -180,7 +180,7 @@ pub fn compress(
         }
     };
 
-    let ratio = if data.len() > 0 {
+    let ratio = if !data.is_empty() {
         (compressed.len() as f64 / data.len() as f64) * 100.0
     } else {
         0.0

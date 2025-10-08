@@ -388,7 +388,7 @@ mod tests {
     #[test]
     fn test_new_2d() {
         let size = [256, 256, 1];
-        let data_size = 256 * 256 * 1;
+        let data_size = 256 * 256;
         let data = vec![0u8; data_size];
 
         let img = ImageMessage::new(ImageScalarType::Uint8, size, data).unwrap();

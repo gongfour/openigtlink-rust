@@ -2,8 +2,6 @@
 //!
 //! These tests verify the convenience methods for query and streaming control.
 
-use openigtlink_rust::io::SyncIgtlClient;
-
 // NOTE: These tests are disabled because the helper methods (request_capability,
 // start_tracking, stop_tracking) have not yet been implemented on SyncIgtlClient.
 // They will be re-enabled when the helper methods are added.

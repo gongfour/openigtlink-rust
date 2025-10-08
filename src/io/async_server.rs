@@ -405,7 +405,7 @@ mod tests {
         // Connect client
         use crate::io::ClientBuilder;
         let mut client = ClientBuilder::new()
-            .tcp(&addr.to_string())
+            .tcp(addr.to_string())
             .async_mode()
             .build()
             .await
@@ -440,7 +440,7 @@ mod tests {
 
         use crate::io::ClientBuilder;
         let mut client = ClientBuilder::new()
-            .tcp(&addr.to_string())
+            .tcp(addr.to_string())
             .async_mode()
             .build()
             .await

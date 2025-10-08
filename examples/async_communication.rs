@@ -57,7 +57,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client_handle = tokio::spawn(async move {
         println!("[Client] Connecting to server...");
         let mut client = ClientBuilder::new()
-            .tcp(&server_addr.to_string())
+            .tcp(server_addr.to_string())
             .async_mode()
             .build()
             .await

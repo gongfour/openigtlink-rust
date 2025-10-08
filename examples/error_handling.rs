@@ -24,7 +24,7 @@
 //! ```
 
 use openigtlink_rust::error::{IgtlError, Result};
-use openigtlink_rust::io::{ClientBuilder, SyncIgtlClient};
+use openigtlink_rust::io::ClientBuilder;
 use openigtlink_rust::protocol::message::IgtlMessage;
 use openigtlink_rust::protocol::types::{StatusMessage, TransformMessage};
 use std::env;

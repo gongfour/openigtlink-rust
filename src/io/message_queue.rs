@@ -120,6 +120,7 @@ impl MessageQueue {
                     );
                     // Drop the oldest message by dequeuing it
                     drop(stats); // Release lock before dequeue
+                    #[allow(clippy::redundant_pattern_matching)]
                     if let Ok(_) = self.try_dequeue().await {
                         stats = self.stats.lock().await;
                         stats.dropped += 1;

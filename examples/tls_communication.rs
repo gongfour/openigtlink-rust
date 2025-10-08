@@ -84,7 +84,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if !std::path::Path::new(cert_path).exists() || !std::path::Path::new(key_path).exists() {
         eprintln!("Error: Test certificates not found!");
         eprintln!("Please run: ./examples/generate_test_certs.sh");
-        eprintln!("");
+        eprintln!();
         return Ok(());
     }
 

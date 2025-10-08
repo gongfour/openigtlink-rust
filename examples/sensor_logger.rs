@@ -214,13 +214,13 @@ fn log_combined_sensors(client: &mut SyncIgtlClient) -> Result<()> {
             let seconds = sample_num / sample_rate;
             println!("[{}s] 14 channels: Force[0-7], IMU[8-13]", seconds);
             print!("      Force: ");
-            for i in 0..8 {
-                print!("{:6.2} ", sensor_data[i]);
+            for value in sensor_data.iter().take(8) {
+                print!("{:6.2} ", value);
             }
             println!();
             print!("      IMU:   ");
-            for i in 8..14 {
-                print!("{:6.2} ", sensor_data[i]);
+            for value in sensor_data.iter().take(14).skip(8) {
+                print!("{:6.2} ", value);
             }
             println!();
         }
