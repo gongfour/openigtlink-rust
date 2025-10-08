@@ -36,6 +36,10 @@ use tracing::{debug, info, trace, warn};
 ///     Ok(())
 /// }
 /// ```
+#[deprecated(
+    since = "0.2.0",
+    note = "Use ClientBuilder instead: ClientBuilder::new().tcp(addr).async_mode().with_tls(config).build().await"
+)]
 pub struct TlsIgtlClient {
     stream: TlsStream<TcpStream>,
     verify_crc: bool,

@@ -114,6 +114,10 @@ impl ReconnectConfig {
 ///     Ok(())
 /// }
 /// ```
+#[deprecated(
+    since = "0.2.0",
+    note = "Use ClientBuilder instead: ClientBuilder::new().tcp(addr).async_mode().with_reconnect(config).build().await"
+)]
 pub struct ReconnectClient {
     addr: String,
     stream: Option<TcpStream>,

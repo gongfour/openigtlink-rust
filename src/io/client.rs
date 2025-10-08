@@ -13,6 +13,10 @@ use tracing::{debug, info, trace, warn};
 /// Synchronous OpenIGTLink client
 ///
 /// Uses blocking I/O with `std::net::TcpStream` for simple, synchronous communication.
+#[deprecated(
+    since = "0.2.0",
+    note = "Use ClientBuilder instead: ClientBuilder::new().tcp(addr).sync().build()"
+)]
 pub struct IgtlClient {
     stream: TcpStream,
     verify_crc: bool,

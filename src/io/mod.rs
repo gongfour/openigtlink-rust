@@ -19,6 +19,11 @@ pub mod udp;
 pub mod message_queue;
 pub mod partial_transfer;
 
+// New builder API (recommended)
+pub use builder::ClientBuilder;
+pub use unified_client::{AsyncIgtlClient as UnifiedAsyncClient, SyncIgtlClient};
+
+// Legacy API (deprecated)
 pub use client::IgtlClient;
 pub use server::{IgtlConnection, IgtlServer};
 pub use async_client::{AsyncIgtlClient, AsyncIgtlReader, AsyncIgtlWriter};

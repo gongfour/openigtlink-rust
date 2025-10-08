@@ -63,6 +63,10 @@ pub const MAX_UDP_DATAGRAM_SIZE: usize = 65507;
 /// client.send_to(&msg, "192.168.1.100:18944")?;
 /// # Ok::<(), openigtlink_rust::error::IgtlError>(())
 /// ```
+#[deprecated(
+    since = "0.2.0",
+    note = "Use ClientBuilder instead: ClientBuilder::new().udp(addr).build()"
+)]
 pub struct UdpClient {
     socket: UdpSocket,
 }
