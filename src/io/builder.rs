@@ -144,12 +144,15 @@
 //! ```compile_fail
 //! use openigtlink_rust::io::builder::ClientBuilder;
 //!
-//! // ERROR: UDP does not support TLS!
+//! // ERROR: This library does not implement UDP + TLS (DTLS)
 //! let client = ClientBuilder::new()
 //!     .udp("127.0.0.1:18944")
 //!     .with_tls(config)  // ← Compile error: method not found
 //!     .build()?;
 //! ```
+//!
+//! **Note**: While DTLS (Datagram TLS) exists in theory, this library focuses on
+//! TCP-based TLS as it's the standard for OpenIGTLink secure communications.
 
 use crate::error::Result;
 use crate::io::reconnect::ReconnectConfig;
