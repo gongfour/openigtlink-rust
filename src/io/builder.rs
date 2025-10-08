@@ -38,8 +38,8 @@
 use crate::error::Result;
 use crate::io::reconnect::ReconnectConfig;
 use crate::io::unified_client::{AsyncIgtlClient, SyncIgtlClient};
-use crate::io::{AsyncIgtlClient as TcpAsyncClient, IgtlClient, ReconnectClient, TlsIgtlClient, UdpClient};
-use crate::io::tls_reconnect::TcpAsyncTlsReconnectClient;
+use crate::io::unified_async_client::UnifiedAsyncClient;
+use crate::io::{IgtlClient, UdpClient};
 use std::marker::PhantomData;
 use std::sync::Arc;
 use tokio_rustls::rustls;
@@ -364,48 +364,25 @@ impl ClientBuilder<TcpConfigured, AsyncMode> {
     pub async fn build(self) -> Result<AsyncIgtlClient> {
         let addr = self.protocol.addr;
 
-        let client = match (self.tls_config, self.reconnect_config) {
-            // Plain async TCP
-            (None, None) => {
-                let mut client = TcpAsyncClient::connect(&addr).await?;
-                client.set_verify_crc(self.verify_crc);
-                AsyncIgtlClient::TcpAsync(client)
-            }
-
-            // TLS only
-            (Some(tls_config), None) => {
-                // Parse hostname and port from addr
-                let (hostname, port) = parse_addr(&addr)?;
-                let mut client =
-                    TlsIgtlClient::connect_with_config(&hostname, port, (*tls_config).clone())
-                        .await?;
-                client.set_verify_crc(self.verify_crc);
-                AsyncIgtlClient::TcpAsyncTls(client)
-            }
-
-            // Reconnect only
-            (None, Some(reconnect_config)) => {
-                let mut client = ReconnectClient::connect(&addr, reconnect_config).await?;
-                client.set_verify_crc(self.verify_crc);
-                AsyncIgtlClient::TcpAsyncReconnect(client)
-            }
-
-            // TLS + Reconnect
-            (Some(tls_config), Some(reconnect_config)) => {
-                let (hostname, port) = parse_addr(&addr)?;
-                let mut client = TcpAsyncTlsReconnectClient::connect(
-                    &hostname,
-                    port,
-                    tls_config,
-                    reconnect_config,
-                )
-                .await?;
-                client.set_verify_crc(self.verify_crc);
-                AsyncIgtlClient::TcpAsyncTlsReconnect(client)
-            }
+        // Create base client (with or without TLS)
+        let mut client = if let Some(tls_config) = self.tls_config {
+            // TLS connection
+            let (hostname, port) = parse_addr(&addr)?;
+            UnifiedAsyncClient::connect_with_tls(&hostname, port, tls_config).await?
+        } else {
+            // Plain TCP connection
+            UnifiedAsyncClient::connect(&addr).await?
         };
 
-        Ok(client)
+        // Add reconnection if configured
+        if let Some(reconnect_config) = self.reconnect_config {
+            client = client.with_reconnect(reconnect_config);
+        }
+
+        // Set CRC verification
+        client.set_verify_crc(self.verify_crc);
+
+        Ok(AsyncIgtlClient::Unified(client))
     }
 }
 

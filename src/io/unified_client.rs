@@ -1,17 +1,16 @@
-//! Unified client enums for type-safe protocol and mode selection
+//! Unified client types for OpenIGTLink
 //!
-//! This module provides unified enum types that wrap different client implementations,
-//! enabling compile-time type-safe selection of protocol (TCP/UDP) and mode (Sync/Async).
+//! This module provides simplified client types that avoid combinatorial explosion
+//! of variants by using internal optional features.
 
 use crate::error::Result;
-use crate::io::{IgtlClient, TlsIgtlClient, ReconnectClient};
-use crate::io::tls_reconnect::TcpAsyncTlsReconnectClient;
+use crate::io::IgtlClient;
+use crate::io::unified_async_client::UnifiedAsyncClient;
 use crate::protocol::message::{IgtlMessage, Message};
 
-/// Synchronous OpenIGTLink client variants
+/// Synchronous OpenIGTLink client
 ///
-/// This enum provides a unified interface for all synchronous (blocking) client types.
-/// Currently supports TCP protocol only. UDP clients use a different API pattern.
+/// Simple wrapper around the synchronous TCP client.
 ///
 /// # Examples
 ///
@@ -66,32 +65,26 @@ impl SyncIgtlClient {
     }
 }
 
-/// Asynchronous OpenIGTLink client variants
+/// Asynchronous OpenIGTLink client
 ///
-/// This enum provides a unified interface for all asynchronous (non-blocking) client types.
-/// Supports TCP with various feature combinations: plain, TLS, reconnect, and TLS+reconnect.
+/// Unified client that supports optional TLS and reconnection features
+/// through internal state rather than separate variants.
 ///
 /// # Examples
 ///
 /// ```no_run
 /// use openigtlink_rust::io::unified_client::AsyncIgtlClient;
-/// use openigtlink_rust::io::AsyncIgtlClient as TcpAsyncClient;
+/// use openigtlink_rust::io::unified_async_client::UnifiedAsyncClient;
 ///
 /// # async fn example() -> Result<(), openigtlink_rust::error::IgtlError> {
-/// let tcp_client = TcpAsyncClient::connect("127.0.0.1:18944").await?;
-/// let client = AsyncIgtlClient::TcpAsync(tcp_client);
+/// let client = UnifiedAsyncClient::connect("127.0.0.1:18944").await?;
+/// let mut unified = AsyncIgtlClient::Unified(client);
 /// # Ok(())
 /// # }
 /// ```
 pub enum AsyncIgtlClient {
-    /// Plain TCP asynchronous client
-    TcpAsync(crate::io::AsyncIgtlClient),
-    /// TCP asynchronous client with TLS encryption
-    TcpAsyncTls(TlsIgtlClient),
-    /// TCP asynchronous client with automatic reconnection
-    TcpAsyncReconnect(ReconnectClient),
-    /// TCP asynchronous client with both TLS and automatic reconnection
-    TcpAsyncTlsReconnect(TcpAsyncTlsReconnectClient),
+    /// Unified async client with optional TLS and reconnection
+    Unified(UnifiedAsyncClient),
 }
 
 impl AsyncIgtlClient {
@@ -105,10 +98,7 @@ impl AsyncIgtlClient {
     #[inline(always)]
     pub async fn send<T: Message>(&mut self, msg: &IgtlMessage<T>) -> Result<()> {
         match self {
-            AsyncIgtlClient::TcpAsync(client) => client.send(msg).await,
-            AsyncIgtlClient::TcpAsyncTls(client) => client.send(msg).await,
-            AsyncIgtlClient::TcpAsyncReconnect(client) => client.send(msg).await,
-            AsyncIgtlClient::TcpAsyncTlsReconnect(client) => client.send(msg).await,
+            AsyncIgtlClient::Unified(client) => client.send(msg).await,
         }
     }
 
@@ -119,10 +109,7 @@ impl AsyncIgtlClient {
     #[inline(always)]
     pub async fn receive<T: Message>(&mut self) -> Result<IgtlMessage<T>> {
         match self {
-            AsyncIgtlClient::TcpAsync(client) => client.receive().await,
-            AsyncIgtlClient::TcpAsyncTls(client) => client.receive().await,
-            AsyncIgtlClient::TcpAsyncReconnect(client) => client.receive().await,
-            AsyncIgtlClient::TcpAsyncTlsReconnect(client) => client.receive().await,
+            AsyncIgtlClient::Unified(client) => client.receive().await,
         }
     }
 
@@ -133,11 +120,7 @@ impl AsyncIgtlClient {
     #[inline(always)]
     pub fn set_verify_crc(&mut self, verify: bool) {
         match self {
-            AsyncIgtlClient::TcpAsync(client) => client.set_verify_crc(verify),
-            AsyncIgtlClient::TcpAsyncTls(client) => client.set_verify_crc(verify),
-            AsyncIgtlClient::TcpAsyncReconnect(client) => client.set_verify_crc(verify),
-            AsyncIgtlClient::TcpAsyncTlsReconnect(client) => client.set_verify_crc(verify),
+            AsyncIgtlClient::Unified(client) => client.set_verify_crc(verify),
         }
     }
 }
-
