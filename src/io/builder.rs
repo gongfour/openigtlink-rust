@@ -1,38 +1,154 @@
 //! Type-state builder pattern for OpenIGTLink clients
 //!
-//! Provides compile-time type-safe construction of clients with various protocol
-//! and mode combinations. Invalid combinations (e.g., UDP with TLS) are prevented
-//! at compile time.
+//! This module provides a flexible, type-safe way to construct OpenIGTLink clients
+//! with exactly the features you need. The builder uses Rust's type system to prevent
+//! invalid configurations at compile time.
+//!
+//! # Design Philosophy
+//!
+//! Instead of creating separate types for every feature combination (which would lead
+//! to exponential growth: TcpAsync, TcpAsyncTls, TcpAsyncReconnect, TcpAsyncTlsReconnect...),
+//! this builder creates a single [`UnifiedAsyncClient`](crate::io::unified_async_client::UnifiedAsyncClient)
+//! with optional features.
+//!
+//! **Benefits:**
+//! - ✅ Compile-time safety: Invalid combinations caught at compile time
+//! - ✅ No variant explosion: Scales to any number of features
+//! - ✅ Zero runtime cost: `PhantomData` markers are optimized away
+//! - ✅ Ergonomic API: Method chaining with clear intent
 //!
 //! # Type-State Pattern
 //!
-//! This builder uses the type-state pattern to ensure correctness:
-//! - Protocol state: Unspecified -> TcpConfigured or UdpConfigured
-//! - Mode state: Unspecified -> SyncMode or AsyncMode
+//! The builder uses type states to enforce valid construction:
 //!
-//! Invalid state transitions result in compile errors.
+//! ```text
+//! ClientBuilder<Unspecified, Unspecified>
+//!   ├─ .tcp(addr)  → ClientBuilder<TcpConfigured, Unspecified>
+//!   │   ├─ .sync()       → ClientBuilder<TcpConfigured, SyncMode>
+//!   │   │   └─ .build()  → Result<SyncIgtlClient>
+//!   │   └─ .async_mode() → ClientBuilder<TcpConfigured, AsyncMode>
+//!   │       ├─ .with_tls(config)      → self
+//!   │       ├─ .with_reconnect(cfg)   → self
+//!   │       ├─ .verify_crc(bool)      → self
+//!   │       └─ .build()               → Result<UnifiedAsyncClient>
+//!   └─ .udp(addr)  → ClientBuilder<UdpConfigured, Unspecified>
+//!       └─ .build() → Result<UdpClient>
+//! ```
+//!
+//! Invalid state transitions result in **compile errors**, not runtime errors!
 //!
 //! # Examples
+//!
+//! ## Basic TCP Clients
 //!
 //! ```no_run
 //! use openigtlink_rust::io::builder::ClientBuilder;
 //!
-//! // TCP Sync client
+//! // Synchronous TCP client (blocking I/O)
 //! let client = ClientBuilder::new()
 //!     .tcp("127.0.0.1:18944")
 //!     .sync()
 //!     .build()?;
 //!
-//! // TCP Async client with TLS
+//! // Asynchronous TCP client (Tokio)
 //! # async fn example() -> Result<(), openigtlink_rust::error::IgtlError> {
 //! let client = ClientBuilder::new()
 //!     .tcp("127.0.0.1:18944")
 //!     .async_mode()
-//!     .with_tls()
 //!     .build()
 //!     .await?;
 //! # Ok(())
 //! # }
+//! ```
+//!
+//! ## TLS-Encrypted Clients
+//!
+//! ```no_run
+//! use openigtlink_rust::io::builder::ClientBuilder;
+//! use openigtlink_rust::io::tls_client::insecure_tls_config;
+//! use std::sync::Arc;
+//!
+//! # async fn example() -> Result<(), openigtlink_rust::error::IgtlError> {
+//! // TLS client for secure hospital networks
+//! let tls_config = Arc::new(insecure_tls_config());
+//! let client = ClientBuilder::new()
+//!     .tcp("hospital-server.local:18944")
+//!     .async_mode()
+//!     .with_tls(tls_config)
+//!     .build()
+//!     .await?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Auto-Reconnecting Clients
+//!
+//! ```no_run
+//! use openigtlink_rust::io::builder::ClientBuilder;
+//! use openigtlink_rust::io::reconnect::ReconnectConfig;
+//!
+//! # async fn example() -> Result<(), openigtlink_rust::error::IgtlError> {
+//! // Client that auto-reconnects on network failures
+//! let reconnect_config = ReconnectConfig::with_max_attempts(10);
+//! let client = ClientBuilder::new()
+//!     .tcp("127.0.0.1:18944")
+//!     .async_mode()
+//!     .with_reconnect(reconnect_config)
+//!     .build()
+//!     .await?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Combined Features (TLS + Auto-Reconnect)
+//!
+//! ```no_run
+//! use openigtlink_rust::io::builder::ClientBuilder;
+//! use openigtlink_rust::io::tls_client::insecure_tls_config;
+//! use openigtlink_rust::io::reconnect::ReconnectConfig;
+//! use std::sync::Arc;
+//!
+//! # async fn example() -> Result<(), openigtlink_rust::error::IgtlError> {
+//! // Production-ready client with encryption AND auto-reconnect
+//! let tls_config = Arc::new(insecure_tls_config());
+//! let reconnect_config = ReconnectConfig::with_max_attempts(100);
+//!
+//! let client = ClientBuilder::new()
+//!     .tcp("production-server:18944")
+//!     .async_mode()
+//!     .with_tls(tls_config)
+//!     .with_reconnect(reconnect_config)
+//!     .verify_crc(true)
+//!     .build()
+//!     .await?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## UDP Client for Low-Latency Tracking
+//!
+//! ```no_run
+//! use openigtlink_rust::io::builder::ClientBuilder;
+//!
+//! // UDP client for real-time surgical tool tracking (120+ Hz)
+//! let client = ClientBuilder::new()
+//!     .udp("127.0.0.1:18944")
+//!     .build()?;
+//! # Ok::<(), openigtlink_rust::error::IgtlError>(())
+//! ```
+//!
+//! ## Compile-Time Error Prevention
+//!
+//! The following code will **not compile**:
+//!
+//! ```compile_fail
+//! use openigtlink_rust::io::builder::ClientBuilder;
+//!
+//! // ERROR: UDP does not support TLS!
+//! let client = ClientBuilder::new()
+//!     .udp("127.0.0.1:18944")
+//!     .with_tls(config)  // ← Compile error: method not found
+//!     .build()?;
 //! ```
 
 use crate::error::Result;

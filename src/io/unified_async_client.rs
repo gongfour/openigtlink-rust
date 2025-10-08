@@ -1,7 +1,128 @@
 //! Unified async client with optional TLS and reconnection
 //!
-//! This module provides a single async client type that supports optional features
-//! through internal state, avoiding combinatorial explosion of client variants.
+//! This module provides `UnifiedAsyncClient`, a single async client type that elegantly
+//! handles all feature combinations (TLS, reconnection) through internal state management.
+//!
+//! # Design Philosophy
+//!
+//! Traditional approach would create separate types for each feature combination:
+//! - `TcpAsync`, `TcpAsyncTls`, `TcpAsyncReconnect`, `TcpAsyncTlsReconnect`...
+//! - This leads to **variant explosion**: 2 features = 4 types, 3 features = 8 types, etc.
+//!
+//! **Our approach**: Single `UnifiedAsyncClient` with optional features:
+//! - Internal `Transport` enum: `Plain(TcpStream)` or `Tls(TlsStream)`
+//! - Optional `reconnect_config: Option<ReconnectConfig>`
+//! - ✅ Scales linearly with features (not exponentially!)
+//! - ✅ Easy to add new features (compression, authentication, etc.)
+//! - ✅ Maintains type safety through builder pattern
+//!
+//! # Architecture
+//!
+//! ```text
+//! UnifiedAsyncClient
+//! ├─ transport: Option<Transport>
+//! │  ├─ Plain(TcpStream)     ← Regular TCP
+//! │  └─ Tls(TlsStream)       ← TLS-encrypted TCP
+//! ├─ reconnect_config: Option<ReconnectConfig>
+//! │  ├─ None                 ← No auto-reconnection
+//! │  └─ Some(config)         ← Auto-reconnect with backoff
+//! ├─ conn_params: ConnectionParams (host, port, TLS config)
+//! └─ verify_crc: bool        ← CRC verification
+//! ```
+//!
+//! # Examples
+//!
+//! ## Plain TCP Connection
+//!
+//! ```no_run
+//! use openigtlink_rust::io::unified_async_client::UnifiedAsyncClient;
+//!
+//! # async fn example() -> Result<(), openigtlink_rust::error::IgtlError> {
+//! let client = UnifiedAsyncClient::connect("127.0.0.1:18944").await?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## TLS-Encrypted Connection
+//!
+//! ```no_run
+//! use openigtlink_rust::io::unified_async_client::UnifiedAsyncClient;
+//! use openigtlink_rust::io::tls_client::insecure_tls_config;
+//! use std::sync::Arc;
+//!
+//! # async fn example() -> Result<(), openigtlink_rust::error::IgtlError> {
+//! let tls_config = Arc::new(insecure_tls_config());
+//! let client = UnifiedAsyncClient::connect_with_tls(
+//!     "hospital-server.local",
+//!     18944,
+//!     tls_config
+//! ).await?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## With Auto-Reconnection
+//!
+//! ```no_run
+//! use openigtlink_rust::io::unified_async_client::UnifiedAsyncClient;
+//! use openigtlink_rust::io::reconnect::ReconnectConfig;
+//!
+//! # async fn example() -> Result<(), openigtlink_rust::error::IgtlError> {
+//! let mut client = UnifiedAsyncClient::connect("127.0.0.1:18944").await?;
+//!
+//! // Enable auto-reconnection
+//! let reconnect_config = ReconnectConfig::with_max_attempts(10);
+//! client = client.with_reconnect(reconnect_config);
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## TLS + Auto-Reconnect (Previously Impossible!)
+//!
+//! ```no_run
+//! use openigtlink_rust::io::unified_async_client::UnifiedAsyncClient;
+//! use openigtlink_rust::io::tls_client::insecure_tls_config;
+//! use openigtlink_rust::io::reconnect::ReconnectConfig;
+//! use std::sync::Arc;
+//!
+//! # async fn example() -> Result<(), openigtlink_rust::error::IgtlError> {
+//! let tls_config = Arc::new(insecure_tls_config());
+//! let mut client = UnifiedAsyncClient::connect_with_tls(
+//!     "production-server",
+//!     18944,
+//!     tls_config
+//! ).await?;
+//!
+//! // Add auto-reconnection to TLS client
+//! let reconnect_config = ReconnectConfig::with_max_attempts(100);
+//! client = client.with_reconnect(reconnect_config);
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! # Prefer Using the Builder
+//!
+//! While you can create `UnifiedAsyncClient` directly, it's recommended to use
+//! [`ClientBuilder`](crate::io::builder::ClientBuilder) for better ergonomics and type safety:
+//!
+//! ```no_run
+//! use openigtlink_rust::io::builder::ClientBuilder;
+//! use openigtlink_rust::io::tls_client::insecure_tls_config;
+//! use openigtlink_rust::io::reconnect::ReconnectConfig;
+//! use std::sync::Arc;
+//!
+//! # async fn example() -> Result<(), openigtlink_rust::error::IgtlError> {
+//! let client = ClientBuilder::new()
+//!     .tcp("production-server:18944")
+//!     .async_mode()
+//!     .with_tls(Arc::new(insecure_tls_config()))
+//!     .with_reconnect(ReconnectConfig::with_max_attempts(100))
+//!     .verify_crc(true)
+//!     .build()
+//!     .await?;
+//! # Ok(())
+//! # }
+//! ```
 
 use crate::error::{IgtlError, Result};
 use crate::io::reconnect::ReconnectConfig;

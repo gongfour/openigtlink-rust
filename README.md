@@ -13,22 +13,30 @@ A **high-performance**, **type-safe** Rust implementation of the [OpenIGTLink](h
 - 🦀 **Memory Safety** - Rust's ownership system eliminates memory leaks and buffer overflows common in medical software
 - 🚀 **High Performance** - Zero-copy parsing and efficient serialization for real-time surgical applications
 - ✅ **100% Compatible** - Binary-compatible with the official C++ library - works with all existing OpenIGTLink software
-- 🔒 **Production Ready** - 359 comprehensive tests, extensive documentation, and real-world examples
+- 🔒 **Production Ready** - 363 comprehensive tests, extensive documentation, and real-world examples
+- 🏗️ **Type-Safe Builder** - Compile-time guarantees prevent invalid client configurations
 
 ## Quick Start
 
 ```rust
-use openigtlink_rust::{IgtlClient, messages::TransformMessage};
+use openigtlink_rust::io::builder::ClientBuilder;
+use openigtlink_rust::protocol::message::IgtlMessage;
+use openigtlink_rust::protocol::types::TransformMessage;
 
-// Connect to a surgical navigation system
-let mut client = IgtlClient::connect("127.0.0.1:18944")?;
+// Build a TCP client with the Builder pattern
+let mut client = ClientBuilder::new()
+    .tcp("127.0.0.1:18944")
+    .async_mode()
+    .build()
+    .await?;
 
 // Send surgical tool position
-let transform = TransformMessage::new("SurgicalTool", transform_matrix);
-client.send_message(&transform)?;
+let transform = TransformMessage::identity();
+let msg = IgtlMessage::new(transform, "SurgicalTool")?;
+client.send(&msg).await?;
 
 // Receive tracking data
-let msg = client.receive_message()?;
+let response: IgtlMessage<TransformMessage> = client.receive().await?;
 ```
 
 Run your first example in 30 seconds:
@@ -42,6 +50,51 @@ cargo run --example client
 
 ## Key Features
 
+### 🏗️ Flexible Client Builder
+
+Create clients with exactly the features you need using the **type-state builder pattern**:
+
+```rust
+// Simple TCP client
+let client = ClientBuilder::new()
+    .tcp("127.0.0.1:18944")
+    .async_mode()
+    .build()
+    .await?;
+
+// TLS-encrypted client
+let client = ClientBuilder::new()
+    .tcp("hospital-server.local:18944")
+    .async_mode()
+    .with_tls(tls_config)
+    .build()
+    .await?;
+
+// Auto-reconnecting client
+let client = ClientBuilder::new()
+    .tcp("127.0.0.1:18944")
+    .async_mode()
+    .with_reconnect(ReconnectConfig::with_max_attempts(10))
+    .build()
+    .await?;
+
+// TLS + Auto-reconnect (previously impossible!)
+let client = ClientBuilder::new()
+    .tcp("hospital-server.local:18944")
+    .async_mode()
+    .with_tls(tls_config)
+    .with_reconnect(reconnect_config)
+    .build()
+    .await?;
+
+// UDP for low-latency tracking
+let client = ClientBuilder::new()
+    .udp("127.0.0.1:18944")
+    .build()?;
+```
+
+**Compile-time safety**: Invalid combinations (like UDP + TLS) are caught at compile time!
+
 ### 🏥 Medical Imaging & Tracking
 - **20/20 Message Types** - Complete implementation of all OpenIGTLink messages
   - Medical images (CT/MRI/Ultrasound) with compression
@@ -51,6 +104,7 @@ cargo run --example client
   - 3D visualization (meshes, point clouds)
 
 ### 🌐 Networking & I/O
+- **Flexible Builder API** - Type-safe client construction with compile-time validation
 - **Async/Sync I/O** - Choose between blocking or Tokio async for your use case
 - **UDP Support** - Low-latency tracking data transmission (120+ Hz)
 - **TLS/SSL Encryption** - Secure medical data transfer with certificate validation
@@ -79,50 +133,134 @@ cd openigtlink-rust
 cargo build --release
 ```
 
+## Architecture
+
+### Builder Pattern Design
+
+The library uses a **type-state builder pattern** to ensure compile-time safety:
+
+```rust
+ClientBuilder::new()
+    .tcp(addr)           // Or .udp(addr)
+    .async_mode()        // Or .sync() for blocking I/O
+    .with_tls(config)    // Optional: Add TLS encryption
+    .with_reconnect(cfg) // Optional: Enable auto-reconnection
+    .verify_crc(true)    // Optional: CRC verification
+    .build()             // Returns Result<Client>
+```
+
+**Key Design Decisions:**
+
+1. **No Variant Explosion**: Instead of creating separate types for every feature combination (TcpAsync, TcpAsyncTls, TcpAsyncReconnect, TcpAsyncTlsReconnect...), we use a single `UnifiedAsyncClient` with optional features.
+
+2. **Type-Safe States**: The builder uses Rust's type system to prevent invalid configurations at compile time. For example, you cannot call `.with_tls()` on a UDP client.
+
+3. **Zero Runtime Cost**: The `PhantomData` markers used for type states have zero size and are optimized away at compile time.
+
+### UnifiedAsyncClient Architecture
+
+```rust
+pub struct UnifiedAsyncClient {
+    // Internal transport (Plain TCP or TLS)
+    transport: Option<Transport>,
+
+    // Optional auto-reconnection
+    reconnect_config: Option<ReconnectConfig>,
+
+    // Connection parameters
+    conn_params: ConnectionParams,
+
+    // CRC verification
+    verify_crc: bool,
+}
+
+enum Transport {
+    Plain(TcpStream),
+    Tls(TlsStream<TcpStream>),
+}
+```
+
+This design:
+- ✅ Scales to any number of features without combinatorial explosion
+- ✅ Maintains type safety and compile-time guarantees
+- ✅ Enables previously impossible combinations (TLS + Reconnect)
+- ✅ Easy to extend with new features (compression, authentication, etc.)
+
+### Client Types
+
+| Builder | Result Type | Best For | Key Features |
+|---------|-------------|----------|-------------|
+| `.tcp().sync()` | `SyncIgtlClient` | Simple applications | Blocking I/O, easy to use |
+| `.tcp().async_mode()` | `UnifiedAsyncClient` | High concurrency | Tokio async, 100+ clients |
+| `.tcp().async_mode().with_tls()` | `UnifiedAsyncClient` | Secure networks | Certificate-based encryption |
+| `.tcp().async_mode().with_reconnect()` | `UnifiedAsyncClient` | Unreliable networks | Auto-reconnect with backoff |
+| `.udp()` | `UdpClient` | Real-time tracking | Low latency (120+ Hz) |
+
 ## Use Cases
 
 ### 🔬 Surgical Navigation
 ```rust
-// Track surgical tools in real-time
-let mut client = UdpClient::connect("127.0.0.1:18944")?;
+// Track surgical tools in real-time with UDP
+let mut client = ClientBuilder::new()
+    .udp("127.0.0.1:18944")
+    .build()?;
+
 loop {
     let transform = get_tool_position();
-    client.send_transform("Scalpel", &transform)?;
-    thread::sleep(Duration::from_millis(8)); // 120 Hz
+    let msg = IgtlMessage::new(transform, "Scalpel")?;
+    client.send(&msg)?;
+    tokio::time::sleep(Duration::from_millis(8)).await; // 120 Hz
 }
 ```
 
 ### 🏥 Medical Imaging Pipeline
 ```rust
+use openigtlink_rust::protocol::types::ImageMessage;
+
 // Stream CT/MRI scans with compression
-let image = ImageMessage::new("CTScan", image_data)
-    .with_compression(CompressionType::Deflate)?;
-client.send_message(&image)?;
-// 98% compression ratio achieved
+let image = ImageMessage::new(
+    ImageScalarType::Uint16,
+    [512, 512, 100],
+    image_data
+)?;
+let msg = IgtlMessage::new(image, "CTScan")?;
+client.send(&msg).await?;
 ```
 
 ### 🔐 Secure Hospital Network
 ```rust
-// TLS-encrypted communication
-let client = TlsIgtlClient::connect_with_ca(
-    "hospital-server.local:18944",
-    ca_cert_path
-)?;
-client.send_message(&patient_data)?;
+use openigtlink_rust::io::tls_client::insecure_tls_config;
+use std::sync::Arc;
+
+// TLS-encrypted communication with auto-reconnection
+let tls_config = Arc::new(insecure_tls_config());
+let reconnect_config = ReconnectConfig::with_max_attempts(10);
+
+let mut client = ClientBuilder::new()
+    .tcp("hospital-server.local:18944")
+    .async_mode()
+    .with_tls(tls_config)
+    .with_reconnect(reconnect_config)
+    .build()
+    .await?;
+
+client.send(&patient_data).await?;
 ```
 
-## Architecture
-
-Choose the right client for your use case:
-
-| Client | Best For | Key Feature |
-|--------|----------|-------------|
-| `IgtlClient` | Simple applications | Blocking I/O, easy to use |
-| `AsyncIgtlClient` | High concurrency | Tokio async, 100+ clients |
-| `TlsIgtlClient` | Secure networks | Certificate-based encryption |
-| `ReconnectClient` | Unreliable networks | Auto-reconnect with backoff |
-| `UdpClient` | Real-time tracking | Low latency (120+ Hz) |
-| `SessionManager` | Server applications | Multi-client management |
+### 🔄 Robust Production System
+```rust
+// Production-ready client with all features
+let client = ClientBuilder::new()
+    .tcp("production-server:18944")
+    .async_mode()
+    .with_tls(load_production_certs()?)
+    .with_reconnect(
+        ReconnectConfig::with_max_attempts(100)
+    )
+    .verify_crc(true)
+    .build()
+    .await?;
+```
 
 ## Supported Message Types
 
@@ -275,7 +413,7 @@ cargo run --example query_streaming -- 192.168.1.100:18944
 
 ### 📊 Testing & Benchmarks
 ```bash
-cargo test           # 359 tests
+cargo test           # 363 tests
 cargo bench          # Performance benchmarks
 RUST_LOG=debug cargo run --example logging
 ```
@@ -331,7 +469,7 @@ Contributions welcome! Feel free to:
 |--------|--------|
 | Message Types | 20/20 ✅ |
 | Query/Control | 22/22 ✅ |
-| Tests | 359 passing ✅ |
+| Tests | 363 passing ✅ |
 | C++ Compatibility | 100% ✅ |
 | Documentation | Complete ✅ |
 
