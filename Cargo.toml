@@ -1,6 +1,6 @@
 [package]
 name = "openigtlink-rust"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Wonjin Kang <kangwonjin.dev@gmail.com>"]
 description = "Rust implementation of the OpenIGTLink protocol for image-guided therapy"
