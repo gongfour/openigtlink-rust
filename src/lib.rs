@@ -85,7 +85,8 @@
 //!   - `crc` - CRC-64 checksum validation
 //!
 //! - **`io`** - Network I/O layer
-//!   - `IgtlClient` - TCP client for sending/receiving messages
+//!   - `ClientBuilder` - Type-state builder for configuring clients
+//!   - `SyncIgtlClient` / `AsyncIgtlClient` - TCP clients for sync/async workflows
 //!   - `IgtlServer` - TCP server for accepting connections
 //!
 //! - **`error`** - Error handling

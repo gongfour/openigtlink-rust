@@ -275,15 +275,13 @@ impl IgtlConnection {
 
     /// Enable or disable TCP_NODELAY (Nagle's algorithm)
     ///
-    /// See [`IgtlClient::set_nodelay`](crate::io::IgtlClient::set_nodelay) for details.
+    /// Wrapper around [`std::net::TcpStream::set_nodelay`].
     pub fn set_nodelay(&self, nodelay: bool) -> Result<()> {
         self.stream.set_nodelay(nodelay)?;
         Ok(())
     }
 
     /// Set the size of the TCP receive buffer (SO_RCVBUF)
-    ///
-    /// See [`IgtlClient::set_recv_buffer_size`](crate::io::IgtlClient::set_recv_buffer_size) for details.
     pub fn set_recv_buffer_size(&self, size: usize) -> Result<()> {
         use std::os::fd::AsRawFd;
 
@@ -308,8 +306,6 @@ impl IgtlConnection {
     }
 
     /// Set the size of the TCP send buffer (SO_SNDBUF)
-    ///
-    /// See [`IgtlClient::set_send_buffer_size`](crate::io::IgtlClient::set_send_buffer_size) for details.
     pub fn set_send_buffer_size(&self, size: usize) -> Result<()> {
         use std::os::fd::AsRawFd;
 

@@ -62,12 +62,15 @@ Server acknowledgment that it's ready to send data.
 ### Example 1: Query Server Capabilities
 
 ```rust
-use openigtlink_rust::io::IgtlClient;
+use openigtlink_rust::io::ClientBuilder;
 use openigtlink_rust::protocol::message::IgtlMessage;
 use openigtlink_rust::protocol::types::{GetCapabilityMessage, CapabilityMessage};
 
 // Connect to C++ OpenIGTLink server
-let mut client = IgtlClient::connect("192.168.1.100:18944")?;
+let mut client = ClientBuilder::new()
+    .tcp("192.168.1.100:18944")
+    .sync()
+    .build()?;
 
 // Send GET_CAPABIL query
 let query = GetCapabilityMessage;
@@ -98,7 +101,7 @@ client.send(&msg)?;
 // 2. Receive acknowledgment
 let ack: IgtlMessage<RtsTDataMessage> = client.receive()?;
 if ack.content.status != 1 {
-    return Err("Server rejected streaming request");
+    panic!("Server rejected streaming request (status={})", ack.content.status);
 }
 
 // 3. Receive tracking data stream
@@ -124,22 +127,26 @@ client.send(&msg)?;
 
 ```rust
 use openigtlink_rust::error::IgtlError;
+use openigtlink_rust::protocol::message::IgtlMessage;
+use openigtlink_rust::protocol::types::{CapabilityMessage, GetCapabilityMessage};
+use std::io::ErrorKind;
+use std::time::Duration;
 
+client.set_read_timeout(Some(Duration::from_secs(5)))?;
+
+let query_msg = IgtlMessage::new(GetCapabilityMessage, "RustClient")?;
 match client.send(&query_msg) {
-    Ok(_) => {
-        // Wait for response with timeout
-        match client.receive_timeout(Duration::from_secs(5)) {
-            Ok(response) => {
-                // Process response
-            }
-            Err(IgtlError::Io(e)) if e.kind() == std::io::ErrorKind::TimedOut => {
-                eprintln!("Server did not respond in time");
-            }
-            Err(e) => {
-                eprintln!("Receive error: {}", e);
-            }
+    Ok(_) => match client.receive::<CapabilityMessage>() {
+        Ok(response) => {
+            println!("Supported types: {:?}", response.content.types);
         }
-    }
+        Err(IgtlError::Io(e)) if e.kind() == ErrorKind::WouldBlock => {
+            eprintln!("Server did not respond in time");
+        }
+        Err(e) => {
+            eprintln!("Receive error: {}", e);
+        }
+    },
     Err(e) => {
         eprintln!("Send error: {}", e);
     }
@@ -243,7 +250,12 @@ To use with PLUS Toolkit tracking server:
 
 2. Connect from Rust:
    ```rust
-   let mut client = IgtlClient::connect("localhost:18944")?;
+   use openigtlink_rust::io::ClientBuilder;
+
+   let mut client = ClientBuilder::new()
+       .tcp("localhost:18944")
+       .sync()
+       .build()?;
    ```
 
 ## Protocol Flow Diagram
@@ -272,6 +284,9 @@ Rust Client                    C++ Server (3D Slicer/PLUS)
 ### 1. Always Check RTS_* Acknowledgment
 
 ```rust
+use openigtlink_rust::error::IgtlError;
+use openigtlink_rust::protocol::message::IgtlMessage;
+
 let ack: IgtlMessage<RtsTDataMessage> = client.receive()?;
 if ack.content.status == 0 {
     return Err(IgtlError::InvalidHeader("Server rejected request".into()));
@@ -281,24 +296,32 @@ if ack.content.status == 0 {
 ### 2. Use Timeouts for Query Messages
 
 ```rust
+use openigtlink_rust::error::IgtlError;
+use openigtlink_rust::protocol::types::StatusMessage;
+use std::io::ErrorKind;
 use std::time::Duration;
 
-client.send(&query)?;
-match client.receive_timeout(Duration::from_secs(5)) {
+client.set_read_timeout(Some(Duration::from_secs(5)))?;
+match client.receive::<StatusMessage>() {
     Ok(response) => { /* ... */ }
-    Err(e) => eprintln!("Timeout: {}", e),
+    Err(IgtlError::Io(e)) if e.kind() == ErrorKind::WouldBlock => {
+        eprintln!("Timeout waiting for response");
+    }
+    Err(e) => eprintln!("Receive error: {}", e),
 }
 ```
 
 ### 3. Handle Stream Interruptions
 
 ```rust
+use openigtlink_rust::io::ClientBuilder;
+
 loop {
     match client.receive() {
         Ok(tdata) => process_tracking_data(tdata),
         Err(IgtlError::Io(e)) if e.kind() == std::io::ErrorKind::ConnectionReset => {
             eprintln!("Connection lost, attempting reconnect...");
-            client = IgtlClient::connect(server_addr)?;
+            client = ClientBuilder::new().tcp(server_addr).sync().build()?;
         }
         Err(e) => return Err(e),
     }
@@ -309,8 +332,12 @@ loop {
 
 ```rust
 // Use RAII pattern
+use openigtlink_rust::io::SyncIgtlClient;
+use openigtlink_rust::protocol::message::IgtlMessage;
+use openigtlink_rust::protocol::types::StopTDataMessage;
+
 struct StreamGuard<'a> {
-    client: &'a mut IgtlClient,
+    client: &'a mut SyncIgtlClient,
 }
 
 impl Drop for StreamGuard<'_> {

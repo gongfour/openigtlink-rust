@@ -13,7 +13,7 @@ A **high-performance**, **type-safe** Rust implementation of the [OpenIGTLink](h
 - 🦀 **Memory Safety** - Rust's ownership system eliminates memory leaks and buffer overflows common in medical software
 - 🚀 **High Performance** - Zero-copy parsing and efficient serialization for real-time surgical applications
 - ✅ **100% Compatible** - Binary-compatible with the official C++ library - works with all existing OpenIGTLink software
-- 🔒 **Production Ready** - 363 comprehensive tests, extensive documentation, and real-world examples
+- 🔒 **Production Ready** - 102 comprehensive tests, extensive documentation, and real-world examples
 - 🏗️ **Type-Safe Builder** - Compile-time guarantees prevent invalid client configurations
 
 ## Quick Start
@@ -63,10 +63,18 @@ let client = ClientBuilder::new()
     .await?;
 
 // TLS-encrypted client
+use std::sync::Arc;
+use tokio_rustls::rustls;
+
+let tls_config = Arc::new(
+    rustls::ClientConfig::builder()
+        .with_root_certificates(rustls::RootCertStore::empty())
+        .with_no_client_auth()
+);
 let client = ClientBuilder::new()
     .tcp("hospital-server.local:18944")
     .async_mode()
-    .with_tls(tls_config)
+    .with_tls(tls_config.clone())
     .build()
     .await?;
 
@@ -82,14 +90,14 @@ let client = ClientBuilder::new()
 let client = ClientBuilder::new()
     .tcp("hospital-server.local:18944")
     .async_mode()
-    .with_tls(tls_config)
+    .with_tls(tls_config.clone())
     .with_reconnect(reconnect_config)
     .build()
     .await?;
 
-// UDP for low-latency tracking
+// UDP for low-latency tracking (bind any available local port)
 let client = ClientBuilder::new()
-    .udp("127.0.0.1:18944")
+    .udp("0.0.0.0:0")
     .build()?;
 ```
 
@@ -413,7 +421,7 @@ cargo run --example query_streaming -- 192.168.1.100:18944
 
 ### 📊 Testing & Benchmarks
 ```bash
-cargo test           # 363 tests
+cargo test           # 102 tests
 cargo bench          # Performance benchmarks
 RUST_LOG=debug cargo run --example logging
 ```
@@ -469,7 +477,7 @@ Contributions welcome! Feel free to:
 |--------|--------|
 | Message Types | 20/20 ✅ |
 | Query/Control | 22/22 ✅ |
-| Tests | 363 passing ✅ |
+| Tests | 102 passing ✅ |
 | C++ Compatibility | 100% ✅ |
 | Documentation | Complete ✅ |
 
