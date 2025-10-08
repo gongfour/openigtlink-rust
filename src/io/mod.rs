@@ -6,6 +6,7 @@
 mod common;
 pub mod unified_client;
 pub mod tls_reconnect;
+pub mod builder;
 pub mod client;
 pub mod server;
 pub mod async_client;
