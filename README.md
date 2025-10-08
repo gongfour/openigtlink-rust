@@ -93,7 +93,7 @@ let client = ClientBuilder::new()
     .build()?;
 ```
 
-**Compile-time safety**: Invalid combinations (like UDP + TLS) are caught at compile time!
+**Compile-time safety**: Unsupported combinations (like UDP + TLS) are prevented at compile time!
 
 ### 🏥 Medical Imaging & Tracking
 - **20/20 Message Types** - Complete implementation of all OpenIGTLink messages
