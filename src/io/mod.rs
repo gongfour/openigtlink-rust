@@ -3,6 +3,7 @@
 //! Provides client and server implementations for OpenIGTLink connections
 //! over both TCP (reliable) and UDP (low-latency) transports.
 
+mod common;
 pub mod client;
 pub mod server;
 pub mod async_client;
