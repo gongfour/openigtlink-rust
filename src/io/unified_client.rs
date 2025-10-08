@@ -5,6 +5,7 @@
 use crate::error::Result;
 use crate::io::sync_client::SyncTcpClient;
 use crate::io::unified_async_client::UnifiedAsyncClient;
+use crate::protocol::any_message::AnyMessage;
 use crate::protocol::message::{IgtlMessage, Message};
 
 /// Synchronous OpenIGTLink client
@@ -73,6 +74,17 @@ impl SyncIgtlClient {
             SyncIgtlClient::TcpSync(client) => client.set_read_timeout(timeout),
         }
     }
+
+    /// Receive any message type dynamically without knowing the type in advance
+    ///
+    /// # Returns
+    /// Decoded message wrapped in AnyMessage enum, or error
+    #[inline(always)]
+    pub fn receive_any(&mut self) -> Result<AnyMessage> {
+        match self {
+            SyncIgtlClient::TcpSync(client) => client.receive_any(),
+        }
+    }
 }
 
 /// Asynchronous OpenIGTLink client
@@ -139,6 +151,17 @@ impl AsyncIgtlClient {
     pub fn reconnect_count(&self) -> usize {
         match self {
             AsyncIgtlClient::Unified(client) => client.reconnect_count(),
+        }
+    }
+
+    /// Receive any message type dynamically without knowing the type in advance
+    ///
+    /// # Returns
+    /// Decoded message wrapped in AnyMessage enum, or error
+    #[inline(always)]
+    pub async fn receive_any(&mut self) -> Result<AnyMessage> {
+        match self {
+            AsyncIgtlClient::Unified(client) => client.receive_any().await,
         }
     }
 }

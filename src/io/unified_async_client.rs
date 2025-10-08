@@ -133,6 +133,8 @@
 
 use crate::error::{IgtlError, Result};
 use crate::io::reconnect::ReconnectConfig;
+use crate::protocol::any_message::AnyMessage;
+use crate::protocol::factory::MessageFactory;
 use crate::protocol::header::Header;
 use crate::protocol::message::{IgtlMessage, Message};
 use rustls::pki_types::ServerName;
@@ -536,6 +538,143 @@ impl UnifiedAsyncClient {
                     Ok(_) => {
                         debug!(
                             msg_type = msg_type,
+                            device_name = device_name,
+                            "Message decoded successfully"
+                        );
+                    }
+                    Err(e) => {
+                        warn!(
+                            msg_type = msg_type,
+                            error = %e,
+                            "Failed to decode message"
+                        );
+                    }
+                }
+
+                return result;
+            } else {
+                return Err(IgtlError::Io(std::io::Error::new(
+                    std::io::ErrorKind::NotConnected,
+                    "Not connected",
+                )));
+            }
+        }
+    }
+
+    /// Receive any message type dynamically without knowing the type in advance
+    ///
+    /// This method reads the message header first, determines the message type,
+    /// and then decodes the appropriate message type dynamically.
+    ///
+    /// # Returns
+    ///
+    /// An `AnyMessage` enum containing the decoded message. If the message type
+    /// is not recognized, it will be returned as `AnyMessage::Unknown` with the
+    /// raw header and body bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use openigtlink_rust::io::builder::ClientBuilder;
+    /// use openigtlink_rust::protocol::AnyMessage;
+    ///
+    /// # async fn example() -> Result<(), openigtlink_rust::error::IgtlError> {
+    /// let mut client = ClientBuilder::new()
+    ///     .tcp("127.0.0.1:18944")
+    ///     .async_mode()
+    ///     .build()
+    ///     .await?;
+    ///
+    /// loop {
+    ///     let msg = client.receive_any().await?;
+    ///
+    ///     match msg {
+    ///         AnyMessage::Transform(transform_msg) => {
+    ///             println!("Received transform from {}",
+    ///                      transform_msg.header.device_name.as_str()?);
+    ///         }
+    ///         AnyMessage::Status(status_msg) => {
+    ///             println!("Status: {}", status_msg.content.status_string);
+    ///         }
+    ///         AnyMessage::Image(image_msg) => {
+    ///             println!("Received image: {}x{}x{}",
+    ///                      image_msg.content.size[0],
+    ///                      image_msg.content.size[1],
+    ///                      image_msg.content.size[2]);
+    ///         }
+    ///         AnyMessage::Unknown { header, .. } => {
+    ///             println!("Unknown message type: {}",
+    ///                      header.type_name.as_str()?);
+    ///         }
+    ///         _ => {}
+    ///     }
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn receive_any(&mut self) -> Result<AnyMessage> {
+        loop {
+            if self.reconnect_config.is_some() {
+                self.ensure_connected().await?;
+            }
+
+            if let Some(transport) = &mut self.transport {
+                // Read header
+                let mut header_buf = vec![0u8; Header::SIZE];
+                match transport.read_exact(&mut header_buf).await {
+                    Ok(_) => {}
+                    Err(e) => {
+                        if self.reconnect_config.is_some() {
+                            warn!(error = %e, "Header read failed, will reconnect");
+                            self.transport = None;
+                            continue;
+                        } else {
+                            return Err(e);
+                        }
+                    }
+                }
+
+                let header = Header::decode(&header_buf)?;
+                let msg_type = header.type_name.as_str().unwrap_or("UNKNOWN");
+                let device_name = header.device_name.as_str().unwrap_or("UNKNOWN");
+
+                debug!(
+                    msg_type = msg_type,
+                    device_name = device_name,
+                    body_size = header.body_size,
+                    version = header.version,
+                    "Received message header"
+                );
+
+                // Read body
+                let mut body_buf = vec![0u8; header.body_size as usize];
+                match transport.read_exact(&mut body_buf).await {
+                    Ok(_) => {}
+                    Err(e) => {
+                        if self.reconnect_config.is_some() {
+                            warn!(error = %e, "Body read failed, will reconnect");
+                            self.transport = None;
+                            continue;
+                        } else {
+                            return Err(e);
+                        }
+                    }
+                }
+
+                trace!(
+                    msg_type = msg_type,
+                    bytes_read = body_buf.len(),
+                    "Message body received"
+                );
+
+                // Decode using MessageFactory
+                let factory = MessageFactory::new();
+                let result = factory.decode_any(&header, &body_buf, self.verify_crc);
+
+                match &result {
+                    Ok(msg) => {
+                        debug!(
+                            msg_type = msg.message_type(),
                             device_name = device_name,
                             "Message decoded successfully"
                         );

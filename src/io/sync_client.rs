@@ -6,6 +6,8 @@ use std::io::{Read, Write};
 use std::net::TcpStream;
 
 use crate::error::Result;
+use crate::protocol::any_message::AnyMessage;
+use crate::protocol::factory::MessageFactory;
 use crate::protocol::header::Header;
 use crate::protocol::message::{IgtlMessage, Message};
 use tracing::{debug, info, trace};
@@ -160,6 +162,90 @@ impl SyncTcpClient {
         match &result {
             Ok(_msg) => {
                 trace!("Successfully decoded message");
+            }
+            Err(e) => {
+                debug!("Failed to decode message: {}", e);
+            }
+        }
+
+        result
+    }
+
+    /// Receive any message type dynamically without knowing the type in advance
+    ///
+    /// This method reads the message header first, determines the message type,
+    /// and then decodes the appropriate message type dynamically.
+    ///
+    /// # Returns
+    ///
+    /// An `AnyMessage` enum containing the decoded message. If the message type
+    /// is not recognized, it will be returned as `AnyMessage::Unknown` with the
+    /// raw header and body bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use openigtlink_rust::io::builder::ClientBuilder;
+    /// use openigtlink_rust::protocol::AnyMessage;
+    ///
+    /// # fn example() -> Result<(), openigtlink_rust::error::IgtlError> {
+    /// let mut client = ClientBuilder::new()
+    ///     .tcp("127.0.0.1:18944")
+    ///     .sync()
+    ///     .build()?;
+    ///
+    /// loop {
+    ///     let msg = client.receive_any()?;
+    ///
+    ///     match msg {
+    ///         AnyMessage::Transform(transform_msg) => {
+    ///             println!("Received transform from {}",
+    ///                      transform_msg.header.device_name.as_str()?);
+    ///         }
+    ///         AnyMessage::Status(status_msg) => {
+    ///             println!("Status: {}", status_msg.content.status_string);
+    ///         }
+    ///         AnyMessage::Image(image_msg) => {
+    ///             println!("Received image: {}x{}x{}",
+    ///                      image_msg.content.size[0],
+    ///                      image_msg.content.size[1],
+    ///                      image_msg.content.size[2]);
+    ///         }
+    ///         AnyMessage::Unknown { header, .. } => {
+    ///             println!("Unknown message type: {}",
+    ///                      header.type_name.as_str()?);
+    ///         }
+    ///         _ => {}
+    ///     }
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn receive_any(&mut self) -> Result<AnyMessage> {
+        // Read header (58 bytes)
+        let mut header_buf = [0u8; Header::SIZE];
+        self.stream.read_exact(&mut header_buf)?;
+
+        let header = Header::decode(&header_buf)?;
+        debug!(
+            "Received header: type={}, device={}, size={}",
+            header.type_name.as_str().unwrap_or("?"),
+            header.device_name.as_str().unwrap_or("?"),
+            header.body_size
+        );
+
+        // Read body
+        let body_size = header.body_size as usize;
+        let mut body_buf = vec![0u8; body_size];
+        self.stream.read_exact(&mut body_buf)?;
+
+        // Decode using MessageFactory
+        let factory = MessageFactory::new();
+        let result = factory.decode_any(&header, &body_buf, self.verify_crc);
+
+        match &result {
+            Ok(msg) => {
+                trace!("Successfully decoded {} message", msg.message_type());
             }
             Err(e) => {
                 debug!("Failed to decode message: {}", e);
