@@ -38,7 +38,7 @@
 use crate::error::Result;
 use crate::io::reconnect::ReconnectConfig;
 use crate::io::unified_client::{AsyncIgtlClient, SyncIgtlClient};
-use crate::io::{AsyncIgtlClient as TcpAsyncClient, IgtlClient, ReconnectClient, TlsIgtlClient};
+use crate::io::{AsyncIgtlClient as TcpAsyncClient, IgtlClient, ReconnectClient, TlsIgtlClient, UdpClient};
 use crate::io::tls_reconnect::TcpAsyncTlsReconnectClient;
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -475,6 +475,41 @@ fn parse_addr(addr: &str) -> Result<(String, u16)> {
     }
 
     Ok((hostname, port))
+}
+
+// ============================================================================
+// UDP Configuration and Build
+// ============================================================================
+
+impl ClientBuilder<UdpConfigured, SyncMode> {
+    /// Build a UDP client
+    ///
+    /// UDP clients use a connectionless protocol and require specifying
+    /// the target address for each send operation using `send_to()`.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if binding to local address fails
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use openigtlink_rust::io::builder::ClientBuilder;
+    /// use openigtlink_rust::protocol::types::TransformMessage;
+    /// use openigtlink_rust::protocol::message::IgtlMessage;
+    ///
+    /// let client = ClientBuilder::new()
+    ///     .udp("0.0.0.0:0")
+    ///     .build()?;
+    ///
+    /// let transform = TransformMessage::identity();
+    /// let msg = IgtlMessage::new(transform, "Device")?;
+    /// client.send_to(&msg, "127.0.0.1:18944")?;
+    /// # Ok::<(), openigtlink_rust::error::IgtlError>(())
+    /// ```
+    pub fn build(self) -> Result<UdpClient> {
+        UdpClient::bind(&self.protocol.addr)
+    }
 }
 
 #[cfg(test)]
