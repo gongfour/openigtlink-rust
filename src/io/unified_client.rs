@@ -5,6 +5,7 @@
 
 use crate::error::Result;
 use crate::io::{IgtlClient, TlsIgtlClient, ReconnectClient};
+use crate::io::tls_reconnect::TcpAsyncTlsReconnectClient;
 use crate::protocol::message::{IgtlMessage, Message};
 
 /// Synchronous OpenIGTLink client variants
@@ -89,11 +90,8 @@ pub enum AsyncIgtlClient {
     TcpAsyncTls(TlsIgtlClient),
     /// TCP asynchronous client with automatic reconnection
     TcpAsyncReconnect(ReconnectClient),
-    /// TCP asynchronous client with both TLS and automatic reconnection (placeholder)
-    ///
-    /// This variant will be implemented in a future task.
-    #[allow(dead_code)]
-    TcpAsyncTlsReconnect(TlsReconnectClient),
+    /// TCP asynchronous client with both TLS and automatic reconnection
+    TcpAsyncTlsReconnect(TcpAsyncTlsReconnectClient),
 }
 
 impl AsyncIgtlClient {
@@ -143,26 +141,3 @@ impl AsyncIgtlClient {
     }
 }
 
-/// Placeholder type for TLS + Reconnect client
-///
-/// This type will be implemented in the next task. For now, it's a placeholder
-/// to allow the enum variant to compile.
-#[allow(dead_code)]
-pub struct TlsReconnectClient;
-
-impl TlsReconnectClient {
-    #[allow(dead_code)]
-    async fn send<T: Message>(&mut self, _msg: &IgtlMessage<T>) -> Result<()> {
-        unimplemented!("TlsReconnectClient will be implemented in the next task")
-    }
-
-    #[allow(dead_code)]
-    async fn receive<T: Message>(&mut self) -> Result<IgtlMessage<T>> {
-        unimplemented!("TlsReconnectClient will be implemented in the next task")
-    }
-
-    #[allow(dead_code)]
-    fn set_verify_crc(&mut self, _verify: bool) {
-        unimplemented!("TlsReconnectClient will be implemented in the next task")
-    }
-}

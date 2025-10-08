@@ -66,7 +66,7 @@ impl ReconnectConfig {
     }
 
     /// Calculate delay for a given attempt number
-    fn delay_for_attempt(&self, attempt: usize) -> Duration {
+    pub(crate) fn delay_for_attempt(&self, attempt: usize) -> Duration {
         let delay_ms = self.initial_delay.as_millis() as f64
             * self.backoff_multiplier.powi(attempt as i32);
 
