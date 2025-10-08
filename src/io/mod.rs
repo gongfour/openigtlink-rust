@@ -4,6 +4,7 @@
 //! over both TCP (reliable) and UDP (low-latency) transports.
 
 mod common;
+pub mod unified_client;
 pub mod client;
 pub mod server;
 pub mod async_client;
