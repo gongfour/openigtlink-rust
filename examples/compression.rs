@@ -85,10 +85,7 @@ fn demonstrate_random_data() {
     println!("   Original size: {} bytes", stats.original_size);
     println!("   Compressed size: {} bytes", stats.compressed_size);
     println!("   Compression ratio: {:.1}%", stats.ratio_percent());
-    println!(
-        "   Space saved: {:.1}%",
-        stats.space_saved_percent()
-    );
+    println!("   Space saved: {:.1}%", stats.space_saved_percent());
 
     let decompressed = decompress(&compressed, CompressionType::Deflate).unwrap();
     assert_eq!(data, decompressed);

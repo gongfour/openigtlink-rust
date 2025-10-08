@@ -89,11 +89,7 @@ fn test_reconnect_logic() -> Result<()> {
     loop {
         println!("  Attempt {}/{}", retry_count + 1, MAX_RETRIES);
 
-        match ClientBuilder::new()
-            .tcp("127.0.0.1:18944")
-            .sync()
-            .build()
-        {
+        match ClientBuilder::new().tcp("127.0.0.1:18944").sync().build() {
             Ok(mut client) => {
                 println!("  ✓ Connection established!");
 
@@ -137,11 +133,7 @@ fn test_timeout_handling() -> Result<()> {
 
     println!("[INFO] Connecting to server...");
 
-    match ClientBuilder::new()
-        .tcp("127.0.0.1:18944")
-        .sync()
-        .build()
-    {
+    match ClientBuilder::new().tcp("127.0.0.1:18944").sync().build() {
         Ok(mut client) => {
             println!("  ✓ Connected");
 
@@ -202,7 +194,9 @@ fn test_crc_error_recovery() -> Result<()> {
     println!("    match client.receive::<TransformMessage>() {{");
     println!("        Ok(msg) => process_message(msg),");
     println!("        Err(IgtlError::CrcMismatch {{ expected, actual }}) => {{");
-    println!("            eprintln!(\"CRC error: expected {{:X}}, got {{:X}}\", expected, actual);");
+    println!(
+        "            eprintln!(\"CRC error: expected {{:X}}, got {{:X}}\", expected, actual);"
+    );
     println!("            // Request retransmission or skip message");
     println!("        }}");
     println!("        Err(e) => handle_other_errors(e),");
@@ -228,11 +222,7 @@ fn test_wrong_message_type() -> Result<()> {
     println!("[INFO] Demonstrating graceful degradation for type mismatches");
     println!();
 
-    match ClientBuilder::new()
-        .tcp("127.0.0.1:18944")
-        .sync()
-        .build()
-    {
+    match ClientBuilder::new().tcp("127.0.0.1:18944").sync().build() {
         Ok(mut client) => {
             println!("  ✓ Connected to server");
 
@@ -257,7 +247,9 @@ fn test_wrong_message_type() -> Result<()> {
                     println!("  → Action: Discarding message (graceful degradation)");
                     println!("  → Alternative: Use generic message receiver");
                 }
-                Err(IgtlError::Io(e)) if e.kind() == ErrorKind::WouldBlock || e.kind() == ErrorKind::TimedOut => {
+                Err(IgtlError::Io(e))
+                    if e.kind() == ErrorKind::WouldBlock || e.kind() == ErrorKind::TimedOut =>
+                {
                     println!("  ⏱ No response (timeout)");
                     println!("  → Server may not be sending responses");
                 }

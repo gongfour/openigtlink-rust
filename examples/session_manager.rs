@@ -25,10 +25,7 @@ struct LoggingHandler;
 
 impl MessageHandler for LoggingHandler {
     fn handle_message(&self, client_id: ClientId, type_name: &str, _data: &[u8]) {
-        println!(
-            "[Handler] Client #{} sent {} message",
-            client_id, type_name
-        );
+        println!("[Handler] Client #{} sent {} message", client_id, type_name);
     }
 }
 
@@ -62,18 +59,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let client_count = mgr_broadcaster.client_count().await;
             if client_count > 0 {
-                let status = StatusMessage::ok(&format!(
-                    "Heartbeat: {} clients connected",
-                    client_count
-                ));
+                let status =
+                    StatusMessage::ok(&format!("Heartbeat: {} clients connected", client_count));
 
                 if let Err(e) = mgr_broadcaster.broadcast(&status).await {
                     eprintln!("[ERROR] Broadcast failed: {}", e);
                 } else {
-                    println!(
-                        "[Broadcast] Sent heartbeat to {} clients",
-                        client_count
-                    );
+                    println!("[Broadcast] Sent heartbeat to {} clients", client_count);
                 }
             }
         }
@@ -110,16 +102,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Send personalized message to each client
         let client_ids = manager.client_ids().await;
         for client_id in client_ids {
-            let personal_msg = StatusMessage::ok(&format!(
-                "Personal message for client #{}",
-                client_id
-            ));
+            let personal_msg =
+                StatusMessage::ok(&format!("Personal message for client #{}", client_id));
 
             if let Err(e) = manager.send_to(client_id, &personal_msg).await {
-                eprintln!(
-                    "[ERROR] Failed to send to client #{}: {}",
-                    client_id, e
-                );
+                eprintln!("[ERROR] Failed to send to client #{}: {}", client_id, e);
             } else {
                 println!("[Personal] Sent message to client #{}", client_id);
             }

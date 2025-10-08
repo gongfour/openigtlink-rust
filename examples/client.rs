@@ -32,10 +32,7 @@ fn run() -> Result<()> {
     let scenario = parse_scenario();
 
     // Connect to server
-    let mut client = ClientBuilder::new()
-        .tcp("127.0.0.1:18944")
-        .sync()
-        .build()?;
+    let mut client = ClientBuilder::new().tcp("127.0.0.1:18944").sync().build()?;
     println!("[INFO] Connected to server\n");
 
     // Execute test scenario
@@ -61,7 +58,10 @@ fn parse_scenario() -> String {
     match scenario.as_str() {
         "all" | "transform" | "status" | "capability" => scenario,
         _ => {
-            eprintln!("Usage: {} [all|transform|status|capability]", env::args().next().unwrap());
+            eprintln!(
+                "Usage: {} [all|transform|status|capability]",
+                env::args().next().unwrap()
+            );
             eprintln!("\nAvailable scenarios:");
             eprintln!("  all        - Test all message types sequentially (default)");
             eprintln!("  transform  - Test TRANSFORM message only");
@@ -79,9 +79,13 @@ fn test_transform(client: &mut SyncIgtlClient) -> Result<()> {
     // Create a translation transform (10, 20, 30)
     let transform = TransformMessage::translation(10.0, 20.0, 30.0);
     println!("[SEND] Translation vector: (10.0, 20.0, 30.0)");
-    println!("       Matrix (first row): [{:.2}, {:.2}, {:.2}, {:.2}]",
-             transform.matrix[0][0], transform.matrix[0][1],
-             transform.matrix[0][2], transform.matrix[0][3]);
+    println!(
+        "       Matrix (first row): [{:.2}, {:.2}, {:.2}, {:.2}]",
+        transform.matrix[0][0],
+        transform.matrix[0][1],
+        transform.matrix[0][2],
+        transform.matrix[0][3]
+    );
 
     // Wrap in IgtlMessage and send
     let msg = IgtlMessage::new(transform, "ClientDevice")?;
@@ -104,7 +108,10 @@ fn test_status(client: &mut SyncIgtlClient) -> Result<()> {
 
     // Create an OK status message
     let status = StatusMessage::ok("Client test message");
-    println!("[SEND] Code: {}, Message: '{}'", status.code, status.status_string);
+    println!(
+        "[SEND] Code: {}, Message: '{}'",
+        status.code, status.status_string
+    );
 
     // Wrap in IgtlMessage and send
     let msg = IgtlMessage::new(status, "ClientDevice")?;

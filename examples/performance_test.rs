@@ -45,7 +45,10 @@ fn test_transform_throughput() {
     println!("   Iterations: {}", iterations);
     println!("   Time: {:.2}s", elapsed.as_secs_f64());
     println!("   Throughput: {:.0} msg/s", throughput);
-    println!("   Latency: {:.2} µs/msg\n", elapsed.as_micros() as f64 / iterations as f64);
+    println!(
+        "   Latency: {:.2} µs/msg\n",
+        elapsed.as_micros() as f64 / iterations as f64
+    );
 }
 
 fn test_image_throughput() {
@@ -55,7 +58,8 @@ fn test_image_throughput() {
         ImageScalarType::Uint8,
         [512, 512, 1],
         vec![128u8; 512 * 512],
-    ).unwrap();
+    )
+    .unwrap();
     let msg = IgtlMessage::new(image, "PerfTest").unwrap();
 
     let iterations = 1_000;
@@ -74,7 +78,10 @@ fn test_image_throughput() {
     println!("   Time: {:.2}s", elapsed.as_secs_f64());
     println!("   Throughput: {:.0} msg/s", throughput);
     println!("   Bandwidth: {:.1} MB/s", bandwidth);
-    println!("   Latency: {:.2} ms/msg\n", elapsed.as_millis() as f64 / iterations as f64);
+    println!(
+        "   Latency: {:.2} ms/msg\n",
+        elapsed.as_millis() as f64 / iterations as f64
+    );
 }
 
 fn test_compression_performance() {
@@ -104,10 +111,22 @@ fn test_compression_performance() {
     println!("   Original size: {} KB", data.len() / 1024);
     println!("   Compressed size: {} KB", compressed.len() / 1024);
     println!("   Compression ratio: {:.1}%", stats.ratio_percent());
-    println!("   Compression time: {:.2} ms", compress_time.as_micros() as f64 / 1000.0);
-    println!("   Decompression time: {:.2} ms", decompress_time.as_micros() as f64 / 1000.0);
-    println!("   Compression speed: {:.1} MB/s", data.len() as f64 / compress_time.as_secs_f64() / 1_000_000.0);
-    println!("   Decompression speed: {:.1} MB/s\n", data.len() as f64 / decompress_time.as_secs_f64() / 1_000_000.0);
+    println!(
+        "   Compression time: {:.2} ms",
+        compress_time.as_micros() as f64 / 1000.0
+    );
+    println!(
+        "   Decompression time: {:.2} ms",
+        decompress_time.as_micros() as f64 / 1000.0
+    );
+    println!(
+        "   Compression speed: {:.1} MB/s",
+        data.len() as f64 / compress_time.as_secs_f64() / 1_000_000.0
+    );
+    println!(
+        "   Decompression speed: {:.1} MB/s\n",
+        data.len() as f64 / decompress_time.as_secs_f64() / 1_000_000.0
+    );
 }
 
 async fn test_network_latency() -> Result<(), Box<dyn std::error::Error>> {
@@ -152,7 +171,10 @@ async fn test_network_latency() -> Result<(), Box<dyn std::error::Error>> {
     println!("   Iterations: {}", iterations);
     println!("   Total time: {:.2}s", elapsed.as_secs_f64());
     println!("   Average round-trip latency: {:.2} ms", avg_latency);
-    println!("   Throughput: {:.0} round-trips/s", iterations as f64 / elapsed.as_secs_f64());
+    println!(
+        "   Throughput: {:.0} round-trips/s",
+        iterations as f64 / elapsed.as_secs_f64()
+    );
 
     server_task.await?;
 

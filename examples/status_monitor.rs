@@ -28,10 +28,7 @@ fn run() -> Result<()> {
     println!("=== STATUS Message: Device Monitoring ===\n");
 
     // Connect to server
-    let mut client = ClientBuilder::new()
-        .tcp("127.0.0.1:18944")
-        .sync()
-        .build()?;
+    let mut client = ClientBuilder::new().tcp("127.0.0.1:18944").sync().build()?;
     println!("[INFO] Connected to monitoring server\n");
 
     // Simulate device lifecycle with status updates

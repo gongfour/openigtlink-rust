@@ -383,13 +383,14 @@ mod tests {
         // Send message
         let transform = TransformMessage::identity();
         let msg = IgtlMessage::new(transform, "TestDevice").unwrap();
-        client
-            .send_to(&msg, &server_addr.to_string())
-            .unwrap();
+        client.send_to(&msg, &server_addr.to_string()).unwrap();
 
         // Receive message
         let (received_msg, sender) = server.receive::<TransformMessage>().unwrap();
-        assert_eq!(received_msg.header.device_name.as_str().unwrap(), "TestDevice");
+        assert_eq!(
+            received_msg.header.device_name.as_str().unwrap(),
+            "TestDevice"
+        );
         assert_eq!(sender, client.local_addr().unwrap());
     }
 

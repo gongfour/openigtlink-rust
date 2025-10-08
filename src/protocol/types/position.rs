@@ -4,8 +4,8 @@
 //! The data consists of a 3D position vector and a quaternion for orientation.
 //! This format is 19% smaller than TRANSFORM and ideal for high frame-rate tracking data.
 
-use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};
+use crate::protocol::message::Message;
 use bytes::{Buf, BufMut};
 
 /// POSITION message containing position and quaternion orientation
@@ -140,10 +140,7 @@ mod tests {
 
     #[test]
     fn test_with_quaternion() {
-        let pos = PositionMessage::with_quaternion(
-            [1.0, 2.0, 3.0],
-            [0.1, 0.2, 0.3, 0.4],
-        );
+        let pos = PositionMessage::with_quaternion([1.0, 2.0, 3.0], [0.1, 0.2, 0.3, 0.4]);
         assert_eq!(pos.position, [1.0, 2.0, 3.0]);
         assert_eq!(pos.quaternion, [0.1, 0.2, 0.3, 0.4]);
     }
@@ -197,10 +194,7 @@ mod tests {
 
     #[test]
     fn test_get_quaternion() {
-        let pos = PositionMessage::with_quaternion(
-            [0.0, 0.0, 0.0],
-            [0.1, 0.2, 0.3, 0.4],
-        );
+        let pos = PositionMessage::with_quaternion([0.0, 0.0, 0.0], [0.1, 0.2, 0.3, 0.4]);
         let (ox, oy, oz, w) = pos.get_quaternion();
         assert_eq!((ox, oy, oz, w), (0.1, 0.2, 0.3, 0.4));
     }

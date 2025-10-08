@@ -33,8 +33,8 @@ use openigtlink_rust::error::{IgtlError, Result};
 use openigtlink_rust::io::{ClientBuilder, SyncIgtlClient};
 use openigtlink_rust::protocol::message::IgtlMessage;
 use openigtlink_rust::protocol::types::{
-    CapabilityMessage, GetCapabilityMessage, RtsTDataMessage, StartTDataMessage,
-    StopTDataMessage, TDataMessage,
+    CapabilityMessage, GetCapabilityMessage, RtsTDataMessage, StartTDataMessage, StopTDataMessage,
+    TDataMessage,
 };
 use std::env;
 use std::time::Duration;
@@ -68,10 +68,7 @@ fn run() -> Result<()> {
 
     // Step 1: Connect to C++ OpenIGTLink server
     println!("[1] Connecting to server at {}...", server_addr);
-    let mut client = ClientBuilder::new()
-        .tcp(&server_addr)
-        .sync()
-        .build()?;
+    let mut client = ClientBuilder::new().tcp(&server_addr).sync().build()?;
     println!("    ✓ Connected successfully\n");
 
     // Step 2: Query server capabilities (GET_CAPABIL → CAPABILITY)
@@ -108,7 +105,10 @@ fn query_capabilities(client: &mut SyncIgtlClient) -> Result<()> {
     // Receive CAPABILITY response
     let response: IgtlMessage<CapabilityMessage> = client.receive()?;
     println!("    ← Received CAPABILITY response");
-    println!("      Supported message types ({}):", response.content.types.len());
+    println!(
+        "      Supported message types ({}):",
+        response.content.types.len()
+    );
 
     for (i, msg_type) in response.content.types.iter().enumerate() {
         println!("        {}. {}", i + 1, msg_type);
@@ -124,8 +124,8 @@ fn start_tracking_stream(client: &mut SyncIgtlClient) -> Result<()> {
     // - resolution: 50ms (20 Hz update rate)
     // - coordinate_name: "RAS" (Right-Anterior-Superior anatomical coordinate system)
     let start_stream = StartTDataMessage {
-        resolution: 50,                      // 50ms = 20 Hz
-        coordinate_name: "RAS".to_string(),  // Anatomical coordinate system
+        resolution: 50,                     // 50ms = 20 Hz
+        coordinate_name: "RAS".to_string(), // Anatomical coordinate system
     };
 
     let msg = IgtlMessage::new(start_stream, "QueryClient")?;
@@ -193,7 +193,10 @@ fn receive_tracking_data(client: &mut SyncIgtlClient) -> Result<()> {
         std::thread::sleep(Duration::from_millis(50));
     }
 
-    println!("    ✓ Successfully received {} tracking data messages\n", MAX_MESSAGES);
+    println!(
+        "    ✓ Successfully received {} tracking data messages\n",
+        MAX_MESSAGES
+    );
 
     Ok(())
 }

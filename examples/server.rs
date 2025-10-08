@@ -28,9 +28,7 @@ fn main() {
 
 fn run() -> Result<()> {
     // Parse port from command line arguments (default: 18944)
-    let port = env::args()
-        .nth(1)
-        .unwrap_or_else(|| "18944".to_string());
+    let port = env::args().nth(1).unwrap_or_else(|| "18944".to_string());
 
     let addr = format!("127.0.0.1:{}", port);
 
@@ -64,9 +62,13 @@ fn handle_client(mut conn: IgtlConnection) -> Result<()> {
         if let Ok(msg) = conn.receive::<TransformMessage>() {
             let device_name = msg.header.device_name.as_str().unwrap_or("Unknown");
             println!("[RECV] TRANSFORM from device '{}'", device_name);
-            println!("       Matrix (first row): [{:.2}, {:.2}, {:.2}, {:.2}]",
-                     msg.content.matrix[0][0], msg.content.matrix[0][1],
-                     msg.content.matrix[0][2], msg.content.matrix[0][3]);
+            println!(
+                "       Matrix (first row): [{:.2}, {:.2}, {:.2}, {:.2}]",
+                msg.content.matrix[0][0],
+                msg.content.matrix[0][1],
+                msg.content.matrix[0][2],
+                msg.content.matrix[0][3]
+            );
 
             // Respond with STATUS(OK)
             let status = StatusMessage::ok("Transform received");
@@ -80,8 +82,10 @@ fn handle_client(mut conn: IgtlConnection) -> Result<()> {
         if let Ok(msg) = conn.receive::<StatusMessage>() {
             let device_name = msg.header.device_name.as_str().unwrap_or("Unknown");
             println!("[RECV] STATUS from device '{}'", device_name);
-            println!("       Code: {}, Name: '{}', Message: '{}'",
-                     msg.content.code, msg.content.error_name, msg.content.status_string);
+            println!(
+                "       Code: {}, Name: '{}', Message: '{}'",
+                msg.content.code, msg.content.error_name, msg.content.status_string
+            );
 
             // Respond with CAPABILITY
             let capability = CapabilityMessage::new(vec![

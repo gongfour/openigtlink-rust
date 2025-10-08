@@ -24,8 +24,7 @@ fn bench_transform_decode(c: &mut Criterion) {
 
     c.bench_function("transform_decode", |b| {
         b.iter(|| {
-            let _: IgtlMessage<TransformMessage> =
-                black_box(IgtlMessage::decode(&data).unwrap());
+            let _: IgtlMessage<TransformMessage> = black_box(IgtlMessage::decode(&data).unwrap());
         })
     });
 }
@@ -69,7 +68,8 @@ fn bench_image_encode_by_size(c: &mut Criterion) {
             ImageScalarType::Uint8,
             [width as u16, height as u16, 1],
             vec![128u8; size],
-        ).unwrap();
+        )
+        .unwrap();
         let msg = IgtlMessage::new(image, "Benchmark").unwrap();
 
         group.bench_with_input(BenchmarkId::from_parameter(name), &msg, |b, msg| {
@@ -98,7 +98,8 @@ fn bench_image_decode_by_size(c: &mut Criterion) {
             ImageScalarType::Uint8,
             [width as u16, height as u16, 1],
             vec![128u8; size],
-        ).unwrap();
+        )
+        .unwrap();
         let msg = IgtlMessage::new(image, "Benchmark").unwrap();
         let data = msg.encode().unwrap();
 

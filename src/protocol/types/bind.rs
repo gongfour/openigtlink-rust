@@ -3,8 +3,8 @@
 //! The BIND message is used to bind multiple OpenIGTLink messages into a single message.
 //! This allows grouping related messages together for synchronized transmission.
 
-use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};
+use crate::protocol::message::Message;
 use bytes::Buf;
 
 /// Child message entry in BIND message
@@ -30,7 +30,7 @@ impl BindEntry {
 ///
 /// # OpenIGTLink Specification
 /// - Message type: "BIND"
-/// - Format: (TYPE (char[12]) + NAME (char[20])) * n
+/// - Format: (TYPE (`char[12]`) + NAME (`char[20]`)) * n
 /// - Each entry: 32 bytes
 /// - Number of child messages determined by body size / 32
 #[derive(Debug, Clone, PartialEq)]
@@ -47,7 +47,9 @@ impl BindMessage {
 
     /// Create an empty BIND message
     pub fn empty() -> Self {
-        BindMessage { entries: Vec::new() }
+        BindMessage {
+            entries: Vec::new(),
+        }
     }
 
     /// Add a child message entry
@@ -87,7 +89,7 @@ impl Message for BindMessage {
             type_bytes[..copy_len].copy_from_slice(&type_str[..copy_len]);
             buf.extend_from_slice(&type_bytes);
 
-            // Encode NAME (char[20])
+            // Encode NAME (`char[20]`)
             let mut name_bytes = [0u8; 20];
             let name_str = entry.device_name.as_bytes();
             let copy_len = name_str.len().min(20);
@@ -108,7 +110,7 @@ impl Message for BindMessage {
             let type_len = type_bytes.iter().position(|&b| b == 0).unwrap_or(12);
             let message_type = String::from_utf8(type_bytes[..type_len].to_vec())?;
 
-            // Decode NAME (char[20])
+            // Decode NAME (`char[20]`)
             let name_bytes = &data[..20];
             data.advance(20);
             let name_len = name_bytes.iter().position(|&b| b == 0).unwrap_or(20);
@@ -171,9 +173,7 @@ mod tests {
 
     #[test]
     fn test_encode_single() {
-        let msg = BindMessage::new(vec![
-            BindEntry::new("TRANSFORM", "Device1"),
-        ]);
+        let msg = BindMessage::new(vec![BindEntry::new("TRANSFORM", "Device1")]);
         let encoded = msg.encode_content().unwrap();
 
         // Each entry is 32 bytes
@@ -194,9 +194,7 @@ mod tests {
 
     #[test]
     fn test_roundtrip_single() {
-        let original = BindMessage::new(vec![
-            BindEntry::new("TRANSFORM", "SurgicalTool"),
-        ]);
+        let original = BindMessage::new(vec![BindEntry::new("TRANSFORM", "SurgicalTool")]);
 
         let encoded = original.encode_content().unwrap();
         let decoded = BindMessage::decode_content(&encoded).unwrap();
@@ -243,9 +241,10 @@ mod tests {
 
     #[test]
     fn test_long_names_truncated() {
-        let msg = BindMessage::new(vec![
-            BindEntry::new("VERYLONGMESSAGETYPE", "VERYLONGDEVICENAMEOVER20CHARS"),
-        ]);
+        let msg = BindMessage::new(vec![BindEntry::new(
+            "VERYLONGMESSAGETYPE",
+            "VERYLONGDEVICENAMEOVER20CHARS",
+        )]);
         let encoded = msg.encode_content().unwrap();
         let decoded = BindMessage::decode_content(&encoded).unwrap();
 

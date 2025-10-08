@@ -1,3 +1,5 @@
+#![allow(rustdoc::redundant_explicit_links)]
+
 //! OpenIGTLink Protocol Implementation in Rust
 //!
 //! This library provides a Rust implementation of the OpenIGTLink protocol,

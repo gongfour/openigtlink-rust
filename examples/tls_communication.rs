@@ -128,7 +128,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             rustls::ClientConfig::builder()
                 .dangerous()
                 .with_custom_certificate_verifier(Arc::new(NoCertificateVerification))
-                .with_no_client_auth()
+                .with_no_client_auth(),
         );
 
         let mut client = ClientBuilder::new()

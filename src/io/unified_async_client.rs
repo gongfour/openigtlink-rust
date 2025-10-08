@@ -293,13 +293,16 @@ impl UnifiedAsyncClient {
         })?;
 
         let connector = TlsConnector::from(tls_config.clone());
-        let tls_stream = connector.connect(server_name, tcp_stream).await.map_err(|e| {
-            warn!(error = %e, "TLS handshake failed");
-            IgtlError::Io(std::io::Error::new(
-                std::io::ErrorKind::ConnectionRefused,
-                format!("TLS handshake failed: {}", e),
-            ))
-        })?;
+        let tls_stream = connector
+            .connect(server_name, tcp_stream)
+            .await
+            .map_err(|e| {
+                warn!(error = %e, "TLS handshake failed");
+                IgtlError::Io(std::io::Error::new(
+                    std::io::ErrorKind::ConnectionRefused,
+                    format!("TLS handshake failed: {}", e),
+                ))
+            })?;
 
         info!(
             local_addr = %local_addr,

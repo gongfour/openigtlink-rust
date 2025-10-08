@@ -2,10 +2,10 @@
 //!
 //! Provides bounded and unbounded message queues for async message processing.
 
+use crate::error::{IgtlError, Result};
 use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
 use tracing::{debug, info, trace, warn};
-use crate::error::{IgtlError, Result};
 
 /// Configuration for message queue behavior
 #[derive(Debug, Clone)]
@@ -215,18 +215,13 @@ impl MessageQueue {
                 stats.current_size = stats.current_size.saturating_sub(1);
                 Ok(data)
             }
-            Err(mpsc::error::TryRecvError::Empty) => {
-                Err(IgtlError::Io(std::io::Error::new(
-                    std::io::ErrorKind::WouldBlock,
-                    "Queue empty",
-                )))
-            }
-            Err(mpsc::error::TryRecvError::Disconnected) => {
-                Err(IgtlError::Io(std::io::Error::new(
-                    std::io::ErrorKind::BrokenPipe,
-                    "Queue closed",
-                )))
-            }
+            Err(mpsc::error::TryRecvError::Empty) => Err(IgtlError::Io(std::io::Error::new(
+                std::io::ErrorKind::WouldBlock,
+                "Queue empty",
+            ))),
+            Err(mpsc::error::TryRecvError::Disconnected) => Err(IgtlError::Io(
+                std::io::Error::new(std::io::ErrorKind::BrokenPipe, "Queue closed"),
+            )),
         }
     }
 

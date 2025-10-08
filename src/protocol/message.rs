@@ -62,7 +62,7 @@ impl<T: Message> IgtlMessage<T> {
     /// # Returns
     /// New message with generated header
     pub fn new(content: T, device_name: &str) -> Result<Self> {
-        use crate::protocol::header::{TypeName, DeviceName, Timestamp};
+        use crate::protocol::header::{DeviceName, Timestamp, TypeName};
 
         let timestamp = Timestamp::now();
 
@@ -237,7 +237,7 @@ impl<T: Message> IgtlMessage<T> {
             let ext_header_size = ext_header.len() as u16;
 
             let mut body = Vec::with_capacity(
-                2 + ext_header.len() + content_bytes.len() + metadata_bytes.len()
+                2 + ext_header.len() + content_bytes.len() + metadata_bytes.len(),
             );
             // Extended header size (2 bytes, big-endian)
             body.extend_from_slice(&ext_header_size.to_be_bytes());
@@ -319,8 +319,8 @@ impl<T: Message> IgtlMessage<T> {
     /// # Ok::<(), openigtlink_rust::error::IgtlError>(())
     /// ```
     pub fn decode_with_options(data: &[u8], verify_crc: bool) -> Result<Self> {
-        use crate::protocol::crc::calculate_crc;
         use crate::error::IgtlError;
+        use crate::protocol::crc::calculate_crc;
 
         if data.len() < Header::SIZE {
             return Err(IgtlError::InvalidSize {
@@ -357,29 +357,30 @@ impl<T: Message> IgtlMessage<T> {
         }
 
         // 4. Parse body based on version
-        let (extended_header, remaining_bytes, has_ext_header_field) = if header.version >= 3 && body_bytes.len() >= 2 {
-            // Try to parse as Version 3 with extended header
-            let ext_header_size = u16::from_be_bytes([body_bytes[0], body_bytes[1]]) as usize;
+        let (extended_header, remaining_bytes, has_ext_header_field) =
+            if header.version >= 3 && body_bytes.len() >= 2 {
+                // Try to parse as Version 3 with extended header
+                let ext_header_size = u16::from_be_bytes([body_bytes[0], body_bytes[1]]) as usize;
 
-            if ext_header_size > 0 && body_bytes.len() >= 2 + ext_header_size {
-                // Version 3 with non-empty extended header
-                let ext_header_data = body_bytes[2..2 + ext_header_size].to_vec();
-                let content_start = 2 + ext_header_size;
-                (Some(ext_header_data), &body_bytes[content_start..], true)
-            } else if ext_header_size == 0 && body_bytes.len() >= 2 {
-                // Version 3 with empty extended header (size field = 0)
-                (Some(Vec::new()), &body_bytes[2..], true)
+                if ext_header_size > 0 && body_bytes.len() >= 2 + ext_header_size {
+                    // Version 3 with non-empty extended header
+                    let ext_header_data = body_bytes[2..2 + ext_header_size].to_vec();
+                    let content_start = 2 + ext_header_size;
+                    (Some(ext_header_data), &body_bytes[content_start..], true)
+                } else if ext_header_size == 0 && body_bytes.len() >= 2 {
+                    // Version 3 with empty extended header (size field = 0)
+                    (Some(Vec::new()), &body_bytes[2..], true)
+                } else {
+                    // Invalid extended header size
+                    return Err(IgtlError::InvalidSize {
+                        expected: 2 + ext_header_size,
+                        actual: body_bytes.len(),
+                    });
+                }
             } else {
-                // Invalid extended header size
-                return Err(IgtlError::InvalidSize {
-                    expected: 2 + ext_header_size,
-                    actual: body_bytes.len(),
-                });
-            }
-        } else {
-            // Version 2 - entire body is content
-            (None, body_bytes, false)
-        };
+                // Version 2 - entire body is content
+                (None, body_bytes, false)
+            };
 
         // 5. Try to determine content size and parse metadata (Version 3 only)
         let (content_bytes, metadata) = if header.version >= 3 && has_ext_header_field {
@@ -407,7 +408,9 @@ impl<T: Message> IgtlMessage<T> {
                         (remaining_bytes, None)
                     }
                 }
-                Err(IgtlError::InvalidSize { expected, .. }) if remaining_bytes.len() > expected => {
+                Err(IgtlError::InvalidSize { expected, .. })
+                    if remaining_bytes.len() > expected =>
+                {
                     // Content decode failed due to size mismatch (fixed-size message with metadata)
                     // This means we have: Content (expected bytes) + Metadata (rest)
                     let content_part = &remaining_bytes[..expected];
@@ -512,7 +515,7 @@ impl<T: Message> IgtlMessage<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::protocol::types::{TransformMessage, StatusMessage, CapabilityMessage};
+    use crate::protocol::types::{CapabilityMessage, StatusMessage, TransformMessage};
 
     // Mock message type for testing
     struct TestMessage {
@@ -628,7 +631,10 @@ mod tests {
 
         // Should fail CRC check
         let result = IgtlMessage::<TransformMessage>::decode(&encoded);
-        assert!(matches!(result, Err(crate::error::IgtlError::CrcMismatch { .. })));
+        assert!(matches!(
+            result,
+            Err(crate::error::IgtlError::CrcMismatch { .. })
+        ));
     }
 
     #[test]
@@ -646,7 +652,10 @@ mod tests {
     fn test_decode_short_buffer() {
         let short_data = vec![0u8; 30];
         let result = IgtlMessage::<TransformMessage>::decode(&short_data);
-        assert!(matches!(result, Err(crate::error::IgtlError::InvalidSize { .. })));
+        assert!(matches!(
+            result,
+            Err(crate::error::IgtlError::InvalidSize { .. })
+        ));
     }
 
     // Version 3 Extended Header Tests
@@ -797,7 +806,10 @@ mod tests {
 
         // Should fail CRC check
         let result = IgtlMessage::<TransformMessage>::decode(&encoded);
-        assert!(matches!(result, Err(crate::error::IgtlError::CrcMismatch { .. })));
+        assert!(matches!(
+            result,
+            Err(crate::error::IgtlError::CrcMismatch { .. })
+        ));
     }
 
     #[test]
@@ -896,7 +908,10 @@ mod tests {
         // Verify metadata
         let decoded_metadata = decoded.get_metadata().unwrap();
         assert_eq!(decoded_metadata.get("priority"), Some(&"high".to_string()));
-        assert_eq!(decoded_metadata.get("timestamp"), Some(&"123456".to_string()));
+        assert_eq!(
+            decoded_metadata.get("timestamp"),
+            Some(&"123456".to_string())
+        );
 
         // Verify content
         assert_eq!(decoded.content, transform);
@@ -990,10 +1005,14 @@ mod tests {
 
         // Should fail with CRC verification enabled
         let result_with_crc = IgtlMessage::<TransformMessage>::decode_with_options(&encoded, true);
-        assert!(matches!(result_with_crc, Err(crate::error::IgtlError::CrcMismatch { .. })));
+        assert!(matches!(
+            result_with_crc,
+            Err(crate::error::IgtlError::CrcMismatch { .. })
+        ));
 
         // Should succeed with CRC verification disabled (even with corrupted data)
-        let result_without_crc = IgtlMessage::<TransformMessage>::decode_with_options(&encoded, false);
+        let result_without_crc =
+            IgtlMessage::<TransformMessage>::decode_with_options(&encoded, false);
         assert!(result_without_crc.is_ok());
     }
 
@@ -1009,7 +1028,10 @@ mod tests {
 
         // Default decode() should verify CRC and fail
         let result = IgtlMessage::<TransformMessage>::decode(&encoded);
-        assert!(matches!(result, Err(crate::error::IgtlError::CrcMismatch { .. })));
+        assert!(matches!(
+            result,
+            Err(crate::error::IgtlError::CrcMismatch { .. })
+        ));
     }
 
     #[test]
@@ -1021,8 +1043,10 @@ mod tests {
         let encoded = msg.encode().unwrap();
 
         // Both should decode to the same content (when data is not corrupted)
-        let decoded_with_crc = IgtlMessage::<StatusMessage>::decode_with_options(&encoded, true).unwrap();
-        let decoded_without_crc = IgtlMessage::<StatusMessage>::decode_with_options(&encoded, false).unwrap();
+        let decoded_with_crc =
+            IgtlMessage::<StatusMessage>::decode_with_options(&encoded, true).unwrap();
+        let decoded_without_crc =
+            IgtlMessage::<StatusMessage>::decode_with_options(&encoded, false).unwrap();
 
         assert_eq!(decoded_with_crc.content, decoded_without_crc.content);
         assert_eq!(decoded_with_crc.content, status);
@@ -1038,7 +1062,8 @@ mod tests {
         let encoded = msg.encode().unwrap();
 
         // Should work with CRC disabled
-        let decoded = IgtlMessage::<TransformMessage>::decode_with_options(&encoded, false).unwrap();
+        let decoded =
+            IgtlMessage::<TransformMessage>::decode_with_options(&encoded, false).unwrap();
         assert_eq!(decoded.header.version, 3);
         let expected: &[u8] = &[0x01, 0x02, 0x03, 0x04];
         assert_eq!(decoded.get_extended_header(), Some(expected));

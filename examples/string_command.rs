@@ -28,10 +28,7 @@ fn run() -> Result<()> {
     println!("=== STRING Message: Device Command & Control ===\n");
 
     // Connect to server
-    let mut client = ClientBuilder::new()
-        .tcp("127.0.0.1:18944")
-        .sync()
-        .build()?;
+    let mut client = ClientBuilder::new().tcp("127.0.0.1:18944").sync().build()?;
     println!("[INFO] Connected to OpenIGTLink server\n");
 
     // Scenario 1: System lifecycle commands
@@ -54,11 +51,7 @@ fn run() -> Result<()> {
     println!("\n[SCENARIO 2] Configuration Commands");
     println!("  Setting device parameters...\n");
 
-    send_command(
-        &mut client,
-        "SET_GAIN 75",
-        "Adjust image gain to 75%",
-    )?;
+    send_command(&mut client, "SET_GAIN 75", "Adjust image gain to 75%")?;
     thread::sleep(Duration::from_millis(500));
 
     send_command(

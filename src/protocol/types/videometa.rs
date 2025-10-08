@@ -3,8 +3,8 @@
 //! The VIDEOMETA message is used to transfer video stream metadata such as
 //! codec parameters, framerate, and bitrate information.
 
-use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};
+use crate::protocol::message::Message;
 use bytes::{Buf, BufMut};
 
 use super::video::CodecType;
@@ -31,13 +31,7 @@ pub struct VideoMetaMessage {
 
 impl VideoMetaMessage {
     /// Create a new VIDEOMETA message
-    pub fn new(
-        codec: CodecType,
-        width: u16,
-        height: u16,
-        framerate: u8,
-        bitrate: u32,
-    ) -> Self {
+    pub fn new(codec: CodecType, width: u16, height: u16, framerate: u8, bitrate: u32) -> Self {
         VideoMetaMessage {
             codec,
             width,

@@ -17,8 +17,8 @@ use openigtlink_rust::error::Result;
 use openigtlink_rust::io::{ClientBuilder, SyncIgtlClient};
 use openigtlink_rust::protocol::message::IgtlMessage;
 use openigtlink_rust::protocol::types::{
-    CapabilityMessage, GetCapabilityMessage, RtsTDataMessage, StartTDataMessage,
-    StopTDataMessage, TDataMessage,
+    CapabilityMessage, GetCapabilityMessage, RtsTDataMessage, StartTDataMessage, StopTDataMessage,
+    TDataMessage,
 };
 use std::env;
 
@@ -40,16 +40,16 @@ fn run() -> Result<()> {
 
     // Connect to server
     println!("[1] Connecting to {}...", server_addr);
-    let mut client = ClientBuilder::new()
-        .tcp(&server_addr)
-        .sync()
-        .build()?;
+    let mut client = ClientBuilder::new().tcp(&server_addr).sync().build()?;
     println!("    ✓ Connected\n");
 
     // Helper Pattern 1: Request server capabilities
     println!("[2] Requesting server capabilities...");
     let capability = request_capability(&mut client)?;
-    println!("    ✓ Server supports {} message types:", capability.types.len());
+    println!(
+        "    ✓ Server supports {} message types:",
+        capability.types.len()
+    );
     for (i, msg_type) in capability.types.iter().enumerate() {
         println!("      {}. {}", i + 1, msg_type);
     }

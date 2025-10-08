@@ -370,8 +370,7 @@ mod tests {
         let data = vec![0u8; 10000];
 
         let fast = compress(&data, CompressionType::Deflate, CompressionLevel::Fast).unwrap();
-        let default =
-            compress(&data, CompressionType::Deflate, CompressionLevel::Default).unwrap();
+        let default = compress(&data, CompressionType::Deflate, CompressionLevel::Default).unwrap();
         let best = compress(&data, CompressionType::Deflate, CompressionLevel::Best).unwrap();
 
         // Best should be smallest (or equal for highly compressible data)
@@ -411,8 +410,12 @@ mod tests {
 
     #[test]
     fn test_compression_stats() {
-        let stats =
-            CompressionStats::calculate(1000, 500, CompressionType::Deflate, CompressionLevel::Default);
+        let stats = CompressionStats::calculate(
+            1000,
+            500,
+            CompressionType::Deflate,
+            CompressionLevel::Default,
+        );
 
         assert_eq!(stats.original_size, 1000);
         assert_eq!(stats.compressed_size, 500);

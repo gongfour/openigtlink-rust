@@ -92,10 +92,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             image_msg.content.size[2],
                             image_msg.content.scalar_type
                         );
-                        println!(
-                            "  Data size: {} bytes",
-                            image_msg.content.data.len()
-                        );
+                        println!("  Data size: {} bytes", image_msg.content.data.len());
                     }
                     AnyMessage::Position(position_msg) => {
                         println!(
@@ -113,10 +110,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         );
                     }
                     AnyMessage::String(string_msg) => {
-                        println!(
-                            "  String encoding: {}",
-                            string_msg.content.encoding as u16
-                        );
+                        println!("  String encoding: {}", string_msg.content.encoding as u16);
                         println!("  Content: '{}'", string_msg.content.string);
                     }
                     AnyMessage::Capability(capability_msg) => {
@@ -137,7 +131,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 if i >= 9 {
                                     // Limit display to first 10 values
                                     if sensor_msg.content.data.len() > 10 {
-                                        print!(", ... ({} more)", sensor_msg.content.data.len() - 10);
+                                        print!(
+                                            ", ... ({} more)",
+                                            sensor_msg.content.data.len() - 10
+                                        );
                                     }
                                     break;
                                 }

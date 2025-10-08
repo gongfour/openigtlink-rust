@@ -3,8 +3,8 @@
 //! The POLYDATA message is used to transfer 3D polygon/mesh data for surgical navigation,
 //! visualization of anatomical structures, or surgical planning.
 
-use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};
+use crate::protocol::message::Message;
 use bytes::{Buf, BufMut};
 
 /// Attribute type for polygon data
@@ -323,8 +323,7 @@ mod tests {
     #[test]
     fn test_with_polygons() {
         let points = vec![[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
-        let poly = PolyDataMessage::new(points)
-            .with_polygons(vec![3, 0, 1, 2]); // Triangle with 3 vertices
+        let poly = PolyDataMessage::new(points).with_polygons(vec![3, 0, 1, 2]); // Triangle with 3 vertices
 
         assert_eq!(poly.polygons, vec![3, 0, 1, 2]);
     }
@@ -334,12 +333,7 @@ mod tests {
         let points = vec![[0.0, 0.0, 0.0]];
         let mut poly = PolyDataMessage::new(points);
 
-        let attr = Attribute::new(
-            AttributeType::Point,
-            3,
-            "Normals",
-            vec![0.0, 0.0, 1.0],
-        );
+        let attr = Attribute::new(AttributeType::Point, 3, "Normals", vec![0.0, 0.0, 1.0]);
         poly.add_attribute(attr);
 
         assert_eq!(poly.attributes.len(), 1);
@@ -373,12 +367,9 @@ mod tests {
 
     #[test]
     fn test_roundtrip_with_polygons() {
-        let original = PolyDataMessage::new(vec![
-            [0.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0],
-        ])
-        .with_polygons(vec![3, 0, 1, 2]);
+        let original =
+            PolyDataMessage::new(vec![[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
+                .with_polygons(vec![3, 0, 1, 2]);
 
         let encoded = original.encode_content().unwrap();
         let decoded = PolyDataMessage::decode_content(&encoded).unwrap();

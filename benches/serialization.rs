@@ -7,10 +7,7 @@
 //! Use examples/performance_test.rs for real network performance testing.
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use openigtlink_rust::protocol::{
-    message::IgtlMessage,
-    types::StatusMessage,
-};
+use openigtlink_rust::protocol::{message::IgtlMessage, types::StatusMessage};
 
 fn bench_status_serialization(c: &mut Criterion) {
     c.bench_function("status_message_serialize", |b| {
@@ -38,6 +35,10 @@ fn bench_batch_serialization(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, bench_status_serialization, bench_batch_serialization);
+criterion_group!(
+    benches,
+    bench_status_serialization,
+    bench_batch_serialization
+);
 
 criterion_main!(benches);

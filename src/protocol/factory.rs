@@ -159,9 +159,11 @@ impl MessageFactory {
             "GET_STATUS" => Ok(AnyMessage::GetStatus(
                 IgtlMessage::<GetStatusMessage>::decode_with_options(&full_msg, false)?,
             )),
-            "GET_CAPABIL" => Ok(AnyMessage::GetCapability(
-                IgtlMessage::<GetCapabilityMessage>::decode_with_options(&full_msg, false)?,
-            )),
+            "GET_CAPABIL" => Ok(AnyMessage::GetCapability(IgtlMessage::<
+                GetCapabilityMessage,
+            >::decode_with_options(
+                &full_msg, false
+            )?)),
             "GET_IMAGE" => Ok(AnyMessage::GetImage(
                 IgtlMessage::<GetImageMessage>::decode_with_options(&full_msg, false)?,
             )),
@@ -185,9 +187,11 @@ impl MessageFactory {
             "RTS_STATUS" => Ok(AnyMessage::RtsStatus(
                 IgtlMessage::<RtsStatusMessage>::decode_with_options(&full_msg, false)?,
             )),
-            "RTS_CAPABIL" => Ok(AnyMessage::RtsCapability(
-                IgtlMessage::<RtsCapabilityMessage>::decode_with_options(&full_msg, false)?,
-            )),
+            "RTS_CAPABIL" => Ok(AnyMessage::RtsCapability(IgtlMessage::<
+                RtsCapabilityMessage,
+            >::decode_with_options(
+                &full_msg, false
+            )?)),
             "RTS_IMAGE" => Ok(AnyMessage::RtsImage(
                 IgtlMessage::<RtsImageMessage>::decode_with_options(&full_msg, false)?,
             )),
@@ -199,9 +203,11 @@ impl MessageFactory {
             "STT_TDATA" => Ok(AnyMessage::StartTData(
                 IgtlMessage::<StartTDataMessage>::decode_with_options(&full_msg, false)?,
             )),
-            "STP_TRANS" => Ok(AnyMessage::StopTransform(
-                IgtlMessage::<StopTransformMessage>::decode_with_options(&full_msg, false)?,
-            )),
+            "STP_TRANS" => Ok(AnyMessage::StopTransform(IgtlMessage::<
+                StopTransformMessage,
+            >::decode_with_options(
+                &full_msg, false
+            )?)),
             "STP_POSITION" => Ok(AnyMessage::StopPosition(
                 IgtlMessage::<StopPositionMessage>::decode_with_options(&full_msg, false)?,
             )),
@@ -276,7 +282,7 @@ mod tests {
     #[test]
     fn test_factory_unknown_type() {
         // Create a header with unknown type
-        use crate::protocol::header::{DeviceName, TypeName, Timestamp};
+        use crate::protocol::header::{DeviceName, Timestamp, TypeName};
 
         let header = Header {
             version: 2,

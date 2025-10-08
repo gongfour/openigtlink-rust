@@ -64,8 +64,8 @@
 //! # Ok::<(), openigtlink_rust::IgtlError>(())
 //! ```
 
-use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};
+use crate::protocol::message::Message;
 use bytes::{Buf, BufMut};
 
 /// Image scalar type
@@ -135,8 +135,8 @@ impl Endian {
 /// Coordinate system type
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CoordinateSystem {
-    RAS = 1,  // Right-Anterior-Superior (common in medical imaging)
-    LPS = 2,  // Left-Posterior-Superior
+    RAS = 1, // Right-Anterior-Superior (common in medical imaging)
+    LPS = 2, // Left-Posterior-Superior
 }
 
 impl CoordinateSystem {
@@ -157,7 +157,7 @@ impl CoordinateSystem {
 ///
 /// # OpenIGTLink Specification
 /// - Message type: "IMAGE"
-/// - Header: VERSION (uint16) + NUM_COMPONENTS (uint8) + SCALAR_TYPE (uint8) + ENDIAN (uint8) + COORD (uint8) + SIZE (uint16[3]) + MATRIX (float32[12])
+/// - Header: VERSION (uint16) + NUM_COMPONENTS (uint8) + SCALAR_TYPE (uint8) + ENDIAN (uint8) + COORD (uint8) + SIZE (`uint16[3]`) + MATRIX (`float32[12]`)
 /// - Header size: 2 + 1 + 1 + 1 + 1 + 6 + 48 = 60 bytes
 /// - Followed by image data
 #[derive(Debug, Clone, PartialEq)]
@@ -182,14 +182,13 @@ pub struct ImageMessage {
 
 impl ImageMessage {
     /// Create a new IMAGE message
-    pub fn new(
-        scalar_type: ImageScalarType,
-        size: [u16; 3],
-        data: Vec<u8>,
-    ) -> Result<Self> {
+    pub fn new(scalar_type: ImageScalarType, size: [u16; 3], data: Vec<u8>) -> Result<Self> {
         let num_components = 1;
-        let expected_size = (size[0] as usize) * (size[1] as usize) * (size[2] as usize)
-            * (num_components as usize) * scalar_type.size();
+        let expected_size = (size[0] as usize)
+            * (size[1] as usize)
+            * (size[2] as usize)
+            * (num_components as usize)
+            * scalar_type.size();
 
         if data.len() != expected_size {
             return Err(IgtlError::InvalidSize {
@@ -215,14 +214,13 @@ impl ImageMessage {
     }
 
     /// Create with RGB components
-    pub fn rgb(
-        scalar_type: ImageScalarType,
-        size: [u16; 3],
-        data: Vec<u8>,
-    ) -> Result<Self> {
+    pub fn rgb(scalar_type: ImageScalarType, size: [u16; 3], data: Vec<u8>) -> Result<Self> {
         let num_components = 3;
-        let expected_size = (size[0] as usize) * (size[1] as usize) * (size[2] as usize)
-            * (num_components as usize) * scalar_type.size();
+        let expected_size = (size[0] as usize)
+            * (size[1] as usize)
+            * (size[2] as usize)
+            * (num_components as usize)
+            * scalar_type.size();
 
         if data.len() != expected_size {
             return Err(IgtlError::InvalidSize {
@@ -288,12 +286,12 @@ impl Message for ImageMessage {
         // Encode COORD (uint8)
         buf.put_u8(self.coordinate as u8);
 
-        // Encode SIZE (uint16[3])
+        // Encode SIZE (`uint16[3]`)
         for &s in &self.size {
             buf.put_u16(s);
         }
 
-        // Encode MATRIX (float32[12]) - row-major order
+        // Encode MATRIX (`float32[12]`) - row-major order
         for row in &self.matrix {
             for &val in row {
                 buf.put_f32(val);
@@ -329,10 +327,10 @@ impl Message for ImageMessage {
         // Decode COORD (uint8)
         let coordinate = CoordinateSystem::from_u8(data.get_u8())?;
 
-        // Decode SIZE (uint16[3])
+        // Decode SIZE (`uint16[3]`)
         let size = [data.get_u16(), data.get_u16(), data.get_u16()];
 
-        // Decode MATRIX (float32[12])
+        // Decode MATRIX (`float32[12]`)
         let mut matrix = [[0.0f32; 4]; 3];
         for row in &mut matrix {
             for val in row {
@@ -344,8 +342,11 @@ impl Message for ImageMessage {
         let image_data = data.to_vec();
 
         // Validate data size
-        let expected_size = (size[0] as usize) * (size[1] as usize) * (size[2] as usize)
-            * (num_components as usize) * scalar_type.size();
+        let expected_size = (size[0] as usize)
+            * (size[1] as usize)
+            * (size[2] as usize)
+            * (num_components as usize)
+            * scalar_type.size();
 
         if image_data.len() != expected_size {
             return Err(IgtlError::InvalidSize {

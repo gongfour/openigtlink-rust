@@ -132,10 +132,11 @@ impl ReconnectConfig {
     ///
     /// Uses exponential backoff with optional jitter.
     pub(crate) fn delay_for_attempt(&self, attempt: usize) -> Duration {
-        let delay_ms = self.initial_delay.as_millis() as f64
-            * self.backoff_multiplier.powi(attempt as i32);
+        let delay_ms =
+            self.initial_delay.as_millis() as f64 * self.backoff_multiplier.powi(attempt as i32);
 
-        let mut delay = Duration::from_millis(delay_ms.min(self.max_delay.as_millis() as f64) as u64);
+        let mut delay =
+            Duration::from_millis(delay_ms.min(self.max_delay.as_millis() as f64) as u64);
 
         // Add jitter if enabled (0-25% random variation)
         if self.use_jitter {

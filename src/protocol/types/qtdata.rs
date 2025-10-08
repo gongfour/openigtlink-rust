@@ -3,8 +3,8 @@
 //! The QTDATA message type is used to transfer 3D positions and orientations
 //! of surgical tools, markers, etc. using quaternions for orientation.
 
-use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};
+use crate::protocol::message::Message;
 use bytes::{Buf, BufMut};
 
 /// Instrument type
@@ -66,7 +66,7 @@ impl TrackingElement {
 ///
 /// # OpenIGTLink Specification
 /// - Message type: "QTDATA"
-/// - Each element: NAME (char[20]) + TYPE (uint8) + Reserved (uint8) + POSITION (float32[3]) + QUATERNION (float32[4])
+/// - Each element: NAME (`char[20]`) + TYPE (uint8) + Reserved (uint8) + POSITION (`float32[3]`) + QUATERNION (`float32[4]`)
 /// - Element size: 20 + 1 + 1 + 12 + 16 = 50 bytes
 #[derive(Debug, Clone, PartialEq)]
 pub struct QtDataMessage {
@@ -112,7 +112,7 @@ impl Message for QtDataMessage {
         let mut buf = Vec::with_capacity(self.elements.len() * 50);
 
         for element in &self.elements {
-            // Encode NAME (char[20])
+            // Encode NAME (`char[20]`)
             let mut name_bytes = [0u8; 20];
             let name_str = element.name.as_bytes();
             let copy_len = name_str.len().min(19); // Reserve 1 byte for null terminator
@@ -125,12 +125,12 @@ impl Message for QtDataMessage {
             // Encode Reserved (uint8)
             buf.put_u8(0);
 
-            // Encode POSITION (float32[3])
+            // Encode POSITION (`float32[3]`)
             for &coord in &element.position {
                 buf.put_f32(coord);
             }
 
-            // Encode QUATERNION (float32[4])
+            // Encode QUATERNION (`float32[4]`)
             for &comp in &element.quaternion {
                 buf.put_f32(comp);
             }
@@ -143,7 +143,7 @@ impl Message for QtDataMessage {
         let mut elements = Vec::new();
 
         while data.len() >= 50 {
-            // Decode NAME (char[20])
+            // Decode NAME (`char[20]`)
             let name_bytes = &data[..20];
             data.advance(20);
 
@@ -157,10 +157,10 @@ impl Message for QtDataMessage {
             // Decode Reserved (uint8)
             let _reserved = data.get_u8();
 
-            // Decode POSITION (float32[3])
+            // Decode POSITION (`float32[3]`)
             let position = [data.get_f32(), data.get_f32(), data.get_f32()];
 
-            // Decode QUATERNION (float32[4])
+            // Decode QUATERNION (`float32[4]`)
             let quaternion = [
                 data.get_f32(),
                 data.get_f32(),
@@ -249,7 +249,7 @@ mod tests {
         assert_eq!(encoded.len(), 50);
         // Check TYPE field
         assert_eq!(encoded[20], 2); // Instrument6D
-        // Check Reserved field
+                                    // Check Reserved field
         assert_eq!(encoded[21], 0);
     }
 

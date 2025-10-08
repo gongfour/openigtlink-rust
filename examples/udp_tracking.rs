@@ -134,7 +134,10 @@ fn test_udp_tracking() -> Result<()> {
         "  Average latency: {:.1} μs",
         total_latency.as_micros() / sent_count as u128
     );
-    println!("  Max theoretical rate: {:.0} Hz", 1_000_000.0 / (total_latency.as_micros() as f64 / sent_count as f64));
+    println!(
+        "  Max theoretical rate: {:.0} Hz",
+        1_000_000.0 / (total_latency.as_micros() as f64 / sent_count as f64)
+    );
 
     Ok(())
 }
@@ -222,9 +225,18 @@ fn compare_tcp_udp() -> Result<()> {
             / tcp_avg.as_micros() as f64)
             * 100.0;
 
-        println!("\n  UDP is {:.1}% faster than TCP (average latency)", improvement);
-        println!("  UDP max throughput: ~{:.0} Hz", 1_000_000.0 / udp_avg.as_micros() as f64);
-        println!("  TCP max throughput: ~{:.0} Hz", 1_000_000.0 / tcp_avg.as_micros() as f64);
+        println!(
+            "\n  UDP is {:.1}% faster than TCP (average latency)",
+            improvement
+        );
+        println!(
+            "  UDP max throughput: ~{:.0} Hz",
+            1_000_000.0 / udp_avg.as_micros() as f64
+        );
+        println!(
+            "  TCP max throughput: ~{:.0} Hz",
+            1_000_000.0 / tcp_avg.as_micros() as f64
+        );
     } else {
         println!("  ✗ Failed to connect (server not running?)");
         println!("  Skipping TCP benchmark");
@@ -268,7 +280,10 @@ fn test_custom_tracking(fps: usize, duration_sec: usize) -> Result<()> {
     println!("[RESULTS]");
     println!("  Frames sent: {}", total_frames);
     println!("  Actual rate: {:.2} Hz (target: {} Hz)", actual_fps, fps);
-    println!("  Timing accuracy: {:.2}%", (actual_fps / fps as f64) * 100.0);
+    println!(
+        "  Timing accuracy: {:.2}%",
+        (actual_fps / fps as f64) * 100.0
+    );
 
     Ok(())
 }

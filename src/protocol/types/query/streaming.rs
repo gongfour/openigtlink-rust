@@ -89,12 +89,10 @@ impl Message for StartTDataMessage {
 
         // Decode coordinate_name (32 bytes, null-terminated)
         let coord_bytes = &data[4..36];
-        let len = coord_bytes
-            .iter()
-            .position(|&b| b == 0)
-            .unwrap_or(32);
-        let coordinate_name = String::from_utf8(coord_bytes[..len].to_vec())
-            .map_err(|_| IgtlError::InvalidHeader("Invalid UTF-8 in coordinate name".to_string()))?;
+        let len = coord_bytes.iter().position(|&b| b == 0).unwrap_or(32);
+        let coordinate_name = String::from_utf8(coord_bytes[..len].to_vec()).map_err(|_| {
+            IgtlError::InvalidHeader("Invalid UTF-8 in coordinate name".to_string())
+        })?;
 
         Ok(Self {
             resolution,

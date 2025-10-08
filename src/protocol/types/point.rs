@@ -96,8 +96,8 @@
 //! # Ok::<(), openigtlink_rust::IgtlError>(())
 //! ```
 
-use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};
+use crate::protocol::message::Message;
 use bytes::{Buf, BufMut};
 
 /// Point/fiducial data element
@@ -119,11 +119,7 @@ pub struct PointElement {
 
 impl PointElement {
     /// Create a new point element
-    pub fn new(
-        name: impl Into<String>,
-        group: impl Into<String>,
-        position: [f32; 3],
-    ) -> Self {
+    pub fn new(name: impl Into<String>, group: impl Into<String>, position: [f32; 3]) -> Self {
         PointElement {
             name: name.into(),
             group: group.into(),
@@ -175,7 +171,7 @@ impl PointElement {
 ///
 /// # OpenIGTLink Specification
 /// - Message type: "POINT"
-/// - Each element: NAME (char[64]) + GROUP (char[32]) + RGBA (uint8[4]) + XYZ (float32[3]) + DIAMETER (float32) + OWNER (char[20])
+/// - Each element: NAME (`char[64]`) + GROUP (`char[32]`) + RGBA (`uint8[4]`) + XYZ (`float32[3]`) + DIAMETER (float32) + OWNER (`char[20]`)
 /// - Element size: 64 + 32 + 4 + 12 + 4 + 20 = 136 bytes
 #[derive(Debug, Clone, PartialEq)]
 pub struct PointMessage {
@@ -219,24 +215,24 @@ impl Message for PointMessage {
         let mut buf = Vec::with_capacity(self.points.len() * 136);
 
         for point in &self.points {
-            // Encode NAME (char[64])
+            // Encode NAME (`char[64]`)
             let mut name_bytes = [0u8; 64];
             let name_str = point.name.as_bytes();
             let copy_len = name_str.len().min(63);
             name_bytes[..copy_len].copy_from_slice(&name_str[..copy_len]);
             buf.extend_from_slice(&name_bytes);
 
-            // Encode GROUP (char[32])
+            // Encode GROUP (`char[32]`)
             let mut group_bytes = [0u8; 32];
             let group_str = point.group.as_bytes();
             let copy_len = group_str.len().min(31);
             group_bytes[..copy_len].copy_from_slice(&group_str[..copy_len]);
             buf.extend_from_slice(&group_bytes);
 
-            // Encode RGBA (uint8[4])
+            // Encode RGBA (`uint8[4]`)
             buf.extend_from_slice(&point.rgba);
 
-            // Encode XYZ (float32[3])
+            // Encode XYZ (`float32[3]`)
             for &coord in &point.position {
                 buf.put_f32(coord);
             }
@@ -244,7 +240,7 @@ impl Message for PointMessage {
             // Encode DIAMETER (float32)
             buf.put_f32(point.diameter);
 
-            // Encode OWNER (char[20])
+            // Encode OWNER (`char[20]`)
             let mut owner_bytes = [0u8; 20];
             let owner_str = point.owner.as_bytes();
             let copy_len = owner_str.len().min(19);
@@ -259,28 +255,28 @@ impl Message for PointMessage {
         let mut points = Vec::new();
 
         while data.len() >= 136 {
-            // Decode NAME (char[64])
+            // Decode NAME (`char[64]`)
             let name_bytes = &data[..64];
             data.advance(64);
             let name_len = name_bytes.iter().position(|&b| b == 0).unwrap_or(64);
             let name = String::from_utf8(name_bytes[..name_len].to_vec())?;
 
-            // Decode GROUP (char[32])
+            // Decode GROUP (`char[32]`)
             let group_bytes = &data[..32];
             data.advance(32);
             let group_len = group_bytes.iter().position(|&b| b == 0).unwrap_or(32);
             let group = String::from_utf8(group_bytes[..group_len].to_vec())?;
 
-            // Decode RGBA (uint8[4])
+            // Decode RGBA (`uint8[4]`)
             let rgba = [data.get_u8(), data.get_u8(), data.get_u8(), data.get_u8()];
 
-            // Decode XYZ (float32[3])
+            // Decode XYZ (`float32[3]`)
             let position = [data.get_f32(), data.get_f32(), data.get_f32()];
 
             // Decode DIAMETER (float32)
             let diameter = data.get_f32();
 
-            // Decode OWNER (char[20])
+            // Decode OWNER (`char[20]`)
             let owner_bytes = &data[..20];
             data.advance(20);
             let owner_len = owner_bytes.iter().position(|&b| b == 0).unwrap_or(20);
@@ -334,12 +330,8 @@ mod tests {
 
     #[test]
     fn test_point_with_color() {
-        let point = PointElement::with_color(
-            "Point1",
-            "Fiducial",
-            [255, 0, 0, 255],
-            [1.0, 2.0, 3.0],
-        );
+        let point =
+            PointElement::with_color("Point1", "Fiducial", [255, 0, 0, 255], [1.0, 2.0, 3.0]);
         assert_eq!(point.rgba, [255, 0, 0, 255]);
     }
 
@@ -430,12 +422,8 @@ mod tests {
 
     #[test]
     fn test_color_values() {
-        let point = PointElement::with_color(
-            "ColorTest",
-            "Test",
-            [128, 64, 32, 200],
-            [0.0, 0.0, 0.0],
-        );
+        let point =
+            PointElement::with_color("ColorTest", "Test", [128, 64, 32, 200], [0.0, 0.0, 0.0]);
         let msg = PointMessage::new(vec![point]);
 
         let encoded = msg.encode_content().unwrap();

@@ -82,10 +82,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// Handle a received message
-async fn handle_message(
-    msg: &AnyMessage,
-    count: usize,
-) -> Result<(), Box<dyn std::error::Error>> {
+async fn handle_message(msg: &AnyMessage, count: usize) -> Result<(), Box<dyn std::error::Error>> {
     println!(
         "📨 Message #{}: {} from '{}'",
         count,
@@ -153,8 +150,8 @@ async fn handle_message(
         AnyMessage::Sensor(sensor_msg) => {
             println!("   📊 Sensor: {} values", sensor_msg.content.data.len());
             if !sensor_msg.content.data.is_empty() {
-                let avg: f64 =
-                    sensor_msg.content.data.iter().sum::<f64>() / sensor_msg.content.data.len() as f64;
+                let avg: f64 = sensor_msg.content.data.iter().sum::<f64>()
+                    / sensor_msg.content.data.len() as f64;
                 let min = sensor_msg
                     .content
                     .data

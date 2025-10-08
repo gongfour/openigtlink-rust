@@ -28,10 +28,7 @@ fn run() -> Result<()> {
     println!("=== NDARRAY Message: Multi-Dimensional Array Transfer ===\n");
 
     // Connect to server
-    let mut client = ClientBuilder::new()
-        .tcp("127.0.0.1:18944")
-        .sync()
-        .build()?;
+    let mut client = ClientBuilder::new().tcp("127.0.0.1:18944").sync().build()?;
     println!("[INFO] Connected to OpenIGTLink server\n");
 
     // Scenario 1: 1D array (signal/waveform)
@@ -156,11 +153,15 @@ fn send_3d_lut(client: &mut SyncIgtlClient) -> Result<()> {
         }
     }
 
-    let array = NdArrayMessage::new_3d(ScalarType::Uint8, lut_size as u16, lut_size as u16, 3, data)?;
+    let array =
+        NdArrayMessage::new_3d(ScalarType::Uint8, lut_size as u16, lut_size as u16, 3, data)?;
 
     println!("  Array Properties:");
     println!("    Dimensions: 3D");
-    println!("    Size: [{}, {}, 3] (height, width, RGB)", lut_size, lut_size);
+    println!(
+        "    Size: [{}, {}, 3] (height, width, RGB)",
+        lut_size, lut_size
+    );
     println!("    Data Type: Uint8");
     println!("    Total Elements: {}", array.element_count());
     println!("    Data Size: {} bytes", array.data_size());

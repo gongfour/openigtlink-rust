@@ -80,8 +80,8 @@
 //! # Ok::<(), openigtlink_rust::IgtlError>(())
 //! ```
 
-use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};
+use crate::protocol::message::Message;
 use bytes::{Buf, BufMut};
 
 /// Instrument type for tracking data
@@ -159,11 +159,7 @@ impl TrackingDataElement {
         TrackingDataElement {
             name: name.into(),
             instrument_type,
-            matrix: [
-                [1.0, 0.0, 0.0, x],
-                [0.0, 1.0, 0.0, y],
-                [0.0, 0.0, 1.0, z],
-            ],
+            matrix: [[1.0, 0.0, 0.0, x], [0.0, 1.0, 0.0, y], [0.0, 0.0, 1.0, z]],
         }
     }
 }
@@ -172,7 +168,7 @@ impl TrackingDataElement {
 ///
 /// # OpenIGTLink Specification
 /// - Message type: "TDATA"
-/// - Each element: NAME (char[20]) + TYPE (uint8) + Reserved (uint8) + MATRIX (float32[12])
+/// - Each element: NAME (`char[20]`) + TYPE (uint8) + Reserved (uint8) + MATRIX (`float32[12]`)
 /// - Element size: 20 + 1 + 1 + 48 = 70 bytes
 #[derive(Debug, Clone, PartialEq)]
 pub struct TDataMessage {
@@ -218,7 +214,7 @@ impl Message for TDataMessage {
         let mut buf = Vec::with_capacity(self.elements.len() * 70);
 
         for element in &self.elements {
-            // Encode NAME (char[20])
+            // Encode NAME (`char[20]`)
             let mut name_bytes = [0u8; 20];
             let name_str = element.name.as_bytes();
             let copy_len = name_str.len().min(19);
@@ -231,7 +227,7 @@ impl Message for TDataMessage {
             // Encode Reserved (uint8)
             buf.put_u8(0);
 
-            // Encode MATRIX (float32[12]) - upper 3x4 portion
+            // Encode MATRIX (`float32[12]`) - upper 3x4 portion
             for row in &element.matrix {
                 for &val in row {
                     buf.put_f32(val);
@@ -246,7 +242,7 @@ impl Message for TDataMessage {
         let mut elements = Vec::new();
 
         while data.len() >= 70 {
-            // Decode NAME (char[20])
+            // Decode NAME (`char[20]`)
             let name_bytes = &data[..20];
             data.advance(20);
 
@@ -259,7 +255,7 @@ impl Message for TDataMessage {
             // Decode Reserved (uint8)
             let _reserved = data.get_u8();
 
-            // Decode MATRIX (float32[12])
+            // Decode MATRIX (`float32[12]`)
             let mut matrix = [[0.0f32; 4]; 3];
             for row in &mut matrix {
                 for val in row {
@@ -350,7 +346,7 @@ mod tests {
         assert_eq!(encoded.len(), 70);
         // Check TYPE field
         assert_eq!(encoded[20], 2); // Instrument6D
-        // Check Reserved field
+                                    // Check Reserved field
         assert_eq!(encoded[21], 0);
     }
 

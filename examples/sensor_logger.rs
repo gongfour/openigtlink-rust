@@ -40,10 +40,7 @@ fn run() -> Result<()> {
     let sensor_type = parse_sensor_type();
 
     // Connect to server
-    let mut client = ClientBuilder::new()
-        .tcp("127.0.0.1:18944")
-        .sync()
-        .build()?;
+    let mut client = ClientBuilder::new().tcp("127.0.0.1:18944").sync().build()?;
     println!("[INFO] Connected to OpenIGTLink server\n");
 
     // Execute sensor logging scenario
@@ -245,12 +242,12 @@ fn read_force_sensor(sample_num: usize) -> Vec<f64> {
     let t = sample_num as f64 * 0.01; // Time in seconds
 
     vec![
-        2.5 * (t * 2.0).sin(),           // Fx (N)
-        -1.2 * (t * 1.5).cos(),          // Fy (N)
-        5.8 + 0.5 * (t * 3.0).sin(),     // Fz (N) - mostly positive (pushing)
-        0.15 * (t * 1.0).sin(),          // Tx (Nm)
-        -0.08 * (t * 1.2).cos(),         // Ty (Nm)
-        0.22 * (t * 0.8).sin(),          // Tz (Nm)
+        2.5 * (t * 2.0).sin(),       // Fx (N)
+        -1.2 * (t * 1.5).cos(),      // Fy (N)
+        5.8 + 0.5 * (t * 3.0).sin(), // Fz (N) - mostly positive (pushing)
+        0.15 * (t * 1.0).sin(),      // Tx (Nm)
+        -0.08 * (t * 1.2).cos(),     // Ty (Nm)
+        0.22 * (t * 0.8).sin(),      // Tz (Nm)
     ]
 }
 
@@ -261,12 +258,12 @@ fn read_imu_sensor(sample_num: usize) -> Vec<f64> {
     let t = sample_num as f64 * 0.01; // Time in seconds
 
     vec![
-        0.5 * (t * 2.0).sin(),           // Ax (m/s²)
-        -0.3 * (t * 1.8).cos(),          // Ay (m/s²)
-        9.81 + 0.2 * (t * 2.5).sin(),    // Az (m/s²) - gravity + motion
-        0.1 * (t * 1.5).sin(),           // Gx (rad/s)
-        -0.05 * (t * 1.2).cos(),         // Gy (rad/s)
-        0.08 * (t * 2.0).sin(),          // Gz (rad/s)
+        0.5 * (t * 2.0).sin(),        // Ax (m/s²)
+        -0.3 * (t * 1.8).cos(),       // Ay (m/s²)
+        9.81 + 0.2 * (t * 2.5).sin(), // Az (m/s²) - gravity + motion
+        0.1 * (t * 1.5).sin(),        // Gx (rad/s)
+        -0.05 * (t * 1.2).cos(),      // Gy (rad/s)
+        0.08 * (t * 2.0).sin(),       // Gz (rad/s)
     ]
 }
 

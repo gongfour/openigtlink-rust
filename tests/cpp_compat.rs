@@ -6,7 +6,7 @@
 
 use openigtlink_rust::protocol::message::{IgtlMessage, Message};
 use openigtlink_rust::protocol::types::{
-    GetCapabilityMessage, GetStatusMessage, StartTDataMessage, StopTDataMessage, RtsTDataMessage,
+    GetCapabilityMessage, GetStatusMessage, RtsTDataMessage, StartTDataMessage, StopTDataMessage,
 };
 
 /// Test GET_CAPABIL message encoding
@@ -16,10 +16,7 @@ fn test_get_capability_encoding() {
     let igtl_msg = IgtlMessage::new(msg, "TestDevice").unwrap();
 
     // Verify message type is exactly "GET_CAPABIL" (12 bytes, null-padded)
-    assert_eq!(
-        igtl_msg.header.type_name.as_str().unwrap(),
-        "GET_CAPABIL"
-    );
+    assert_eq!(igtl_msg.header.type_name.as_str().unwrap(), "GET_CAPABIL");
 
     // Verify body size is 0 (empty message)
     assert_eq!(igtl_msg.header.body_size, 0);
@@ -35,10 +32,7 @@ fn test_get_status_encoding() {
     let igtl_msg = IgtlMessage::new(msg, "QueryClient").unwrap();
 
     // Verify message type
-    assert_eq!(
-        igtl_msg.header.type_name.as_str().unwrap(),
-        "GET_STATUS"
-    );
+    assert_eq!(igtl_msg.header.type_name.as_str().unwrap(), "GET_STATUS");
 
     // Verify empty body
     assert_eq!(igtl_msg.header.body_size, 0);
@@ -48,8 +42,8 @@ fn test_get_status_encoding() {
 #[test]
 fn test_stt_tdata_encoding() {
     let msg = StartTDataMessage {
-        resolution: 50,                      // 50ms = 0x00000032
-        coordinate_name: "RAS".to_string(),  // 32 bytes, null-padded
+        resolution: 50,                     // 50ms = 0x00000032
+        coordinate_name: "RAS".to_string(), // 32 bytes, null-padded
     };
 
     let igtl_msg = IgtlMessage::new(msg.clone(), "Tracker").unwrap();
@@ -68,7 +62,10 @@ fn test_stt_tdata_encoding() {
     assert_eq!(body[0], 0x00, "Resolution byte 0 should be 0x00");
     assert_eq!(body[1], 0x00, "Resolution byte 1 should be 0x00");
     assert_eq!(body[2], 0x00, "Resolution byte 2 should be 0x00");
-    assert_eq!(body[3], 0x32, "Resolution byte 3 should be 0x32 (50 decimal)");
+    assert_eq!(
+        body[3], 0x32,
+        "Resolution byte 3 should be 0x32 (50 decimal)"
+    );
 
     // Verify coordinate name (null-padded to 32 bytes)
     assert_eq!(body[4], b'R', "Coordinate name byte 0 should be 'R'");
@@ -188,19 +185,19 @@ fn test_rts_tdata_roundtrip() {
 fn test_message_type_length() {
     // All message types must be ≤ 12 characters (OpenIGTLink spec)
     let types = vec![
-        "GET_CAPABIL",   // 11 chars (CAPABILITY truncated)
-        "GET_STATUS",    // 10 chars
-        "GET_TRANSFOR",  // 12 chars (TRANSFORM truncated)
-        "GET_IMAGE",     // 9 chars
-        "GET_TDATA",     // 9 chars
-        "GET_POINT",     // 9 chars
-        "GET_IMGMETA",   // 11 chars
-        "GET_LBMETA",    // 10 chars
-        "STT_TDATA",     // 9 chars
-        "STP_TDATA",     // 9 chars
-        "STP_IMAGE",     // 9 chars
-        "STP_TRANSFOR",  // 12 chars
-        "RTS_TDATA",     // 9 chars
+        "GET_CAPABIL",  // 11 chars (CAPABILITY truncated)
+        "GET_STATUS",   // 10 chars
+        "GET_TRANSFOR", // 12 chars (TRANSFORM truncated)
+        "GET_IMAGE",    // 9 chars
+        "GET_TDATA",    // 9 chars
+        "GET_POINT",    // 9 chars
+        "GET_IMGMETA",  // 11 chars
+        "GET_LBMETA",   // 10 chars
+        "STT_TDATA",    // 9 chars
+        "STP_TDATA",    // 9 chars
+        "STP_IMAGE",    // 9 chars
+        "STP_TRANSFOR", // 12 chars
+        "RTS_TDATA",    // 9 chars
     ];
 
     for msg_type in types {
@@ -217,7 +214,11 @@ fn test_message_type_length() {
 #[test]
 fn test_header_size() {
     use openigtlink_rust::protocol::header::Header;
-    assert_eq!(Header::SIZE, 58, "OpenIGTLink header must be exactly 58 bytes");
+    assert_eq!(
+        Header::SIZE,
+        58,
+        "OpenIGTLink header must be exactly 58 bytes"
+    );
 }
 
 /// Test CRC calculation compatibility

@@ -3,8 +3,8 @@
 //! The IMGMETA message is used to transfer image metadata not available in IMAGE messages,
 //! such as patient information, modality, etc.
 
-use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};
+use crate::protocol::message::Message;
 use bytes::{Buf, BufMut};
 
 /// Image metadata element
@@ -81,7 +81,7 @@ impl ImageMetaElement {
 ///
 /// # OpenIGTLink Specification
 /// - Message type: "IMGMETA"
-/// - Each element: NAME (char[64]) + ID (char[20]) + MODALITY (char[32]) + PATIENT_NAME (char[64]) + PATIENT_ID (char[64]) + TIMESTAMP (uint64) + SIZE (uint16[3]) + SCALAR_TYPE (uint8) + Reserved (uint8)
+/// - Each element: NAME (`char[64]`) + ID (`char[20]`) + MODALITY (`char[32]`) + PATIENT_NAME (`char[64]`) + PATIENT_ID (`char[64]`) + TIMESTAMP (uint64) + SIZE (`uint16[3]`) + SCALAR_TYPE (uint8) + Reserved (uint8)
 /// - Element size: 64 + 20 + 32 + 64 + 64 + 8 + 6 + 1 + 1 = 260 bytes
 #[derive(Debug, Clone, PartialEq)]
 pub struct ImgMetaMessage {
@@ -125,35 +125,35 @@ impl Message for ImgMetaMessage {
         let mut buf = Vec::with_capacity(self.images.len() * 260);
 
         for img in &self.images {
-            // Encode NAME (char[64])
+            // Encode NAME (`char[64]`)
             let mut name_bytes = [0u8; 64];
             let name_str = img.name.as_bytes();
             let copy_len = name_str.len().min(63);
             name_bytes[..copy_len].copy_from_slice(&name_str[..copy_len]);
             buf.extend_from_slice(&name_bytes);
 
-            // Encode ID (char[20])
+            // Encode ID (`char[20]`)
             let mut id_bytes = [0u8; 20];
             let id_str = img.id.as_bytes();
             let copy_len = id_str.len().min(19);
             id_bytes[..copy_len].copy_from_slice(&id_str[..copy_len]);
             buf.extend_from_slice(&id_bytes);
 
-            // Encode MODALITY (char[32])
+            // Encode MODALITY (`char[32]`)
             let mut modality_bytes = [0u8; 32];
             let modality_str = img.modality.as_bytes();
             let copy_len = modality_str.len().min(31);
             modality_bytes[..copy_len].copy_from_slice(&modality_str[..copy_len]);
             buf.extend_from_slice(&modality_bytes);
 
-            // Encode PATIENT_NAME (char[64])
+            // Encode PATIENT_NAME (`char[64]`)
             let mut patient_name_bytes = [0u8; 64];
             let patient_name_str = img.patient_name.as_bytes();
             let copy_len = patient_name_str.len().min(63);
             patient_name_bytes[..copy_len].copy_from_slice(&patient_name_str[..copy_len]);
             buf.extend_from_slice(&patient_name_bytes);
 
-            // Encode PATIENT_ID (char[64])
+            // Encode PATIENT_ID (`char[64]`)
             let mut patient_id_bytes = [0u8; 64];
             let patient_id_str = img.patient_id.as_bytes();
             let copy_len = patient_id_str.len().min(63);
@@ -182,31 +182,34 @@ impl Message for ImgMetaMessage {
         let mut images = Vec::new();
 
         while data.len() >= 260 {
-            // Decode NAME (char[64])
+            // Decode NAME (`char[64]`)
             let name_bytes = &data[..64];
             data.advance(64);
             let name_len = name_bytes.iter().position(|&b| b == 0).unwrap_or(64);
             let name = String::from_utf8(name_bytes[..name_len].to_vec())?;
 
-            // Decode ID (char[20])
+            // Decode ID (`char[20]`)
             let id_bytes = &data[..20];
             data.advance(20);
             let id_len = id_bytes.iter().position(|&b| b == 0).unwrap_or(20);
             let id = String::from_utf8(id_bytes[..id_len].to_vec())?;
 
-            // Decode MODALITY (char[32])
+            // Decode MODALITY (`char[32]`)
             let modality_bytes = &data[..32];
             data.advance(32);
             let modality_len = modality_bytes.iter().position(|&b| b == 0).unwrap_or(32);
             let modality = String::from_utf8(modality_bytes[..modality_len].to_vec())?;
 
-            // Decode PATIENT_NAME (char[64])
+            // Decode PATIENT_NAME (`char[64]`)
             let patient_name_bytes = &data[..64];
             data.advance(64);
-            let patient_name_len = patient_name_bytes.iter().position(|&b| b == 0).unwrap_or(64);
+            let patient_name_len = patient_name_bytes
+                .iter()
+                .position(|&b| b == 0)
+                .unwrap_or(64);
             let patient_name = String::from_utf8(patient_name_bytes[..patient_name_len].to_vec())?;
 
-            // Decode PATIENT_ID (char[64])
+            // Decode PATIENT_ID (`char[64]`)
             let patient_id_bytes = &data[..64];
             data.advance(64);
             let patient_id_len = patient_id_bytes.iter().position(|&b| b == 0).unwrap_or(64);
@@ -273,16 +276,15 @@ mod tests {
 
     #[test]
     fn test_with_patient() {
-        let elem = ImageMetaElement::new("Image1", "IMG001", "MRI")
-            .with_patient("John Doe", "P12345");
+        let elem =
+            ImageMetaElement::new("Image1", "IMG001", "MRI").with_patient("John Doe", "P12345");
         assert_eq!(elem.patient_name, "John Doe");
         assert_eq!(elem.patient_id, "P12345");
     }
 
     #[test]
     fn test_with_size() {
-        let elem = ImageMetaElement::new("Image1", "IMG001", "CT")
-            .with_size([512, 512, 128]);
+        let elem = ImageMetaElement::new("Image1", "IMG001", "CT").with_size([512, 512, 128]);
         assert_eq!(elem.size, [512, 512, 128]);
     }
 

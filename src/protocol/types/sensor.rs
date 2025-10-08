@@ -73,15 +73,15 @@
 //! # Ok::<(), openigtlink_rust::IgtlError>(())
 //! ```
 
-use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};
+use crate::protocol::message::Message;
 use bytes::{Buf, BufMut};
 
 /// SENSOR message containing sensor data array
 ///
 /// # OpenIGTLink Specification
 /// - Message type: "SENSOR"
-/// - Body format: LARRAY (uint8) + STATUS (uint8) + UNIT (uint64) + DATA (float64[LARRAY])
+/// - Body format: LARRAY (uint8) + STATUS (uint8) + UNIT (uint64) + DATA (`float64[LARRAY]`)
 /// - Max array length: 255
 #[derive(Debug, Clone, PartialEq)]
 pub struct SensorMessage {
@@ -161,7 +161,7 @@ impl Message for SensorMessage {
         // Encode UNIT (uint64)
         buf.put_u64(self.unit);
 
-        // Encode DATA (float64[LARRAY])
+        // Encode DATA (`float64[LARRAY]`)
         for &value in &self.data {
             buf.put_f64(value);
         }

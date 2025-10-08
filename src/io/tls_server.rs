@@ -135,8 +135,12 @@ impl TlsIgtlServer {
 
     // Helper: Load certificates from PEM file
     fn load_certs(path: &str) -> Result<Vec<CertificateDer<'static>>> {
-        let file = File::open(path)
-            .map_err(|e| IgtlError::Io(std::io::Error::new(e.kind(), format!("Failed to open certificate file {}: {}", path, e))))?;
+        let file = File::open(path).map_err(|e| {
+            IgtlError::Io(std::io::Error::new(
+                e.kind(),
+                format!("Failed to open certificate file {}: {}", path, e),
+            ))
+        })?;
         let mut reader = BufReader::new(file);
 
         rustls_pemfile::certs(&mut reader)
@@ -151,8 +155,12 @@ impl TlsIgtlServer {
 
     // Helper: Load private key from PEM file
     fn load_key(path: &str) -> Result<PrivateKeyDer<'static>> {
-        let file = File::open(path)
-            .map_err(|e| IgtlError::Io(std::io::Error::new(e.kind(), format!("Failed to open key file {}: {}", path, e))))?;
+        let file = File::open(path).map_err(|e| {
+            IgtlError::Io(std::io::Error::new(
+                e.kind(),
+                format!("Failed to open key file {}: {}", path, e),
+            ))
+        })?;
         let mut reader = BufReader::new(file);
 
         // Try PKCS8 first, then RSA

@@ -314,7 +314,10 @@ impl SessionManager {
                 // Read header
                 let mut header_buf = vec![0u8; Header::SIZE];
                 if reader.read_exact(&mut header_buf).await.is_err() {
-                    trace!(client_id = client_id, "Client disconnected (header read failed)");
+                    trace!(
+                        client_id = client_id,
+                        "Client disconnected (header read failed)"
+                    );
                     break;
                 }
 
@@ -427,10 +430,7 @@ impl SessionManager {
             let _ = session.send_raw(data.clone()).await;
         }
 
-        trace!(
-            client_count = client_count,
-            "Broadcast completed"
-        );
+        trace!(client_count = client_count, "Broadcast completed");
 
         Ok(())
     }
@@ -451,7 +451,11 @@ impl SessionManager {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn send_to<T: Message + Clone>(&self, client_id: ClientId, message: &T) -> Result<()> {
+    pub async fn send_to<T: Message + Clone>(
+        &self,
+        client_id: ClientId,
+        message: &T,
+    ) -> Result<()> {
         let igtl_msg = IgtlMessage::new(message.clone(), "Server")?;
         let data = igtl_msg.encode()?;
 
@@ -496,7 +500,10 @@ impl SessionManager {
         let mut clients = self.clients.write().await;
         let count = clients.len();
         clients.clear();
-        info!(disconnected_clients = count, "SessionManager shutdown complete");
+        info!(
+            disconnected_clients = count,
+            "SessionManager shutdown complete"
+        );
     }
 }
 

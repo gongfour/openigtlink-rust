@@ -163,5 +163,8 @@ fn test_builder_async_verify_crc_option() {
         .verify_crc(true);
 
     // Builder should compile and be ready to build
-    assert_eq!(std::mem::size_of_val(&builder), std::mem::size_of_val(&builder));
+    assert_eq!(
+        std::mem::size_of_val(&builder),
+        std::mem::size_of_val(&builder)
+    );
 }

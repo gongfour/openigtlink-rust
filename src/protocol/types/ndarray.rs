@@ -2,8 +2,8 @@
 //!
 //! The NDARRAY message type is used to transfer N-dimensional numerical arrays.
 
-use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};
+use crate::protocol::message::Message;
 use bytes::{Buf, BufMut};
 
 /// Scalar data type for NDARRAY
@@ -53,7 +53,7 @@ impl ScalarType {
 ///
 /// # OpenIGTLink Specification
 /// - Message type: "NDARRAY"
-/// - Body format: SCALAR_TYPE (uint8) + DIM (uint8) + SIZE (uint16[DIM]) + DATA (bytes)
+/// - Body format: SCALAR_TYPE (uint8) + DIM (uint8) + SIZE (`uint16[DIM]`) + DATA (bytes)
 /// - Data layout: Row-major order (C-style)
 #[derive(Debug, Clone, PartialEq)]
 pub struct NdArrayMessage {
@@ -76,7 +76,8 @@ impl NdArrayMessage {
         }
 
         // Calculate expected data size
-        let expected_size: usize = size.iter().map(|&s| s as usize).product::<usize>() * scalar_type.size();
+        let expected_size: usize =
+            size.iter().map(|&s| s as usize).product::<usize>() * scalar_type.size();
 
         if data.len() != expected_size {
             return Err(IgtlError::InvalidSize {
@@ -104,7 +105,13 @@ impl NdArrayMessage {
     }
 
     /// Create a 3D array
-    pub fn new_3d(scalar_type: ScalarType, dim1: u16, dim2: u16, dim3: u16, data: Vec<u8>) -> Result<Self> {
+    pub fn new_3d(
+        scalar_type: ScalarType,
+        dim1: u16,
+        dim2: u16,
+        dim3: u16,
+        data: Vec<u8>,
+    ) -> Result<Self> {
         Self::new(scalar_type, vec![dim1, dim2, dim3], data)
     }
 
@@ -146,7 +153,7 @@ impl Message for NdArrayMessage {
         // Encode DIM (uint8)
         buf.put_u8(dim as u8);
 
-        // Encode SIZE (uint16[DIM])
+        // Encode SIZE (`uint16[DIM]`)
         for &s in &self.size {
             buf.put_u16(s);
         }
@@ -172,7 +179,9 @@ impl Message for NdArrayMessage {
         let dim = data.get_u8() as usize;
 
         if dim == 0 {
-            return Err(IgtlError::InvalidHeader("Dimension cannot be zero".to_string()));
+            return Err(IgtlError::InvalidHeader(
+                "Dimension cannot be zero".to_string(),
+            ));
         }
 
         // Check we have enough data for SIZE array
@@ -190,7 +199,8 @@ impl Message for NdArrayMessage {
         }
 
         // Calculate expected data size
-        let expected_data_size: usize = size.iter().map(|&s| s as usize).product::<usize>() * scalar_type.size();
+        let expected_data_size: usize =
+            size.iter().map(|&s| s as usize).product::<usize>() * scalar_type.size();
 
         if data.len() < expected_data_size {
             return Err(IgtlError::InvalidSize {

@@ -3,8 +3,8 @@
 //! The COLORTABLE message is used to transfer color lookup tables for
 //! visualization of label images or other indexed data.
 
-use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};
+use crate::protocol::message::Message;
 use bytes::{Buf, BufMut};
 
 /// Color table entry
@@ -61,7 +61,7 @@ impl IndexType {
 ///
 /// # OpenIGTLink Specification
 /// - Message type: "COLORTABLE"
-/// - Format: INDEX_TYPE (uint8) + Reserved (uint8) + MAP (rgba[n])
+/// - Format: INDEX_TYPE (uint8) + Reserved (uint8) + MAP (`rgba[n]`)
 /// - INDEX_TYPE: 3=uint8, 5=uint16
 /// - Number of colors determined by body size
 #[derive(Debug, Clone, PartialEq)]
@@ -253,7 +253,8 @@ mod tests {
             ColorEntry::new(0, 255, 0, 255),
             ColorEntry::new(0, 0, 255, 255),
             ColorEntry::new(255, 255, 0, 255),
-        ]).unwrap();
+        ])
+        .unwrap();
 
         let encoded = original.encode_content().unwrap();
         let decoded = ColorTableMessage::decode_content(&encoded).unwrap();
@@ -271,7 +272,8 @@ mod tests {
         let original = ColorTableMessage::uint16(vec![
             ColorEntry::new(128, 128, 128, 255),
             ColorEntry::new(64, 64, 64, 128),
-        ]).unwrap();
+        ])
+        .unwrap();
 
         let encoded = original.encode_content().unwrap();
         let decoded = ColorTableMessage::decode_content(&encoded).unwrap();

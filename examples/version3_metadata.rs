@@ -76,7 +76,10 @@ fn main() -> Result<()> {
         if let Some(metadata) = decoded.get_metadata() {
             println!("  Metadata:");
             println!("    tool_id: {}", metadata.get("tool_id").unwrap());
-            println!("    tracking_quality: {}", metadata.get("tracking_quality").unwrap());
+            println!(
+                "    tracking_quality: {}",
+                metadata.get("tracking_quality").unwrap()
+            );
         }
     }
 
@@ -162,17 +165,29 @@ fn main() -> Result<()> {
             // Add tracking metadata
             msg.add_metadata("frame_id".to_string(), format!("{}", i));
             msg.add_metadata("timestamp_ms".to_string(), format!("{}", i * 1000));
-            msg.add_metadata("tracking_error_mm".to_string(), format!("{:.2}", 0.5 + i as f32 * 0.1));
+            msg.add_metadata(
+                "tracking_error_mm".to_string(),
+                format!("{:.2}", 0.5 + i as f32 * 0.1),
+            );
             msg.add_metadata("num_markers".to_string(), "4".to_string());
-            msg.add_metadata("confidence".to_string(), format!("{:.1}", 95.0 + i as f32 * 0.5));
+            msg.add_metadata(
+                "confidence".to_string(),
+                format!("{:.1}", 95.0 + i as f32 * 0.5),
+            );
 
             let encoded = msg.encode()?;
             let decoded = IgtlMessage::<TransformMessage>::decode(&encoded)?;
 
             println!("  Frame #{}:", i);
             if let Some(metadata) = decoded.get_metadata() {
-                println!("    Timestamp: {} ms", metadata.get("timestamp_ms").unwrap());
-                println!("    Tracking Error: {} mm", metadata.get("tracking_error_mm").unwrap());
+                println!(
+                    "    Timestamp: {} ms",
+                    metadata.get("timestamp_ms").unwrap()
+                );
+                println!(
+                    "    Tracking Error: {} mm",
+                    metadata.get("tracking_error_mm").unwrap()
+                );
                 println!("    Confidence: {}%", metadata.get("confidence").unwrap());
                 println!("    Message Size: {} bytes", encoded.len());
             }

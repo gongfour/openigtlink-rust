@@ -70,8 +70,8 @@
 //! # Ok::<(), openigtlink_rust::IgtlError>(())
 //! ```
 
-use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};
+use crate::protocol::message::Message;
 use bytes::{Buf, BufMut};
 
 /// Video codec type
@@ -121,12 +121,7 @@ pub struct VideoMessage {
 
 impl VideoMessage {
     /// Create a new VIDEO message
-    pub fn new(
-        codec: CodecType,
-        width: u16,
-        height: u16,
-        frame_data: Vec<u8>,
-    ) -> Self {
+    pub fn new(codec: CodecType, width: u16, height: u16, frame_data: Vec<u8>) -> Self {
         VideoMessage {
             codec,
             width,
@@ -268,12 +263,7 @@ mod tests {
 
     #[test]
     fn test_roundtrip_raw() {
-        let original = VideoMessage::new(
-            CodecType::Raw,
-            640,
-            480,
-            vec![128u8; 640 * 480 * 3],
-        );
+        let original = VideoMessage::new(CodecType::Raw, 640, 480, vec![128u8; 640 * 480 * 3]);
 
         let encoded = original.encode_content().unwrap();
         let decoded = VideoMessage::decode_content(&encoded).unwrap();

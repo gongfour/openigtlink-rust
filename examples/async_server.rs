@@ -140,8 +140,7 @@ async fn handle_client(mut socket: TcpStream, client_id: usize) -> Result<()> {
                 if let Ok(msg) = IgtlMessage::<StatusMessage>::decode(&full_msg) {
                     println!(
                         "  [#{}] STATUS received: {}",
-                        client_id,
-                        msg.content.status_string
+                        client_id, msg.content.status_string
                     );
                 }
             }
@@ -160,11 +159,7 @@ async fn handle_client(mut socket: TcpStream, client_id: usize) -> Result<()> {
 }
 
 /// Send acknowledgment message back to client
-async fn send_ack(
-    socket: &mut TcpStream,
-    client_id: usize,
-    msg_num: usize,
-) -> Result<()> {
+async fn send_ack(socket: &mut TcpStream, client_id: usize, msg_num: usize) -> Result<()> {
     let status = StatusMessage::ok(&format!(
         "Message #{} processed by async handler #{}",
         msg_num, client_id

@@ -53,14 +53,20 @@ fn main() -> Result<()> {
         msg.set_extended_header(ext_header.clone());
 
         println!("  Version: {}", msg.header.version);
-        println!("  Extended Header: {:02X?}", msg.get_extended_header().unwrap());
+        println!(
+            "  Extended Header: {:02X?}",
+            msg.get_extended_header().unwrap()
+        );
 
         let encoded = msg.encode()?;
         println!("  Total Size: {} bytes", encoded.len());
         println!("    - Header: 58 bytes");
         println!("    - ExtHdr Size Field: 2 bytes");
         println!("    - ExtHdr Data: {} bytes", ext_header.len());
-        println!("    - Content: {} bytes", encoded.len() - 58 - 2 - ext_header.len());
+        println!(
+            "    - Content: {} bytes",
+            encoded.len() - 58 - 2 - ext_header.len()
+        );
     }
 
     println!();
@@ -85,8 +91,14 @@ fn main() -> Result<()> {
 
         println!("  Decoded:");
         println!("    Version: {}", decoded.header.version);
-        println!("    ExtHdr: {:02X?}", decoded.get_extended_header().unwrap());
-        println!("    Match: {}", msg.get_extended_header() == decoded.get_extended_header());
+        println!(
+            "    ExtHdr: {:02X?}",
+            decoded.get_extended_header().unwrap()
+        );
+        println!(
+            "    Match: {}",
+            msg.get_extended_header() == decoded.get_extended_header()
+        );
     }
 
     println!();
@@ -101,7 +113,10 @@ fn main() -> Result<()> {
         msg.set_extended_header(vec![]);
 
         println!("  Version: {}", msg.header.version);
-        println!("  ExtHdr Length: {} bytes", msg.get_extended_header().unwrap().len());
+        println!(
+            "  ExtHdr Length: {} bytes",
+            msg.get_extended_header().unwrap().len()
+        );
 
         let encoded = msg.encode()?;
         let decoded = IgtlMessage::<StatusMessage>::decode(&encoded)?;
@@ -120,11 +135,17 @@ fn main() -> Result<()> {
 
         // Upgrade to Version 3
         msg.set_extended_header(vec![0x01, 0x02]);
-        println!("  After set_extended_header: Version {}", msg.header.version);
+        println!(
+            "  After set_extended_header: Version {}",
+            msg.header.version
+        );
 
         // Clear extended header (downgrades to Version 2)
         msg.clear_extended_header();
-        println!("  After clear_extended_header: Version {}", msg.header.version);
+        println!(
+            "  After clear_extended_header: Version {}",
+            msg.header.version
+        );
         println!("  ExtHdr: {:?}", msg.get_extended_header());
     }
 
@@ -146,8 +167,10 @@ fn main() -> Result<()> {
         println!("  Total Message Size: {} bytes", encoded.len());
 
         let decoded = IgtlMessage::<StatusMessage>::decode(&encoded)?;
-        println!("  Roundtrip Success: {}",
-                 decoded.get_extended_header().unwrap().len() == 1024);
+        println!(
+            "  Roundtrip Success: {}",
+            decoded.get_extended_header().unwrap().len() == 1024
+        );
     }
 
     println!();
@@ -174,8 +197,12 @@ fn main() -> Result<()> {
                 decoded.get_extended_header().unwrap()[3],
             ]);
 
-            println!("  Message #{}: Encoded {} bytes, Seq={}",
-                     seq, encoded.len(), decoded_seq);
+            println!(
+                "  Message #{}: Encoded {} bytes, Seq={}",
+                seq,
+                encoded.len(),
+                decoded_seq
+            );
         }
     }
 

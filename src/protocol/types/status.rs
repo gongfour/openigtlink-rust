@@ -4,8 +4,8 @@
 //! status of the sender. It can contain status code, subcode, error name,
 //! and a status string.
 
-use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};
+use crate::protocol::message::Message;
 use bytes::{Buf, BufMut};
 
 /// STATUS message containing device status information
@@ -107,11 +107,7 @@ impl Message for StatusMessage {
 
         // Decode status_string (null-terminated)
         let remaining = &data[cursor.position() as usize..];
-        let status_bytes: Vec<u8> = remaining
-            .iter()
-            .take_while(|&&b| b != 0)
-            .copied()
-            .collect();
+        let status_bytes: Vec<u8> = remaining.iter().take_while(|&&b| b != 0).copied().collect();
 
         let status_string = String::from_utf8(status_bytes)?;
 

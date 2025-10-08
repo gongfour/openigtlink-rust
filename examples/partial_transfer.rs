@@ -63,7 +63,10 @@ async fn main() -> Result<()> {
         let info = manager.get_transfer(transfer_id).await.unwrap();
         println!("  ✅ Transfer completed!");
         println!("  Total time: {:.2}s", info.elapsed().as_secs_f64());
-        println!("  Average speed: {:.2} MB/s", info.speed_bps() / 1_000_000.0);
+        println!(
+            "  Average speed: {:.2} MB/s",
+            info.speed_bps() / 1_000_000.0
+        );
     }
 
     println!();
@@ -349,9 +352,18 @@ async fn main() -> Result<()> {
         manager.cleanup_completed().await;
 
         println!("  After cleanup:");
-        println!("    - Transfer 1: {}", manager.get_transfer(id1).await.is_some());
-        println!("    - Transfer 2: {}", manager.get_transfer(id2).await.is_some());
-        println!("    - Transfer 3: {}", manager.get_transfer(id3).await.is_some());
+        println!(
+            "    - Transfer 1: {}",
+            manager.get_transfer(id1).await.is_some()
+        );
+        println!(
+            "    - Transfer 2: {}",
+            manager.get_transfer(id2).await.is_some()
+        );
+        println!(
+            "    - Transfer 3: {}",
+            manager.get_transfer(id3).await.is_some()
+        );
     }
 
     println!("\n✅ All examples completed successfully!");

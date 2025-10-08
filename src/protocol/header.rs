@@ -2,8 +2,8 @@
 //!
 //! The header is a fixed 58-byte structure that precedes every OpenIGTLink message.
 
-use bytes::{Buf, BufMut, BytesMut};
 use crate::error::{IgtlError, Result};
+use bytes::{Buf, BufMut, BytesMut};
 
 /// Type-safe wrapper for message type name (12 bytes, null-padded)
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -13,9 +13,10 @@ impl TypeName {
     /// Create a new TypeName from a string
     pub fn new(name: &str) -> Result<Self> {
         if name.len() > 12 {
-            return Err(IgtlError::InvalidHeader(
-                format!("Type name too long: {} bytes (max: 12)", name.len())
-            ));
+            return Err(IgtlError::InvalidHeader(format!(
+                "Type name too long: {} bytes (max: 12)",
+                name.len()
+            )));
         }
         let mut bytes = [0u8; 12];
         bytes[..name.len()].copy_from_slice(name.as_bytes());
@@ -44,9 +45,10 @@ impl DeviceName {
     /// Create a new DeviceName from a string
     pub fn new(name: &str) -> Result<Self> {
         if name.len() > 20 {
-            return Err(IgtlError::InvalidHeader(
-                format!("Device name too long: {} bytes (max: 20)", name.len())
-            ));
+            return Err(IgtlError::InvalidHeader(format!(
+                "Device name too long: {} bytes (max: 20)",
+                name.len()
+            )));
         }
         let mut bytes = [0u8; 20];
         bytes[..name.len()].copy_from_slice(name.as_bytes());
@@ -206,8 +208,8 @@ impl Timestamp {
 ///
 /// # Header Structure (all numerical values in big-endian)
 /// - Version: u16 (2 bytes)
-/// - Type: char[12] (12 bytes, null-padded)
-/// - Device Name: char[20] (20 bytes, null-padded)
+/// - Type: `char[12]` (12 bytes, null-padded)
+/// - Device Name: `char[20]` (20 bytes, null-padded)
 /// - Timestamp: u64 (8 bytes) - high 32 bits: seconds, low 32 bits: fraction
 /// - Body Size: u64 (8 bytes)
 /// - CRC: u64 (8 bytes)

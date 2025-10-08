@@ -193,9 +193,7 @@ impl AnyMessage {
             AnyMessage::StopTData(_) => "STP_TDATA",
             AnyMessage::StopImage(_) => "STP_IMAGE",
             AnyMessage::StopNdArray(_) => "STP_NDARRAY",
-            AnyMessage::Unknown { header, .. } => {
-                header.type_name.as_str().unwrap_or("UNKNOWN")
-            }
+            AnyMessage::Unknown { header, .. } => header.type_name.as_str().unwrap_or("UNKNOWN"),
         }
     }
 

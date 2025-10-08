@@ -3,8 +3,8 @@
 //! The LBMETA message is used to transfer label/segmentation metadata not available
 //! in LABEL messages, such as label names, colors, and owner information.
 
-use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};
+use crate::protocol::message::Message;
 use bytes::{Buf, BufMut};
 
 /// Label metadata element
@@ -26,11 +26,7 @@ pub struct LabelMetaElement {
 
 impl LabelMetaElement {
     /// Create a new label metadata element
-    pub fn new(
-        name: impl Into<String>,
-        id: impl Into<String>,
-        label: u8,
-    ) -> Self {
+    pub fn new(name: impl Into<String>, id: impl Into<String>, label: u8) -> Self {
         LabelMetaElement {
             name: name.into(),
             id: id.into(),
@@ -64,7 +60,7 @@ impl LabelMetaElement {
 ///
 /// # OpenIGTLink Specification
 /// - Message type: "LBMETA"
-/// - Each element: NAME (char[64]) + ID (char[20]) + LABEL (uint8) + Reserved (uint8) + RGBA (uint8[4]) + SIZE (uint16[3]) + OWNER (char[20])
+/// - Each element: NAME (`char[64]`) + ID (`char[20]`) + LABEL (uint8) + Reserved (uint8) + RGBA (`uint8[4]`) + SIZE (`uint16[3]`) + OWNER (`char[20]`)
 /// - Element size: 64 + 20 + 1 + 1 + 4 + 6 + 20 = 116 bytes
 #[derive(Debug, Clone, PartialEq)]
 pub struct LbMetaMessage {
@@ -108,14 +104,14 @@ impl Message for LbMetaMessage {
         let mut buf = Vec::with_capacity(self.labels.len() * 116);
 
         for label in &self.labels {
-            // Encode NAME (char[64])
+            // Encode NAME (`char[64]`)
             let mut name_bytes = [0u8; 64];
             let name_str = label.name.as_bytes();
             let copy_len = name_str.len().min(63);
             name_bytes[..copy_len].copy_from_slice(&name_str[..copy_len]);
             buf.extend_from_slice(&name_bytes);
 
-            // Encode ID (char[20])
+            // Encode ID (`char[20]`)
             let mut id_bytes = [0u8; 20];
             let id_str = label.id.as_bytes();
             let copy_len = id_str.len().min(19);
@@ -128,15 +124,15 @@ impl Message for LbMetaMessage {
             // Encode Reserved (uint8)
             buf.put_u8(0);
 
-            // Encode RGBA (uint8[4])
+            // Encode RGBA (`uint8[4]`)
             buf.extend_from_slice(&label.rgba);
 
-            // Encode SIZE (uint16[3])
+            // Encode SIZE (`uint16[3]`)
             for &s in &label.size {
                 buf.put_u16(s);
             }
 
-            // Encode OWNER (char[20])
+            // Encode OWNER (`char[20]`)
             let mut owner_bytes = [0u8; 20];
             let owner_str = label.owner.as_bytes();
             let copy_len = owner_str.len().min(19);
@@ -151,13 +147,13 @@ impl Message for LbMetaMessage {
         let mut labels = Vec::new();
 
         while data.len() >= 116 {
-            // Decode NAME (char[64])
+            // Decode NAME (`char[64]`)
             let name_bytes = &data[..64];
             data.advance(64);
             let name_len = name_bytes.iter().position(|&b| b == 0).unwrap_or(64);
             let name = String::from_utf8(name_bytes[..name_len].to_vec())?;
 
-            // Decode ID (char[20])
+            // Decode ID (`char[20]`)
             let id_bytes = &data[..20];
             data.advance(20);
             let id_len = id_bytes.iter().position(|&b| b == 0).unwrap_or(20);
@@ -169,13 +165,13 @@ impl Message for LbMetaMessage {
             // Decode Reserved (uint8)
             let _reserved = data.get_u8();
 
-            // Decode RGBA (uint8[4])
+            // Decode RGBA (`uint8[4]`)
             let rgba = [data.get_u8(), data.get_u8(), data.get_u8(), data.get_u8()];
 
-            // Decode SIZE (uint16[3])
+            // Decode SIZE (`uint16[3]`)
             let size = [data.get_u16(), data.get_u16(), data.get_u16()];
 
-            // Decode OWNER (char[20])
+            // Decode OWNER (`char[20]`)
             let owner_bytes = &data[..20];
             data.advance(20);
             let owner_len = owner_bytes.iter().position(|&b| b == 0).unwrap_or(20);
@@ -229,15 +225,13 @@ mod tests {
 
     #[test]
     fn test_with_rgba() {
-        let elem = LabelMetaElement::new("Heart", "LBL002", 2)
-            .with_rgba([255, 0, 0, 255]);
+        let elem = LabelMetaElement::new("Heart", "LBL002", 2).with_rgba([255, 0, 0, 255]);
         assert_eq!(elem.rgba, [255, 0, 0, 255]);
     }
 
     #[test]
     fn test_with_size() {
-        let elem = LabelMetaElement::new("Kidney", "LBL003", 3)
-            .with_size([256, 256, 100]);
+        let elem = LabelMetaElement::new("Kidney", "LBL003", 3).with_size([256, 256, 100]);
         assert_eq!(elem.size, [256, 256, 100]);
     }
 
@@ -259,12 +253,10 @@ mod tests {
 
     #[test]
     fn test_roundtrip() {
-        let original = LbMetaMessage::new(vec![
-            LabelMetaElement::new("Liver", "LBL001", 1)
-                .with_rgba([139, 69, 19, 255])
-                .with_size([512, 512, 200])
-                .with_owner("CT001"),
-        ]);
+        let original = LbMetaMessage::new(vec![LabelMetaElement::new("Liver", "LBL001", 1)
+            .with_rgba([139, 69, 19, 255])
+            .with_size([512, 512, 200])
+            .with_owner("CT001")]);
 
         let encoded = original.encode_content().unwrap();
         let decoded = LbMetaMessage::decode_content(&encoded).unwrap();
@@ -281,12 +273,9 @@ mod tests {
     #[test]
     fn test_roundtrip_multiple() {
         let original = LbMetaMessage::new(vec![
-            LabelMetaElement::new("Liver", "LBL001", 1)
-                .with_rgba([139, 69, 19, 255]),
-            LabelMetaElement::new("Heart", "LBL002", 2)
-                .with_rgba([255, 0, 0, 255]),
-            LabelMetaElement::new("Kidney", "LBL003", 3)
-                .with_rgba([0, 255, 0, 255]),
+            LabelMetaElement::new("Liver", "LBL001", 1).with_rgba([139, 69, 19, 255]),
+            LabelMetaElement::new("Heart", "LBL002", 2).with_rgba([255, 0, 0, 255]),
+            LabelMetaElement::new("Kidney", "LBL003", 3).with_rgba([0, 255, 0, 255]),
         ]);
 
         let encoded = original.encode_content().unwrap();

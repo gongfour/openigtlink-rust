@@ -59,7 +59,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             drop(server);
 
             if round < 2 {
-                println!("[Server] Round {}: Shutting down (simulating failure)...\n", round);
+                println!(
+                    "[Server] Round {}: Shutting down (simulating failure)...\n",
+                    round
+                );
                 tokio::time::sleep(Duration::from_millis(500)).await;
             } else {
                 println!("[Server] Round {}: Completed\n", round);

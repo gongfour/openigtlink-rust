@@ -3,15 +3,15 @@
 //! The STRING message type is used for transferring character strings.
 //! It supports strings up to 65535 bytes with configurable character encoding.
 
-use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};
+use crate::protocol::message::Message;
 use bytes::{Buf, BufMut};
 
 /// STRING message containing a text string with encoding information
 ///
 /// # OpenIGTLink Specification
 /// - Message type: "STRING"
-/// - Body format: ENCODING (uint16) + LENGTH (uint16) + STRING (uint8[LENGTH])
+/// - Body format: ENCODING (uint16) + LENGTH (uint16) + STRING (`uint8[LENGTH]`)
 /// - Encoding: MIBenum value (default: 3 = US-ASCII)
 /// - Max length: 65535 bytes
 #[derive(Debug, Clone, PartialEq)]

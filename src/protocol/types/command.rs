@@ -3,8 +3,8 @@
 //! The COMMAND message type is used to transfer command strings structured in XML.
 //! It provides command ID and name fields for referencing messages.
 
-use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};
+use crate::protocol::message::Message;
 use bytes::{Buf, BufMut};
 
 /// Size of command name field
@@ -14,7 +14,7 @@ const COMMAND_NAME_SIZE: usize = 20;
 ///
 /// # OpenIGTLink Specification
 /// - Message type: "COMMAND"
-/// - Body format: COMMAND_ID (uint32) + COMMAND_NAME (char[20]) + ENCODING (uint16) + LENGTH (uint32) + COMMAND (uint8[LENGTH])
+/// - Body format: COMMAND_ID (uint32) + COMMAND_NAME (`char[20]`) + ENCODING (uint16) + LENGTH (uint32) + COMMAND (`uint8[LENGTH]`)
 /// - Character encoding: MIBenum value (default: 3 = US-ASCII)
 #[derive(Debug, Clone, PartialEq)]
 pub struct CommandMessage {
@@ -36,7 +36,11 @@ pub struct CommandMessage {
 
 impl CommandMessage {
     /// Create a new COMMAND message with US-ASCII encoding
-    pub fn new(command_id: u32, command_name: impl Into<String>, command: impl Into<String>) -> Self {
+    pub fn new(
+        command_id: u32,
+        command_name: impl Into<String>,
+        command: impl Into<String>,
+    ) -> Self {
         CommandMessage {
             command_id,
             command_name: command_name.into(),
@@ -46,7 +50,11 @@ impl CommandMessage {
     }
 
     /// Create a COMMAND message with UTF-8 encoding
-    pub fn utf8(command_id: u32, command_name: impl Into<String>, command: impl Into<String>) -> Self {
+    pub fn utf8(
+        command_id: u32,
+        command_name: impl Into<String>,
+        command: impl Into<String>,
+    ) -> Self {
         CommandMessage {
             command_id,
             command_name: command_name.into(),
@@ -90,7 +98,7 @@ impl Message for CommandMessage {
         // Encode COMMAND_ID (uint32)
         buf.put_u32(self.command_id);
 
-        // Encode COMMAND_NAME (char[20])
+        // Encode COMMAND_NAME (`char[20]`)
         let mut name_bytes = [0u8; COMMAND_NAME_SIZE];
         let name_str = self.command_name.as_bytes();
         let copy_len = name_str.len().min(COMMAND_NAME_SIZE - 1);
@@ -120,11 +128,14 @@ impl Message for CommandMessage {
         // Decode COMMAND_ID
         let command_id = data.get_u32();
 
-        // Decode COMMAND_NAME (char[20])
+        // Decode COMMAND_NAME (`char[20]`)
         let name_bytes = &data[..COMMAND_NAME_SIZE];
         data.advance(COMMAND_NAME_SIZE);
 
-        let name_len = name_bytes.iter().position(|&b| b == 0).unwrap_or(COMMAND_NAME_SIZE);
+        let name_len = name_bytes
+            .iter()
+            .position(|&b| b == 0)
+            .unwrap_or(COMMAND_NAME_SIZE);
         let command_name = String::from_utf8(name_bytes[..name_len].to_vec())?;
 
         // Decode ENCODING
@@ -196,13 +207,19 @@ mod tests {
         let encoded = msg.encode_content().unwrap();
 
         // Check command ID (first 4 bytes)
-        assert_eq!(u32::from_be_bytes([encoded[0], encoded[1], encoded[2], encoded[3]]), 100);
+        assert_eq!(
+            u32::from_be_bytes([encoded[0], encoded[1], encoded[2], encoded[3]]),
+            100
+        );
 
         // Check encoding field (at offset 4 + 20 = 24)
         assert_eq!(u16::from_be_bytes([encoded[24], encoded[25]]), 3);
 
         // Check length field (at offset 26)
-        assert_eq!(u32::from_be_bytes([encoded[26], encoded[27], encoded[28], encoded[29]]), 2);
+        assert_eq!(
+            u32::from_be_bytes([encoded[26], encoded[27], encoded[28], encoded[29]]),
+            2
+        );
     }
 
     #[test]
@@ -219,7 +236,8 @@ mod tests {
 
     #[test]
     fn test_roundtrip_xml() {
-        let xml = r#"<?xml version="1.0" encoding="UTF-8"?><command><action>start</action></command>"#;
+        let xml =
+            r#"<?xml version="1.0" encoding="UTF-8"?><command><action>start</action></command>"#;
         let original = CommandMessage::new(1, "XML_CMD", xml);
         let encoded = original.encode_content().unwrap();
         let decoded = CommandMessage::decode_content(&encoded).unwrap();
@@ -266,7 +284,7 @@ mod tests {
     #[test]
     fn test_decode_truncated_command() {
         let mut data = vec![0u8; 30]; // Header only
-        // Set LENGTH to 10 at offset 26
+                                      // Set LENGTH to 10 at offset 26
         data[26..30].copy_from_slice(&10u32.to_be_bytes());
         // But don't provide the 10 bytes of command data
 

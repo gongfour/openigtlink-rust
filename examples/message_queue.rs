@@ -11,7 +11,7 @@
 use openigtlink_rust::error::Result;
 use openigtlink_rust::io::message_queue::{MessageQueue, QueueConfig};
 use openigtlink_rust::protocol::message::IgtlMessage;
-use openigtlink_rust::protocol::types::{TransformMessage, StatusMessage};
+use openigtlink_rust::protocol::types::{StatusMessage, TransformMessage};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -147,7 +147,7 @@ async fn main() -> Result<()> {
                 tokio::time::sleep(Duration::from_millis(10)).await;
 
                 match producer_queue.enqueue(data).await {
-                    Ok(_) => {},
+                    Ok(_) => {}
                     Err(_) => println!("    Producer: Queue full, waiting..."),
                 }
             }
@@ -254,8 +254,8 @@ async fn main() -> Result<()> {
             let mut blocked_count = 0;
             for i in 0..50 {
                 let transform = TransformMessage::identity();
-                let msg = IgtlMessage::new(transform, "FastProducer")
-                    .expect("Failed to create message");
+                let msg =
+                    IgtlMessage::new(transform, "FastProducer").expect("Failed to create message");
                 let data = msg.encode().expect("Failed to encode");
 
                 loop {

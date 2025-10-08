@@ -3,8 +3,8 @@
 //! The TRAJECTORY message type is used to transfer information about 3D trajectories,
 //! often used for surgical planning and guidance.
 
-use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};
+use crate::protocol::message::Message;
 use bytes::{Buf, BufMut};
 
 /// Trajectory type
@@ -133,7 +133,7 @@ impl TrajectoryElement {
 ///
 /// # OpenIGTLink Specification
 /// - Message type: "TRAJ"
-/// - Each element: NAME (char[64]) + GROUP_NAME (char[32]) + TYPE (uint8) + Reserved (uint8) + RGBA (uint8[4]) + Entry (float32[3]) + Target (float32[3]) + DIAMETER (float32) + OWNER_IMAGE (char[20])
+/// - Each element: NAME (`char[64]`) + GROUP_NAME (`char[32]`) + TYPE (uint8) + Reserved (uint8) + RGBA (`uint8[4]`) + Entry (`float32[3]`) + Target (`float32[3]`) + DIAMETER (float32) + OWNER_IMAGE (`char[20]`)
 /// - Element size: 64 + 32 + 1 + 1 + 4 + 12 + 12 + 4 + 20 = 150 bytes
 #[derive(Debug, Clone, PartialEq)]
 pub struct TrajectoryMessage {
@@ -179,14 +179,14 @@ impl Message for TrajectoryMessage {
         let mut buf = Vec::with_capacity(self.trajectories.len() * 150);
 
         for traj in &self.trajectories {
-            // Encode NAME (char[64])
+            // Encode NAME (`char[64]`)
             let mut name_bytes = [0u8; 64];
             let name_str = traj.name.as_bytes();
             let copy_len = name_str.len().min(63);
             name_bytes[..copy_len].copy_from_slice(&name_str[..copy_len]);
             buf.extend_from_slice(&name_bytes);
 
-            // Encode GROUP_NAME (char[32])
+            // Encode GROUP_NAME (`char[32]`)
             let mut group_bytes = [0u8; 32];
             let group_str = traj.group_name.as_bytes();
             let copy_len = group_str.len().min(31);
@@ -199,7 +199,7 @@ impl Message for TrajectoryMessage {
             // Encode Reserved (uint8)
             buf.put_u8(0);
 
-            // Encode RGBA (uint8[4])
+            // Encode RGBA (`uint8[4]`)
             buf.extend_from_slice(&traj.rgba);
 
             // Encode Entry point (float32[3])
@@ -215,7 +215,7 @@ impl Message for TrajectoryMessage {
             // Encode DIAMETER (float32)
             buf.put_f32(traj.diameter);
 
-            // Encode OWNER_IMAGE (char[20])
+            // Encode OWNER_IMAGE (`char[20]`)
             let mut owner_bytes = [0u8; 20];
             let owner_str = traj.owner_image.as_bytes();
             let copy_len = owner_str.len().min(19);
@@ -230,13 +230,13 @@ impl Message for TrajectoryMessage {
         let mut trajectories = Vec::new();
 
         while data.len() >= 150 {
-            // Decode NAME (char[64])
+            // Decode NAME (`char[64]`)
             let name_bytes = &data[..64];
             data.advance(64);
             let name_len = name_bytes.iter().position(|&b| b == 0).unwrap_or(64);
             let name = String::from_utf8(name_bytes[..name_len].to_vec())?;
 
-            // Decode GROUP_NAME (char[32])
+            // Decode GROUP_NAME (`char[32]`)
             let group_bytes = &data[..32];
             data.advance(32);
             let group_len = group_bytes.iter().position(|&b| b == 0).unwrap_or(32);
@@ -248,7 +248,7 @@ impl Message for TrajectoryMessage {
             // Decode Reserved (uint8)
             let _reserved = data.get_u8();
 
-            // Decode RGBA (uint8[4])
+            // Decode RGBA (`uint8[4]`)
             let rgba = [data.get_u8(), data.get_u8(), data.get_u8(), data.get_u8()];
 
             // Decode Entry point (float32[3])
@@ -260,7 +260,7 @@ impl Message for TrajectoryMessage {
             // Decode DIAMETER (float32)
             let diameter = data.get_f32();
 
-            // Decode OWNER_IMAGE (char[20])
+            // Decode OWNER_IMAGE (`char[20]`)
             let owner_bytes = &data[..20];
             data.advance(20);
             let owner_len = owner_bytes.iter().position(|&b| b == 0).unwrap_or(20);
@@ -346,15 +346,20 @@ mod tests {
 
     #[test]
     fn test_with_diameter() {
-        let traj = TrajectoryElement::new("T1", "Trajectory", [0.0; 3], [1.0; 3])
-            .with_diameter(5.5);
+        let traj =
+            TrajectoryElement::new("T1", "Trajectory", [0.0; 3], [1.0; 3]).with_diameter(5.5);
         assert_eq!(traj.diameter, 5.5);
     }
 
     #[test]
     fn test_add_trajectory() {
         let mut msg = TrajectoryMessage::empty();
-        msg.add_trajectory(TrajectoryElement::new("T1", "Trajectory", [0.0; 3], [1.0; 3]));
+        msg.add_trajectory(TrajectoryElement::new(
+            "T1",
+            "Trajectory",
+            [0.0; 3],
+            [1.0; 3],
+        ));
         assert_eq!(msg.len(), 1);
     }
 
@@ -369,12 +374,15 @@ mod tests {
 
     #[test]
     fn test_roundtrip() {
-        let original = TrajectoryMessage::new(vec![
-            TrajectoryElement::new("Traj1", "Planning", [0.0, 0.0, 0.0], [100.0, 100.0, 100.0])
-                .with_color([255, 0, 0, 255])
-                .with_diameter(2.5)
-                .with_owner("Image1"),
-        ]);
+        let original = TrajectoryMessage::new(vec![TrajectoryElement::new(
+            "Traj1",
+            "Planning",
+            [0.0, 0.0, 0.0],
+            [100.0, 100.0, 100.0],
+        )
+        .with_color([255, 0, 0, 255])
+        .with_diameter(2.5)
+        .with_owner("Image1")]);
 
         let encoded = original.encode_content().unwrap();
         let decoded = TrajectoryMessage::decode_content(&encoded).unwrap();
@@ -399,9 +407,18 @@ mod tests {
         let decoded = TrajectoryMessage::decode_content(&encoded).unwrap();
 
         assert_eq!(decoded.trajectories.len(), 3);
-        assert_eq!(decoded.trajectories[0].trajectory_type, TrajectoryType::EntryOnly);
-        assert_eq!(decoded.trajectories[1].trajectory_type, TrajectoryType::TargetOnly);
-        assert_eq!(decoded.trajectories[2].trajectory_type, TrajectoryType::EntryAndTarget);
+        assert_eq!(
+            decoded.trajectories[0].trajectory_type,
+            TrajectoryType::EntryOnly
+        );
+        assert_eq!(
+            decoded.trajectories[1].trajectory_type,
+            TrajectoryType::TargetOnly
+        );
+        assert_eq!(
+            decoded.trajectories[2].trajectory_type,
+            TrajectoryType::EntryAndTarget
+        );
     }
 
     #[test]

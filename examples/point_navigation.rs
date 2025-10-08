@@ -29,10 +29,7 @@ fn main() {
 
 fn run() -> Result<()> {
     // Connect to server
-    let mut client = ClientBuilder::new()
-        .tcp("127.0.0.1:18944")
-        .sync()
-        .build()?;
+    let mut client = ClientBuilder::new().tcp("127.0.0.1:18944").sync().build()?;
     println!("[INFO] Connected to OpenIGTLink server\n");
 
     println!("=== Surgical Navigation: Fiducial Point Registration ===");

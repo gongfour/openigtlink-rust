@@ -4,8 +4,8 @@
 //! transformation matrix. Only the upper 3x4 portion is transmitted
 //! (48 bytes = 12 floats), as the last row is always [0, 0, 0, 1].
 
-use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};
+use crate::protocol::message::Message;
 use bytes::{Buf, BufMut};
 
 /// TRANSFORM message containing a 4x4 homogeneous transformation matrix

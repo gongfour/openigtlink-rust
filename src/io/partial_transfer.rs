@@ -23,7 +23,7 @@ pub struct TransferConfig {
 impl Default for TransferConfig {
     fn default() -> Self {
         Self {
-            chunk_size: 65536,      // 64KB chunks
+            chunk_size: 65536, // 64KB chunks
             allow_resume: true,
             timeout_secs: Some(300), // 5 minutes
         }
@@ -81,7 +81,11 @@ impl TransferState {
     /// Get progress percentage (0.0 - 1.0)
     pub fn progress(&self) -> f64 {
         match self {
-            Self::InProgress { bytes_transferred, total_bytes, .. } => {
+            Self::InProgress {
+                bytes_transferred,
+                total_bytes,
+                ..
+            } => {
                 if *total_bytes > 0 {
                     (*bytes_transferred as f64) / (*total_bytes as f64)
                 } else {
@@ -89,7 +93,11 @@ impl TransferState {
                 }
             }
             Self::Completed { .. } => 1.0,
-            Self::Interrupted { bytes_transferred, total_bytes, .. } => {
+            Self::Interrupted {
+                bytes_transferred,
+                total_bytes,
+                ..
+            } => {
                 if *total_bytes > 0 {
                     (*bytes_transferred as f64) / (*total_bytes as f64)
                 } else {
@@ -107,7 +115,13 @@ impl TransferState {
 
     /// Check if transfer can be resumed
     pub fn is_resumable(&self) -> bool {
-        matches!(self, Self::Interrupted { resumable: true, .. })
+        matches!(
+            self,
+            Self::Interrupted {
+                resumable: true,
+                ..
+            }
+        )
     }
 }
 
@@ -135,8 +149,12 @@ impl TransferInfo {
     /// Calculate transfer speed in bytes/sec
     pub fn speed_bps(&self) -> f64 {
         match &self.state {
-            TransferState::InProgress { bytes_transferred, .. }
-            | TransferState::Interrupted { bytes_transferred, .. } => {
+            TransferState::InProgress {
+                bytes_transferred, ..
+            }
+            | TransferState::Interrupted {
+                bytes_transferred, ..
+            } => {
                 let elapsed_secs = self.elapsed().as_secs_f64();
                 if elapsed_secs > 0.0 {
                     (*bytes_transferred as f64) / elapsed_secs
@@ -375,14 +393,14 @@ impl PartialTransferManager {
                 info.updated_at = std::time::Instant::now();
                 Ok(bytes_transferred)
             }
-            TransferState::Interrupted { resumable: false, .. } => {
+            TransferState::Interrupted {
+                resumable: false, ..
+            } => {
                 warn!(transfer_id = id.value(), "Transfer is not resumable");
-                Err(IgtlError::Io(
-                    std::io::Error::new(
-                        std::io::ErrorKind::InvalidInput,
-                        "Transfer is not resumable",
-                    ),
-                ))
+                Err(IgtlError::Io(std::io::Error::new(
+                    std::io::ErrorKind::InvalidInput,
+                    "Transfer is not resumable",
+                )))
             }
             _ => {
                 warn!(transfer_id = id.value(), "Transfer is not interrupted");

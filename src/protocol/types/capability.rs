@@ -3,8 +3,8 @@
 //! The CAPABILITY message type is used to notify the receiver about
 //! the types of messages supported by the sender.
 
-use crate::protocol::message::Message;
 use crate::error::{IgtlError, Result};
+use crate::protocol::message::Message;
 use bytes::{Buf, BufMut};
 
 /// CAPABILITY message containing list of supported message types
@@ -82,7 +82,9 @@ impl Message for CapabilityMessage {
                 .iter()
                 .position(|&b| b == 0)
                 .ok_or_else(|| {
-                    IgtlError::InvalidHeader("Missing null terminator in capability type".to_string())
+                    IgtlError::InvalidHeader(
+                        "Missing null terminator in capability type".to_string(),
+                    )
                 })?;
 
             // Extract type name

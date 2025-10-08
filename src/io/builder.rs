@@ -8,7 +8,7 @@
 //!
 //! Instead of creating separate types for every feature combination (which would lead
 //! to exponential growth: TcpAsync, TcpAsyncTls, TcpAsyncReconnect, TcpAsyncTlsReconnect...),
-//! this builder creates a single [`UnifiedAsyncClient`](crate::io::unified_async_client::UnifiedAsyncClient)
+//! this builder creates a single [`UnifiedAsyncClient`]
 //! with optional features.
 //!
 //! **Benefits:**
@@ -165,8 +165,8 @@
 use crate::error::Result;
 use crate::io::reconnect::ReconnectConfig;
 use crate::io::sync_client::SyncTcpClient;
-use crate::io::unified_client::{AsyncIgtlClient, SyncIgtlClient};
 use crate::io::unified_async_client::UnifiedAsyncClient;
+use crate::io::unified_client::{AsyncIgtlClient, SyncIgtlClient};
 use crate::io::UdpClient;
 use std::marker::PhantomData;
 use std::sync::Arc;

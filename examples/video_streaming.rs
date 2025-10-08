@@ -40,10 +40,7 @@ fn run() -> Result<()> {
     let codec = parse_codec();
 
     // Connect to server
-    let mut client = ClientBuilder::new()
-        .tcp("127.0.0.1:18944")
-        .sync()
-        .build()?;
+    let mut client = ClientBuilder::new().tcp("127.0.0.1:18944").sync().build()?;
     println!("[INFO] Connected to OpenIGTLink server\n");
 
     // Execute streaming scenario
@@ -232,11 +229,7 @@ fn stream_raw(client: &mut SyncIgtlClient) -> Result<()> {
         client.send(&msg)?;
 
         // Display progress
-        print!(
-            "\r[RAW] Streaming frame {}/{}",
-            frame_num + 1,
-            total_frames
-        );
+        print!("\r[RAW] Streaming frame {}/{}", frame_num + 1, total_frames);
         std::io::Write::flush(&mut std::io::stdout()).ok();
 
         // Maintain frame rate

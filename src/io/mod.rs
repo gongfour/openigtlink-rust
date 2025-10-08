@@ -21,38 +21,38 @@
 //! # }
 //! ```
 
-mod common;
-mod sync_client;
-pub mod unified_async_client;
-pub mod unified_client;
-pub mod builder;
-pub mod server;
 pub mod async_server;
-pub mod tls_server;
-pub mod reconnect;
-pub mod session_manager;
-pub mod udp;
+pub mod builder;
+mod common;
 pub mod message_queue;
 pub mod partial_transfer;
+pub mod reconnect;
+pub mod server;
+pub mod session_manager;
+mod sync_client;
+pub mod tls_server;
+pub mod udp;
+pub mod unified_async_client;
+pub mod unified_client;
 
 // Client builder API (recommended)
 pub use builder::ClientBuilder;
-pub use unified_client::{AsyncIgtlClient, SyncIgtlClient};
 pub use reconnect::ReconnectConfig;
+pub use unified_client::{AsyncIgtlClient, SyncIgtlClient};
 
 // Server APIs
-pub use server::{IgtlConnection, IgtlServer};
 pub use async_server::{
     AsyncIgtlConnection, AsyncIgtlConnectionReader, AsyncIgtlConnectionWriter, AsyncIgtlServer,
 };
+pub use server::{IgtlConnection, IgtlServer};
 pub use tls_server::{TlsIgtlConnection, TlsIgtlServer};
 
 // Session and queue management
-pub use session_manager::{ClientId, ClientInfo, MessageHandler, SessionManager};
 pub use message_queue::{MessageQueue, QueueConfig, QueueStats};
 pub use partial_transfer::{
     PartialTransferManager, TransferConfig, TransferId, TransferInfo, TransferState,
 };
+pub use session_manager::{ClientId, ClientInfo, MessageHandler, SessionManager};
 
 // UDP
 pub use udp::{UdpClient, UdpServer};

@@ -24,9 +24,7 @@
 use openigtlink_rust::error::Result;
 use openigtlink_rust::io::{ClientBuilder, SyncIgtlClient};
 use openigtlink_rust::protocol::message::IgtlMessage;
-use openigtlink_rust::protocol::types::{
-    CoordinateSystem, ImageMessage, ImageScalarType,
-};
+use openigtlink_rust::protocol::types::{CoordinateSystem, ImageMessage, ImageScalarType};
 use std::env;
 use std::thread;
 use std::time::Duration;
@@ -42,10 +40,7 @@ fn run() -> Result<()> {
     let scenario = parse_scenario();
 
     // Connect to server
-    let mut client = ClientBuilder::new()
-        .tcp("127.0.0.1:18944")
-        .sync()
-        .build()?;
+    let mut client = ClientBuilder::new().tcp("127.0.0.1:18944").sync().build()?;
     println!("[INFO] Connected to OpenIGTLink server\n");
 
     // Execute imaging scenario
@@ -97,12 +92,8 @@ fn stream_ct_scan(client: &mut SyncIgtlClient) -> Result<()> {
         let image_data = generate_ct_slice(slice_num);
 
         // Create IMAGE message
-        let image = ImageMessage::new(
-            ImageScalarType::Uint16,
-            [512, 512, 1],
-            image_data,
-        )?
-        .with_coordinate(CoordinateSystem::LPS);
+        let image = ImageMessage::new(ImageScalarType::Uint16, [512, 512, 1], image_data)?
+            .with_coordinate(CoordinateSystem::LPS);
 
         // Send to server
         let msg = IgtlMessage::new(image, "CTScanner")?;
@@ -140,12 +131,8 @@ fn stream_mri_scan(client: &mut SyncIgtlClient) -> Result<()> {
         let image_data = generate_mri_slice(slice_num);
 
         // Create IMAGE message
-        let image = ImageMessage::new(
-            ImageScalarType::Float32,
-            [256, 256, 1],
-            image_data,
-        )?
-        .with_coordinate(CoordinateSystem::RAS);
+        let image = ImageMessage::new(ImageScalarType::Float32, [256, 256, 1], image_data)?
+            .with_coordinate(CoordinateSystem::RAS);
 
         // Send to server
         let msg = IgtlMessage::new(image, "MRIScanner")?;
@@ -188,19 +175,19 @@ fn stream_ultrasound(client: &mut SyncIgtlClient) -> Result<()> {
         let image_data = generate_ultrasound_frame(frame_num);
 
         // Create IMAGE message
-        let image = ImageMessage::new(
-            ImageScalarType::Uint8,
-            [640, 480, 1],
-            image_data,
-        )?
-        .with_coordinate(CoordinateSystem::RAS);
+        let image = ImageMessage::new(ImageScalarType::Uint8, [640, 480, 1], image_data)?
+            .with_coordinate(CoordinateSystem::RAS);
 
         // Send to server
         let msg = IgtlMessage::new(image, "UltrasoundProbe")?;
         client.send(&msg)?;
 
-        print!("\r[US] Streaming frame {}/{} @ {}fps",
-               frame_num + 1, total_frames, fps);
+        print!(
+            "\r[US] Streaming frame {}/{} @ {}fps",
+            frame_num + 1,
+            total_frames,
+            fps
+        );
         std::io::Write::flush(&mut std::io::stdout()).ok();
 
         // Maintain frame rate

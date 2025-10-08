@@ -54,8 +54,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut conn = server.accept().expect("Failed to accept connection");
 
         // Receive a message - this will log header reception, body reception, and decoding
-        let msg: IgtlMessage<StatusMessage> =
-            conn.receive().expect("Failed to receive message");
+        let msg: IgtlMessage<StatusMessage> = conn.receive().expect("Failed to receive message");
 
         info!("Server received status: {}", msg.content.status_string);
 
@@ -73,10 +72,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Client starting connection");
 
     // Connect to server - this will log connection attempt and success
-    let mut client = ClientBuilder::new()
-        .tcp("127.0.0.1:18944")
-        .sync()
-        .build()?;
+    let mut client = ClientBuilder::new().tcp("127.0.0.1:18944").sync().build()?;
 
     info!("Client connected, preparing to send message");
 
@@ -94,7 +90,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Receive response - this will log reception details
     let response: IgtlMessage<StatusMessage> = client.receive()?;
 
-    info!("Client received response: {}", response.content.status_string);
+    info!(
+        "Client received response: {}",
+        response.content.status_string
+    );
 
     // Wait for server thread to complete
     server_thread.join().expect("Server thread panicked");

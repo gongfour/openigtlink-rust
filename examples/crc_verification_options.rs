@@ -11,7 +11,7 @@
 
 use openigtlink_rust::error::Result;
 use openigtlink_rust::protocol::message::IgtlMessage;
-use openigtlink_rust::protocol::types::{TransformMessage, StatusMessage};
+use openigtlink_rust::protocol::types::{StatusMessage, TransformMessage};
 use std::time::Instant;
 
 fn main() -> Result<()> {
@@ -47,11 +47,14 @@ fn main() -> Result<()> {
         println!("  With CRC: Decoded successfully");
 
         // Decode with CRC verification disabled
-        let decoded_without_crc = IgtlMessage::<StatusMessage>::decode_with_options(&encoded, false)?;
+        let decoded_without_crc =
+            IgtlMessage::<StatusMessage>::decode_with_options(&encoded, false)?;
         println!("  Without CRC: Decoded successfully");
 
-        println!("  Both results match: {}",
-                 decoded_with_crc.content == decoded_without_crc.content);
+        println!(
+            "  Both results match: {}",
+            decoded_with_crc.content == decoded_without_crc.content
+        );
     }
 
     println!();
@@ -106,14 +109,19 @@ fn main() -> Result<()> {
         let duration_without_crc = start.elapsed();
 
         println!("  {} iterations:", iterations);
-        println!("    With CRC:    {:?} ({:.2} µs/msg)",
-                 duration_with_crc,
-                 duration_with_crc.as_micros() as f64 / iterations as f64);
-        println!("    Without CRC: {:?} ({:.2} µs/msg)",
-                 duration_without_crc,
-                 duration_without_crc.as_micros() as f64 / iterations as f64);
+        println!(
+            "    With CRC:    {:?} ({:.2} µs/msg)",
+            duration_with_crc,
+            duration_with_crc.as_micros() as f64 / iterations as f64
+        );
+        println!(
+            "    Without CRC: {:?} ({:.2} µs/msg)",
+            duration_without_crc,
+            duration_without_crc.as_micros() as f64 / iterations as f64
+        );
 
-        let speedup = duration_with_crc.as_micros() as f64 / duration_without_crc.as_micros() as f64;
+        let speedup =
+            duration_with_crc.as_micros() as f64 / duration_without_crc.as_micros() as f64;
         println!("    Speedup: {:.2}x faster without CRC", speedup);
     }
 
@@ -154,7 +162,10 @@ fn main() -> Result<()> {
 
         println!("  Version: {}", decoded.header.version);
         println!("  Extended header: {:?}", decoded.get_extended_header());
-        println!("  Metadata count: {}", decoded.get_metadata().map(|m| m.len()).unwrap_or(0));
+        println!(
+            "  Metadata count: {}",
+            decoded.get_metadata().map(|m| m.len()).unwrap_or(0)
+        );
         println!("  Content matches: {}", decoded.content == transform);
     }
 
@@ -196,7 +207,10 @@ fn main() -> Result<()> {
         println!("  Average decode time:");
         println!("    With CRC:    {} µs", avg_with_crc);
         println!("    Without CRC: {} µs", avg_without_crc);
-        println!("    Saved: {} µs per message", avg_with_crc - avg_without_crc);
+        println!(
+            "    Saved: {} µs per message",
+            avg_with_crc - avg_without_crc
+        );
 
         if avg_with_crc > 0 {
             let max_rate_with = 1_000_000 / avg_with_crc;
