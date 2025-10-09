@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2025-10-09
+
+### Fixed
+
+- **Windows Platform Support**
+  - Added conditional compilation for platform-specific socket APIs in `set_recv_buffer_size()` and `set_send_buffer_size()`
+  - Defined Windows Winsock constants (SOL_SOCKET, SO_RCVBUF, SO_SNDBUF) that are not available in libc crate on Windows
+  - Fixed compilation errors on Windows by using `AsRawSocket` instead of `AsRawFd`
+  - Fixed type mismatches in setsockopt calls (c_char vs c_void pointer types)
+
+### Changed
+
+- **CI/CD Configuration**
+  - Updated MSRV (Minimum Supported Rust Version) from 1.70.0 to 1.84.0 for Cargo.lock version 4 compatibility
+
 ## [0.3.1] - 2025-10-09
 
 ### Added
