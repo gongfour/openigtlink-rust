@@ -283,22 +283,47 @@ impl IgtlConnection {
 
     /// Set the size of the TCP receive buffer (SO_RCVBUF)
     pub fn set_recv_buffer_size(&self, size: usize) -> Result<()> {
-        use std::os::fd::AsRawFd;
+        #[cfg(unix)]
+        {
+            use std::os::fd::AsRawFd;
 
-        let fd = self.stream.as_raw_fd();
-        let size = size as libc::c_int;
+            let fd = self.stream.as_raw_fd();
+            let size = size as libc::c_int;
 
-        unsafe {
-            let ret = libc::setsockopt(
-                fd,
-                libc::SOL_SOCKET,
-                libc::SO_RCVBUF,
-                &size as *const _ as *const libc::c_void,
-                std::mem::size_of::<libc::c_int>() as libc::socklen_t,
-            );
+            unsafe {
+                let ret = libc::setsockopt(
+                    fd,
+                    libc::SOL_SOCKET,
+                    libc::SO_RCVBUF,
+                    &size as *const _ as *const libc::c_void,
+                    std::mem::size_of::<libc::c_int>() as libc::socklen_t,
+                );
 
-            if ret != 0 {
-                return Err(std::io::Error::last_os_error().into());
+                if ret != 0 {
+                    return Err(std::io::Error::last_os_error().into());
+                }
+            }
+        }
+
+        #[cfg(windows)]
+        {
+            use std::os::windows::io::AsRawSocket;
+
+            let socket = self.stream.as_raw_socket();
+            let size = size as libc::c_int;
+
+            unsafe {
+                let ret = libc::setsockopt(
+                    socket as libc::SOCKET,
+                    libc::SOL_SOCKET,
+                    libc::SO_RCVBUF,
+                    &size as *const _ as *const libc::c_char,
+                    std::mem::size_of::<libc::c_int>() as libc::c_int,
+                );
+
+                if ret != 0 {
+                    return Err(std::io::Error::last_os_error().into());
+                }
             }
         }
 
