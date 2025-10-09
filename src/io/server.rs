@@ -309,14 +309,18 @@ impl IgtlConnection {
         {
             use std::os::windows::io::AsRawSocket;
 
+            // Windows Winsock constants
+            const SOL_SOCKET: libc::c_int = 0xffff;
+            const SO_RCVBUF: libc::c_int = 0x1002;
+
             let socket = self.stream.as_raw_socket();
             let size = size as libc::c_int;
 
             unsafe {
                 let ret = libc::setsockopt(
                     socket as libc::SOCKET,
-                    libc::SOL_SOCKET,
-                    libc::SO_RCVBUF,
+                    SOL_SOCKET,
+                    SO_RCVBUF,
                     &size as *const _ as *const libc::c_char,
                     std::mem::size_of::<libc::c_int>() as libc::c_int,
                 );
@@ -358,14 +362,18 @@ impl IgtlConnection {
         {
             use std::os::windows::io::AsRawSocket;
 
+            // Windows Winsock constants
+            const SOL_SOCKET: libc::c_int = 0xffff;
+            const SO_SNDBUF: libc::c_int = 0x1001;
+
             let socket = self.stream.as_raw_socket();
             let size = size as libc::c_int;
 
             unsafe {
                 let ret = libc::setsockopt(
                     socket as libc::SOCKET,
-                    libc::SOL_SOCKET,
-                    libc::SO_SNDBUF,
+                    SOL_SOCKET,
+                    SO_SNDBUF,
                     &size as *const _ as *const libc::c_char,
                     std::mem::size_of::<libc::c_int>() as libc::c_int,
                 );
