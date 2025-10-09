@@ -149,7 +149,7 @@ use tracing::{debug, info, trace, warn};
 /// Transport type for the async client
 enum Transport {
     Plain(TcpStream),
-    Tls(TlsStream<TcpStream>),
+    Tls(Box<TlsStream<TcpStream>>),
 }
 
 impl Transport {
@@ -311,7 +311,7 @@ impl UnifiedAsyncClient {
         );
 
         Ok(Self {
-            transport: Some(Transport::Tls(tls_stream)),
+            transport: Some(Transport::Tls(Box::new(tls_stream))),
             conn_params: ConnectionParams {
                 addr,
                 hostname: Some(hostname.to_string()),
