@@ -141,7 +141,7 @@ jobs:
           cargo init verify-test
           cd verify-test
           cargo add openigtlink-rust@${{ steps.version.outputs.VERSION }}
-          cat >> src/main.rs << 'EOF'
+          cat > src/main.rs << 'EOF'
           use openigtlink_rust::protocol::types::TransformMessage;
           fn main() {
               let _ = TransformMessage::identity();
