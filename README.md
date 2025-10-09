@@ -13,42 +13,102 @@ A **high-performance**, **type-safe** Rust implementation of the [OpenIGTLink](h
 - 🦀 **Memory Safety** - Rust's ownership system eliminates memory leaks and buffer overflows common in medical software
 - 🚀 **High Performance** - Zero-copy parsing and efficient serialization for real-time surgical applications
 - ✅ **100% Compatible** - Binary-compatible with the official C++ library - works with all existing OpenIGTLink software
-- 🔒 **Production Ready** - 102 comprehensive tests, extensive documentation, and real-world examples
+- 🎯 **Dynamic Dispatch** - Receive any message type at runtime, just like C++ MessageFactory (v0.3.0+)
+- 🔒 **Production Ready** - 102+ comprehensive tests, extensive documentation, and real-world examples
 - 🏗️ **Type-Safe Builder** - Compile-time guarantees prevent invalid client configurations
 
 ## Quick Start
 
+The most common use case is receiving messages dynamically without knowing the type in advance:
+
 ```rust
 use openigtlink_rust::io::builder::ClientBuilder;
-use openigtlink_rust::protocol::message::IgtlMessage;
-use openigtlink_rust::protocol::types::TransformMessage;
+use openigtlink_rust::protocol::AnyMessage;
 
-// Build a TCP client with the Builder pattern
+// Connect to an OpenIGTLink server
 let mut client = ClientBuilder::new()
     .tcp("127.0.0.1:18944")
     .async_mode()
     .build()
     .await?;
 
-// Send surgical tool position
+// Receive any message type dynamically
+let msg = client.receive_any().await?;
+
+// Pattern match to handle different message types
+match msg {
+    AnyMessage::Transform(transform_msg) => {
+        println!("Received transform from {}", transform_msg.header.device_name.as_str()?);
+        // Access the 4x4 transformation matrix
+        let matrix = &transform_msg.content.matrix;
+    }
+    AnyMessage::Image(image_msg) => {
+        println!("Received {}x{}x{} image",
+            image_msg.content.size[0],
+            image_msg.content.size[1],
+            image_msg.content.size[2]);
+    }
+    AnyMessage::Status(status_msg) => {
+        println!("Status: {}", status_msg.content.status_string);
+    }
+    _ => println!("Received: {}", msg.message_type()),
+}
+```
+
+**Try it now** - Run your first example in 30 seconds:
+```bash
+# Terminal 1: Start a server that sends various message types
+cargo run --example async_server
+
+# Terminal 2: Receive and handle messages dynamically
+cargo run --example async_dynamic_receiver
+```
+
+For **sending specific message types**, use the type-safe API:
+```rust
+use openigtlink_rust::protocol::message::IgtlMessage;
+use openigtlink_rust::protocol::types::TransformMessage;
+
 let transform = TransformMessage::identity();
 let msg = IgtlMessage::new(transform, "SurgicalTool")?;
 client.send(&msg).await?;
-
-// Receive tracking data
-let response: IgtlMessage<TransformMessage> = client.receive().await?;
-```
-
-Run your first example in 30 seconds:
-```bash
-# Terminal 1: Start server
-cargo run --example server
-
-# Terminal 2: Send/receive messages
-cargo run --example client
 ```
 
 ## Key Features
+
+### 🎯 Dynamic Message Handling (v0.3.0+)
+
+**Receive any message type without compile-time knowledge** - perfect for monitoring tools, protocol analyzers, and multi-device applications:
+
+```rust
+use openigtlink_rust::protocol::AnyMessage;
+
+// Receive messages dynamically at runtime
+let msg = client.receive_any().await?;
+
+// Access common header information
+println!("Device: {}, Type: {}", msg.device_name()?, msg.message_type());
+
+// Pattern match for specific handling
+match msg {
+    AnyMessage::Transform(t) => { /* handle transform */ },
+    AnyMessage::Image(i) => { /* handle image */ },
+    AnyMessage::Status(s) => { /* handle status */ },
+    AnyMessage::Unknown { header, body } => {
+        // Handle custom/unknown message types
+        println!("Custom type: {}", header.type_name.as_str()?);
+    }
+    _ => { /* handle other types */ }
+}
+```
+
+**Use cases:**
+- Generic receivers for multiple devices (surgical tools, scanners, sensors)
+- Message logging and monitoring dashboards
+- Protocol debugging and testing tools
+- Applications receiving unknown or custom message types
+
+See [dynamic_receiver.rs](./examples/dynamic_receiver.rs) and [async_dynamic_receiver.rs](./examples/async_dynamic_receiver.rs) for complete examples.
 
 ### 🏗️ Flexible Client Builder
 
@@ -133,7 +193,7 @@ let client = ClientBuilder::new()
 Add to your `Cargo.toml`:
 ```toml
 [dependencies]
-openigtlink-rust = "0.1.0"
+openigtlink-rust = "0.3"  # Latest: Dynamic message dispatch support
 ```
 
 Or install from source:
@@ -325,16 +385,27 @@ let client = ClientBuilder::new()
 
 ## Examples
 
-📝 **27 ready-to-run examples** covering all features - [Browse all examples](./examples/)
+📝 **Ready-to-run examples** covering all features - [Browse all examples](./examples/)
 
-### 🚀 Getting Started (2 min)
+### 🚀 Getting Started
+
+**New to OpenIGTLink?** Start here:
+
 ```bash
-# Terminal 1: Start server
-cargo run --example server
+# 1. Dynamic message receiver (recommended - works with any message type)
+cargo run --example async_server          # Terminal 1
+cargo run --example async_dynamic_receiver # Terminal 2
 
-# Terminal 2: Send/receive messages
-cargo run --example client
+# 2. Basic client/server (specific message types)
+cargo run --example server                 # Terminal 1
+cargo run --example client                 # Terminal 2
 ```
+
+**Key examples:**
+- [async_dynamic_receiver.rs](./examples/async_dynamic_receiver.rs) - **Start here!** Receive any message type dynamically (v0.3.0+)
+- [dynamic_receiver.rs](./examples/dynamic_receiver.rs) - Sync version of dynamic receiver
+- [client.rs](./examples/client.rs) - Basic client with specific message types
+- [server.rs](./examples/server.rs) - Basic server example
 
 ### 🏥 Medical Applications
 
