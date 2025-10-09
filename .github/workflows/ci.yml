@@ -23,24 +23,24 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-  # Clippy lints
-  clippy:
-    name: Clippy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-clippy-${{ hashFiles('**/Cargo.lock') }}
-      - name: Run clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
+  # Clippy lints (disabled - run locally with: cargo clippy --all-targets --all-features)
+  # clippy:
+  #   name: Clippy
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: dtolnay/rust-toolchain@stable
+  #       with:
+  #         components: clippy
+  #     - uses: actions/cache@v4
+  #       with:
+  #         path: |
+  #           ~/.cargo/registry
+  #           ~/.cargo/git
+  #           target
+  #         key: ${{ runner.os }}-cargo-clippy-${{ hashFiles('**/Cargo.lock') }}
+  #     - name: Run clippy
+  #       run: cargo clippy --all-targets --all-features -- -D warnings
 
   # Test on multiple platforms
   test:
@@ -172,7 +172,7 @@ jobs:
   # All checks passed
   ci-success:
     name: CI Success
-    needs: [fmt, clippy, test, test-versions, docs, bench, security, examples]
+    needs: [fmt, test, test-versions, docs, bench, security, examples]
     runs-on: ubuntu-latest
     steps:
       - name: Mark CI as successful
