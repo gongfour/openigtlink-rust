@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-10-14
+
+### Added
+
+- **OpenIGTLink Version 3 Extended Header Support**
+  - New `ExtendedHeader` struct for OpenIGTLink Version 3 protocol
+    - 12-byte minimum structure with metadata support
+    - Fields: `extended_header_size`, `metadata_header_size`, `metadata_size`, `message_id`
+    - Support for additional implementation-specific fields
+  - Field-based Extended Header detection (no longer depends on version field)
+  - New methods in `IgtlMessage`:
+    - `set_extended_header_struct()` - Set structured Extended Header
+    - `get_extended_header_struct()` - Get Extended Header reference
+    - `get_message_id()` - Get message ID from Extended Header
+    - `set_message_id()` - Set message ID in Extended Header
+
+### Changed
+
+- **Breaking: `IgtlMessage` Extended Header API Changes**
+  - `extended_header` field type changed from `Option<Vec<u8>>` to `Option<ExtendedHeader>`
+  - `get_extended_header()` return type changed from `Option<&[u8]>` to `Option<Vec<u8>>`
+  - `set_extended_header()` now accepts `Vec<u8>` and automatically parses as `ExtendedHeader`
+
+### Fixed
+
+- **C++ OpenIGTLink Compatibility**
+  - Fixed message body parsing to match C++ implementation structure:
+    - Correct body layout: `[ExtHeader][Content][MetadataHeader][MetadataData]`
+    - Metadata is now correctly positioned at body END (not after ExtHeader)
+    - Content immediately follows Extended Header
+  - Implemented `decode_metadata_v3()` with separate header/body parsing
+    - Metadata Header: INDEX_COUNT + entry array (key_size, value_encoding, value_size)
+    - Metadata Body: sequential key-value pairs
+  - Fixed "Invalid message size" errors when receiving messages with Extended Headers
+  - TransformMessage encoding/decoding now uses correct column-major order
+    - OpenIGTLink spec order: R11,R21,R31,R12,R22,R32,R13,R23,R33,TX,TY,TZ
+    - Previous row-major encoding was incompatible with C++ implementation
+
+### Removed
+
+- Removed legacy `decode_metadata()` function (replaced by `decode_metadata_v3()`)
+
 ## [0.3.2] - 2025-10-09
 
 ### Fixed
