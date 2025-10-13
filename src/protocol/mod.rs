@@ -4,6 +4,7 @@
 
 pub mod any_message;
 pub mod crc;
+pub mod extended_header;
 pub mod factory;
 pub mod header;
 pub mod message;
@@ -12,6 +13,7 @@ pub mod types;
 // Re-export commonly used types
 pub use any_message::AnyMessage;
 pub use crc::{calculate_crc, verify_crc};
+pub use extended_header::ExtendedHeader;
 pub use factory::MessageFactory;
 pub use header::{DeviceName, Header, Timestamp, TypeName};
 pub use message::{IgtlMessage, Message};

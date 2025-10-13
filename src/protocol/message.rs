@@ -3,7 +3,8 @@
 //! This module defines the common interface that all message types must implement,
 //! as well as the generic message wrapper structure.
 
-use crate::error::Result;
+use crate::error::{IgtlError, Result};
+use crate::protocol::extended_header::ExtendedHeader;
 use crate::protocol::header::Header;
 use std::collections::HashMap;
 
@@ -45,7 +46,8 @@ pub struct IgtlMessage<T: Message> {
     /// Message header (58 bytes)
     pub header: Header,
     /// Extended header (Version 3 feature, optional)
-    pub extended_header: Option<Vec<u8>>,
+    /// Contains metadata information and message ID when present
+    pub extended_header: Option<ExtendedHeader>,
     /// Message content
     pub content: T,
     /// Metadata as key-value pairs (Version 3 feature, optional)
@@ -101,7 +103,27 @@ impl<T: Message> IgtlMessage<T> {
     /// msg.set_extended_header(vec![0x01, 0x02, 0x03, 0x04]);
     /// ```
     pub fn set_extended_header(&mut self, data: Vec<u8>) {
-        self.extended_header = Some(data);
+        // Try to parse as structured ExtendedHeader, fallback to custom data
+        if let Ok(ext_header) = ExtendedHeader::decode(&data) {
+            self.extended_header = Some(ext_header);
+        } else {
+            // Custom extended header data - wrap in ExtendedHeader with additional_fields
+            let mut ext_header = ExtendedHeader::new();
+            ext_header.set_additional_fields(data);
+            self.extended_header = Some(ext_header);
+        }
+        // Upgrade to version 3 when extended header is used
+        if self.header.version < 3 {
+            self.header.version = 3;
+        }
+    }
+
+    /// Set structured Extended Header (Version 3 feature)
+    ///
+    /// # Arguments
+    /// * `ext_header` - Structured Extended Header
+    pub fn set_extended_header_struct(&mut self, ext_header: ExtendedHeader) {
+        self.extended_header = Some(ext_header);
         // Upgrade to version 3 when extended header is used
         if self.header.version < 3 {
             self.header.version = 3;
@@ -112,8 +134,42 @@ impl<T: Message> IgtlMessage<T> {
     ///
     /// # Returns
     /// Optional reference to extended header bytes
-    pub fn get_extended_header(&self) -> Option<&[u8]> {
-        self.extended_header.as_deref()
+    pub fn get_extended_header(&self) -> Option<Vec<u8>> {
+        self.extended_header.as_ref().map(|h| h.encode())
+    }
+
+    /// Get structured Extended Header reference (Version 3 feature)
+    ///
+    /// # Returns
+    /// Optional reference to structured Extended Header
+    pub fn get_extended_header_struct(&self) -> Option<&ExtendedHeader> {
+        self.extended_header.as_ref()
+    }
+
+    /// Get message ID from Extended Header
+    ///
+    /// # Returns
+    /// Message ID if Extended Header exists, None otherwise
+    pub fn get_message_id(&self) -> Option<u32> {
+        self.extended_header.as_ref().map(|h| h.get_message_id())
+    }
+
+    /// Set message ID in Extended Header
+    ///
+    /// Creates Extended Header if it doesn't exist.
+    ///
+    /// # Arguments
+    /// * `message_id` - Unique message identifier
+    pub fn set_message_id(&mut self, message_id: u32) {
+        if let Some(ext_header) = &mut self.extended_header {
+            ext_header.message_id = message_id;
+        } else {
+            self.extended_header = Some(ExtendedHeader::with_message_id(message_id));
+        }
+        // Upgrade to version 3 when extended header is used
+        if self.header.version < 3 {
+            self.header.version = 3;
+        }
     }
 
     /// Remove extended header and optionally downgrade to Version 2
@@ -184,10 +240,17 @@ impl<T: Message> IgtlMessage<T> {
 
     /// Encode the complete message to bytes
     ///
-    /// Version 2 format: Header (58) + Content
-    /// Version 3 format: Header (58) + ExtHdrSize (2) + ExtHdr (var) + Content + Metadata (var)
+    /// Message format is determined by the presence of extended_header and metadata fields,
+    /// NOT by the version field, as version information may be unreliable.
     ///
-    /// Metadata format (Version 3):
+    /// Format without Extended Header: Header (58) + Content
+    /// Format with Extended Header: Header (58) + ExtHdrSize (2) + ExtHdr (var) + Content + Metadata (var)
+    ///
+    /// Extended Header Size field:
+    /// - 0: No extended header present, content follows immediately after the size field
+    /// - >0: Extended header present, value indicates the size (including this field)
+    ///
+    /// Metadata format (when present):
     /// - MetadataSize (2 bytes, big-endian)
     /// - For each pair:
     ///   - KeySize (2 bytes)
@@ -204,7 +267,8 @@ impl<T: Message> IgtlMessage<T> {
         let content_bytes = self.content.encode_content()?;
 
         // 2. Encode metadata if present
-        let metadata_bytes = if self.header.version >= 3 && self.metadata.is_some() {
+        // Metadata is encoded based on its presence, not version number
+        let metadata_bytes = if self.metadata.is_some() {
             let metadata = self.metadata.as_ref().unwrap();
             let mut meta_buf = Vec::new();
 
@@ -230,30 +294,50 @@ impl<T: Message> IgtlMessage<T> {
             Vec::new()
         };
 
-        // 3. Build body based on version
-        let body_bytes = if self.header.version >= 3 && self.extended_header.is_some() {
-            // Version 3 with extended header
+        // 3. Build body based on extended header and metadata presence (NOT version)
+        // Extended Header format is determined by the presence of extended_header or metadata fields,
+        // not by the version number, as version information may be unreliable.
+        let body_bytes = if self.extended_header.is_some() {
+            // With extended header
             let ext_header = self.extended_header.as_ref().unwrap();
-            let ext_header_size = ext_header.len() as u16;
+            
+            // Update Extended Header with current metadata information
+            let mut ext_header_to_encode = ext_header.clone();
+            if !metadata_bytes.is_empty() {
+                // Count metadata entries
+                let metadata_count = self.metadata.as_ref().map(|m| m.len()).unwrap_or(0);
+                ext_header_to_encode.metadata_header_size = metadata_count as u16;
+                ext_header_to_encode.metadata_size = metadata_bytes.len() as u32;
+            }
+            
+            let ext_header_encoded = ext_header_to_encode.encode();
+            let ext_header_size = ext_header_encoded.len();
 
             let mut body = Vec::with_capacity(
-                2 + ext_header.len() + content_bytes.len() + metadata_bytes.len(),
+                ext_header_size + content_bytes.len() + metadata_bytes.len(),
             );
-            // Extended header size (2 bytes, big-endian)
-            body.extend_from_slice(&ext_header_size.to_be_bytes());
-            // Extended header data
-            body.extend_from_slice(ext_header);
+            // Extended header (includes size field within it)
+            body.extend_from_slice(&ext_header_encoded);
             // Content
             body.extend_from_slice(&content_bytes);
             // Metadata
             body.extend_from_slice(&metadata_bytes);
 
             body
-        } else if self.header.version >= 3 && !metadata_bytes.is_empty() {
-            // Version 3 without extended header but with metadata
-            let mut body = Vec::with_capacity(2 + content_bytes.len() + metadata_bytes.len());
-            // Extended header size = 0
-            body.extend_from_slice(&0u16.to_be_bytes());
+        } else if !metadata_bytes.is_empty() {
+            // Without extended header but with metadata - create minimal Extended Header
+            let metadata_count = self.metadata.as_ref().map(|m| m.len()).unwrap_or(0);
+            let ext_header = ExtendedHeader::with_metadata(
+                metadata_count as u16,
+                metadata_bytes.len() as u32,
+            );
+            let ext_header_encoded = ext_header.encode();
+            
+            let mut body = Vec::with_capacity(
+                ext_header_encoded.len() + content_bytes.len() + metadata_bytes.len(),
+            );
+            // Extended header
+            body.extend_from_slice(&ext_header_encoded);
             // Content
             body.extend_from_slice(&content_bytes);
             // Metadata
@@ -261,7 +345,7 @@ impl<T: Message> IgtlMessage<T> {
 
             body
         } else {
-            // Version 2 or Version 3 without extended header/metadata
+            // No extended header and no metadata - just content
             content_bytes
         };
 
@@ -280,7 +364,8 @@ impl<T: Message> IgtlMessage<T> {
 
     /// Decode a complete message from bytes with CRC verification
     ///
-    /// Automatically detects Version 2 or Version 3 format based on header.
+    /// Automatically detects Extended Header presence based on the extended_header_size field,
+    /// NOT the version field, as version information may be unreliable.
     ///
     /// # Arguments
     /// * `data` - Byte slice containing the complete message
@@ -356,87 +441,86 @@ impl<T: Message> IgtlMessage<T> {
             }
         }
 
-        // 4. Parse body based on version
-        let (extended_header, remaining_bytes, has_ext_header_field) =
-            if header.version >= 3 && body_bytes.len() >= 2 {
-                // Try to parse as Version 3 with extended header
+        // 4. Parse body based on Extended Header size field (not version)
+        // Extended Header presence is determined by the extended_header_size field,
+        // NOT by the version field, as version information may be unreliable.
+        // 
+        // If body has at least 2 bytes, we check the extended_header_size field:
+        // - extended_header_size > 0: Extended Header is present
+        // - extended_header_size == 0: No Extended Header, body starts with content
+        //
+        // Extended Header structure (OpenIGTLink Version 3):
+        // - extended_header_size (2 bytes) - total size including this field
+        // - metadata_header_size (2 bytes) - size of metadata header section
+        // - metadata_size (4 bytes) - size of metadata data section
+        // - message_id (4 bytes)
+        // - additional fields (variable, if extended_header_size > 12)
+        //
+        // Body structure (C++ implementation):
+        // [Extended Header][Content][Metadata Header][Metadata Data]
+        //                            ^---- at end ----^
+        let (extended_header, content_bytes, metadata) =
+            if body_bytes.len() >= 2 {
+                // Read the extended_header_size field (first 2 bytes of body)
                 let ext_header_size = u16::from_be_bytes([body_bytes[0], body_bytes[1]]) as usize;
 
-                if ext_header_size > 0 && body_bytes.len() >= 2 + ext_header_size {
-                    // Version 3 with non-empty extended header
-                    let ext_header_data = body_bytes[2..2 + ext_header_size].to_vec();
-                    let content_start = 2 + ext_header_size;
-                    (Some(ext_header_data), &body_bytes[content_start..], true)
-                } else if ext_header_size == 0 && body_bytes.len() >= 2 {
-                    // Version 3 with empty extended header (size field = 0)
-                    (Some(Vec::new()), &body_bytes[2..], true)
+                if ext_header_size > 0 {
+                    // Extended header is present
+                    // ext_header_size includes the 2-byte size field itself
+                    if body_bytes.len() >= ext_header_size && ext_header_size >= ExtendedHeader::MIN_SIZE {
+                        // Parse Extended Header
+                        match ExtendedHeader::decode(&body_bytes[..ext_header_size]) {
+                            Ok(ext_header) => {
+                                let metadata_header_size = ext_header.get_metadata_header_size();
+                                let metadata_size = ext_header.get_metadata_size();
+                                let body_size = body_bytes.len();
+                                
+                                // Content: from Extended Header to start of metadata
+                                // Metadata: at the end of body
+                                let content_size = body_size - ext_header_size - metadata_header_size - metadata_size;
+                                let content_start = ext_header_size;
+                                let content_end = content_start + content_size;
+                                
+                                let content_part = &body_bytes[content_start..content_end];
+                                
+                                // Parse metadata if present
+                                let parsed_metadata = if metadata_header_size > 0 && metadata_size > 0 {
+                                    let meta_header_start = body_size - metadata_header_size - metadata_size;
+                                    let meta_data_start = body_size - metadata_size;
+                                    
+                                    let meta_header_part = &body_bytes[meta_header_start..meta_data_start];
+                                    let meta_data_part = &body_bytes[meta_data_start..];
+                                    
+                                    Self::decode_metadata_v3(meta_header_part, meta_data_part)?
+                                } else {
+                                    None
+                                };
+                                
+                                (Some(ext_header), content_part, parsed_metadata)
+                            }
+                            Err(_) => {
+                                // Failed to parse as standard Extended Header
+                                // Treat as content (fallback for malformed messages)
+                                (None, body_bytes, None)
+                            }
+                        }
+                    } else {
+                        // Extended header size is larger than available data or too small
+                        // This could be a malformed message or version 1 format
+                        (None, body_bytes, None)
+                    }
                 } else {
-                    // Invalid extended header size
-                    return Err(IgtlError::InvalidSize {
-                        expected: 2 + ext_header_size,
-                        actual: body_bytes.len(),
-                    });
+                    // ext_header_size == 0: No Extended Header
+                    // Skip the 2-byte size field and treat rest as content
+                    (None, &body_bytes[2..], None)
                 }
             } else {
-                // Version 2 - entire body is content
-                (None, body_bytes, false)
+                // Body too small to contain extended_header_size field - treat as content
+                // This is likely a version 1 message
+                (None, body_bytes, None)
             };
 
-        // 5. Try to determine content size and parse metadata (Version 3 only)
-        let (content_bytes, metadata) = if header.version >= 3 && has_ext_header_field {
-            // For Version 3 with ext_header_size field (whether 0 or not)
-            // We need to figure out where content ends and metadata begins
-            // Strategy: Try to decode content. If successful, re-encode to find actual size.
-
-            // First, try decoding the entire remaining_bytes as content
-            match T::decode_content(remaining_bytes) {
-                Ok(content) => {
-                    // Content decoded successfully
-                    // Re-encode to find actual content size
-                    let actual_content_size = content.encode_content()?.len();
-
-                    if remaining_bytes.len() > actual_content_size {
-                        // There's metadata after the content
-                        let content_part = &remaining_bytes[..actual_content_size];
-                        let metadata_part = &remaining_bytes[actual_content_size..];
-
-                        // Parse metadata
-                        let parsed_metadata = Self::decode_metadata(metadata_part)?;
-                        (content_part, parsed_metadata)
-                    } else {
-                        // No metadata
-                        (remaining_bytes, None)
-                    }
-                }
-                Err(IgtlError::InvalidSize { expected, .. })
-                    if remaining_bytes.len() > expected =>
-                {
-                    // Content decode failed due to size mismatch (fixed-size message with metadata)
-                    // This means we have: Content (expected bytes) + Metadata (rest)
-                    let content_part = &remaining_bytes[..expected];
-                    let metadata_part = &remaining_bytes[expected..];
-
-                    // Verify content decodes correctly
-                    if T::decode_content(content_part).is_ok() {
-                        // Parse metadata
-                        let parsed_metadata = Self::decode_metadata(metadata_part)?;
-                        (content_part, parsed_metadata)
-                    } else {
-                        // Content still doesn't decode - treat all as content
-                        (remaining_bytes, None)
-                    }
-                }
-                Err(_) => {
-                    // Some other error - treat all as content
-                    (remaining_bytes, None)
-                }
-            }
-        } else {
-            // Version 2 - no metadata
-            (remaining_bytes, None)
-        };
-
-        // 6. Decode content
+        // 5. Decode content
         let content = T::decode_content(content_bytes)?;
 
         Ok(IgtlMessage {
@@ -447,7 +531,93 @@ impl<T: Message> IgtlMessage<T> {
         })
     }
 
-    /// Decode metadata from bytes (helper function)
+    /// Decode metadata from V3 format (separate header and data)
+    /// 
+    /// # Arguments
+    /// * `header_data` - Metadata header bytes (INDEX_COUNT + entries)
+    /// * `body_data` - Metadata body bytes (keys + values)
+    /// 
+    /// # Format
+    /// Header: INDEX_COUNT (2) + [KEY_SIZE (2) + VALUE_ENCODING (2) + VALUE_SIZE (4)]...
+    /// Body: [KEY + VALUE]...
+    fn decode_metadata_v3(
+        header_data: &[u8],
+        body_data: &[u8],
+    ) -> Result<Option<HashMap<String, String>>> {
+        use crate::error::IgtlError;
+
+        if header_data.len() < 2 {
+            return Ok(None);
+        }
+
+        // Parse INDEX_COUNT
+        let index_count = u16::from_be_bytes([header_data[0], header_data[1]]) as usize;
+
+        if index_count == 0 {
+            return Ok(None);
+        }
+
+        // Parse metadata header entries
+        let mut entries = Vec::with_capacity(index_count);
+        let mut header_offset = 2;
+
+        for _ in 0..index_count {
+            if header_offset + 8 > header_data.len() {
+                return Err(IgtlError::InvalidSize {
+                    expected: header_offset + 8,
+                    actual: header_data.len(),
+                });
+            }
+
+            let key_size = u16::from_be_bytes([header_data[header_offset], header_data[header_offset + 1]]);
+            let _value_encoding = u16::from_be_bytes([header_data[header_offset + 2], header_data[header_offset + 3]]);
+            let value_size = u32::from_be_bytes([
+                header_data[header_offset + 4],
+                header_data[header_offset + 5],
+                header_data[header_offset + 6],
+                header_data[header_offset + 7],
+            ]);
+
+            entries.push((key_size, value_size));
+            header_offset += 8;
+        }
+
+        // Parse metadata body using header entries
+        let mut metadata = HashMap::new();
+        let mut body_offset = 0;
+
+        for (key_size, value_size) in entries {
+            let key_size = key_size as usize;
+            let value_size = value_size as usize;
+
+            // Read key
+            if body_offset + key_size > body_data.len() {
+                return Err(IgtlError::InvalidSize {
+                    expected: body_offset + key_size,
+                    actual: body_data.len(),
+                });
+            }
+            let key = String::from_utf8(body_data[body_offset..body_offset + key_size].to_vec())?;
+            body_offset += key_size;
+
+            // Read value
+            if body_offset + value_size > body_data.len() {
+                return Err(IgtlError::InvalidSize {
+                    expected: body_offset + value_size,
+                    actual: body_data.len(),
+                });
+            }
+            let value = String::from_utf8(body_data[body_offset..body_offset + value_size].to_vec())?;
+            body_offset += value_size;
+
+            metadata.insert(key, value);
+        }
+
+        Ok(Some(metadata))
+    }
+
+    /// Decode metadata from bytes (helper function - legacy format)
+    /// This is for backward compatibility with old format where metadata was inline
     fn decode_metadata(data: &[u8]) -> Result<Option<HashMap<String, String>>> {
         use crate::error::IgtlError;
 
@@ -1089,4 +1259,86 @@ mod tests {
         assert_eq!(metadata.get("key2"), Some(&"value2".to_string()));
         assert_eq!(decoded.content, status);
     }
+
+    #[test]
+    fn test_extended_header_detection_by_field_not_version() {
+        // This test verifies that Extended Header presence is determined by the
+        // extended_header_size field, NOT the version field.
+        
+        use crate::protocol::crc::calculate_crc;
+
+        let transform = TransformMessage::identity();
+        let mut msg = IgtlMessage::new(transform.clone(), "TestDevice").unwrap();
+        
+        // Add extended header
+        let ext_header = vec![0xAA, 0xBB, 0xCC, 0xDD];
+        msg.set_extended_header(ext_header.clone());
+        
+        // Encode message
+        let mut encoded = msg.encode().unwrap();
+        
+        // MANUALLY set version to 1 in the header to simulate unreliable version info
+        // Version field is at bytes 0-1 of the header
+        encoded[0] = 0;
+        encoded[1] = 1;
+        
+        // Recalculate CRC (body didn't change, but we need consistent CRC)
+        let body_start = Header::SIZE;
+        let body_end = body_start + (msg.header.body_size as usize);
+        let body = &encoded[body_start..body_end];
+        let new_crc = calculate_crc(body);
+        
+        // Update CRC in header (bytes 50-57)
+        encoded[50..58].copy_from_slice(&new_crc.to_be_bytes());
+        
+        // Decode - should still detect extended header based on extended_header_size field
+        let decoded = IgtlMessage::<TransformMessage>::decode(&encoded).unwrap();
+        
+        // Version field should be 1 (as we set it)
+        assert_eq!(decoded.header.version, 1);
+        
+        // But extended header should still be detected and decoded correctly!
+        assert_eq!(decoded.get_extended_header(), Some(ext_header.as_slice()));
+        assert_eq!(decoded.content, transform);
+    }
+
+    #[test]
+    fn test_no_extended_header_with_zero_size_field() {
+        // Test that extended_header_size = 0 means no extended header,
+        // regardless of version
+        
+        use crate::protocol::crc::calculate_crc;
+        
+        let status = StatusMessage::ok("Test");
+        let msg = IgtlMessage::new(status.clone(), "TestDevice").unwrap();
+        
+        // Create a message with extended_header_size = 0 but version = 3
+        let content_bytes = status.encode_content().unwrap();
+        
+        // Build body with ext_header_size = 0
+        let mut body = Vec::new();
+        body.extend_from_slice(&0u16.to_be_bytes()); // ext_header_size = 0
+        body.extend_from_slice(&content_bytes);
+        
+        let crc = calculate_crc(&body);
+        
+        // Build header with version 3
+        let mut header = msg.header.clone();
+        header.version = 3;
+        header.body_size = body.len() as u64;
+        header.crc = crc;
+        
+        // Combine header + body
+        let mut encoded = Vec::new();
+        encoded.extend_from_slice(&header.encode());
+        encoded.extend_from_slice(&body);
+        
+        // Decode - should not have extended header
+        let decoded = IgtlMessage::<StatusMessage>::decode(&encoded).unwrap();
+        
+        assert_eq!(decoded.header.version, 3);
+        assert_eq!(decoded.get_extended_header(), None);
+        assert_eq!(decoded.content, status);
+    }
 }
+

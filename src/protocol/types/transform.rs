@@ -60,10 +60,11 @@ impl Message for TransformMessage {
     fn encode_content(&self) -> Result<Vec<u8>> {
         let mut buf = Vec::with_capacity(48);
 
-        // Encode 3x4 matrix (12 floats) in row-major order, big-endian
-        for row in &self.matrix[0..3] {
-            for &val in row {
-                buf.put_f32(val);
+        // Encode 3x4 matrix (12 floats) in column-major order, big-endian
+        // Order: R11, R21, R31, R12, R22, R32, R13, R23, R33, TX, TY, TZ
+        for col in 0..4 {
+            for row in 0..3 {
+                buf.put_f32(self.matrix[row][col]);
             }
         }
 
@@ -89,10 +90,11 @@ impl Message for TransformMessage {
         let mut cursor = std::io::Cursor::new(data);
         let mut matrix = [[0.0f32; 4]; 4];
 
-        // Decode 3x4 matrix from row-major order, big-endian
-        for row in matrix[0..3].iter_mut() {
-            for val in row.iter_mut() {
-                *val = cursor.get_f32();
+        // Decode 3x4 matrix from column-major order, big-endian
+        // Order: R11, R21, R31, R12, R22, R32, R13, R23, R33, TX, TY, TZ
+        for col in 0..4 {
+            for row in 0..3 {
+                matrix[row][col] = cursor.get_f32();
             }
         }
 
