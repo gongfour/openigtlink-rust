@@ -3,7 +3,7 @@
 //! This module defines the common interface that all message types must implement,
 //! as well as the generic message wrapper structure.
 
-use crate::error::{IgtlError, Result};
+use crate::error::Result;
 use crate::protocol::extended_header::ExtendedHeader;
 use crate::protocol::header::Header;
 use std::collections::HashMap;
@@ -609,71 +609,6 @@ impl<T: Message> IgtlMessage<T> {
             }
             let value = String::from_utf8(body_data[body_offset..body_offset + value_size].to_vec())?;
             body_offset += value_size;
-
-            metadata.insert(key, value);
-        }
-
-        Ok(Some(metadata))
-    }
-
-    /// Decode metadata from bytes (helper function - legacy format)
-    /// This is for backward compatibility with old format where metadata was inline
-    fn decode_metadata(data: &[u8]) -> Result<Option<HashMap<String, String>>> {
-        use crate::error::IgtlError;
-
-        if data.len() < 2 {
-            return Ok(None);
-        }
-
-        let metadata_count = u16::from_be_bytes([data[0], data[1]]) as usize;
-
-        if metadata_count == 0 {
-            return Ok(None);
-        }
-
-        let mut metadata = HashMap::new();
-        let mut offset = 2;
-
-        for _ in 0..metadata_count {
-            // Read key size
-            if offset + 2 > data.len() {
-                return Err(IgtlError::InvalidSize {
-                    expected: offset + 2,
-                    actual: data.len(),
-                });
-            }
-            let key_size = u16::from_be_bytes([data[offset], data[offset + 1]]) as usize;
-            offset += 2;
-
-            // Read key
-            if offset + key_size > data.len() {
-                return Err(IgtlError::InvalidSize {
-                    expected: offset + key_size,
-                    actual: data.len(),
-                });
-            }
-            let key = String::from_utf8(data[offset..offset + key_size].to_vec())?;
-            offset += key_size;
-
-            // Read value size
-            if offset + 2 > data.len() {
-                return Err(IgtlError::InvalidSize {
-                    expected: offset + 2,
-                    actual: data.len(),
-                });
-            }
-            let value_size = u16::from_be_bytes([data[offset], data[offset + 1]]) as usize;
-            offset += 2;
-
-            // Read value
-            if offset + value_size > data.len() {
-                return Err(IgtlError::InvalidSize {
-                    expected: offset + value_size,
-                    actual: data.len(),
-                });
-            }
-            let value = String::from_utf8(data[offset..offset + value_size].to_vec())?;
-            offset += value_size;
 
             metadata.insert(key, value);
         }
