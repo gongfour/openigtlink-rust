@@ -24,11 +24,8 @@
 pub mod async_server;
 pub mod builder;
 mod common;
-pub mod message_queue;
-pub mod partial_transfer;
 pub mod reconnect;
 pub mod server;
-pub mod session_manager;
 mod sync_client;
 pub mod tls_server;
 pub mod udp;
@@ -46,13 +43,6 @@ pub use async_server::{
 };
 pub use server::{IgtlConnection, IgtlServer};
 pub use tls_server::{TlsIgtlConnection, TlsIgtlServer};
-
-// Session and queue management
-pub use message_queue::{MessageQueue, QueueConfig, QueueStats};
-pub use partial_transfer::{
-    PartialTransferManager, TransferConfig, TransferId, TransferInfo, TransferState,
-};
-pub use session_manager::{ClientId, ClientInfo, MessageHandler, SessionManager};
 
 // UDP
 pub use udp::{UdpClient, UdpServer};
