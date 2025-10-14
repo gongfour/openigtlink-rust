@@ -193,7 +193,7 @@ let client = ClientBuilder::new()
 Add to your `Cargo.toml`:
 ```toml
 [dependencies]
-openigtlink-rust = "0.3"  # Latest: Dynamic message dispatch support
+openigtlink-rust = "0.4"  # Latest: Dynamic message dispatch support
 ```
 
 Or install from source:
@@ -530,7 +530,7 @@ cargo bench
 ## Documentation & Resources
 
 - 📚 **[API Docs](https://docs.rs/openigtlink-rust)** - Complete API reference
-- 📖 **[Examples](./examples/)** - 27 practical examples
+- 📖 **[Examples](./examples/)** - 17+ practical examples
 - 🔍 **[Query Guide](./docs/query_usage.md)** - Streaming control protocol
 - 📊 **[Benchmarks](./BENCHMARKS.md)** - Performance analysis
 - 🌐 **[OpenIGTLink Protocol](http://openigtlink.org/)** - Official specification
