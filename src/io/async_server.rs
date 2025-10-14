@@ -5,6 +5,7 @@
 use crate::error::Result;
 use crate::protocol::header::Header;
 use crate::protocol::message::{IgtlMessage, Message};
+use crate::protocol::AnyMessage;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tracing::{debug, info, trace, warn};
@@ -251,6 +252,91 @@ impl AsyncIgtlConnection {
                     msg_type = msg_type,
                     device_name = device_name,
                     "Message decoded successfully (async)"
+                );
+            }
+            Err(e) => {
+                warn!(
+                    msg_type = msg_type,
+                    error = %e,
+                    "Failed to decode message from client (async)"
+                );
+            }
+        }
+
+        result
+    }
+
+    /// Receive any message type dynamically (async)
+    ///
+    /// This method receives a message without knowing its type in advance,
+    /// returning it as an [`AnyMessage`] enum that can be pattern matched.
+    ///
+    /// # Errors
+    ///
+    /// - [`IgtlError::Io`](crate::error::IgtlError::Io) - Network read failed
+    /// - [`IgtlError::InvalidHeader`](crate::error::IgtlError::InvalidHeader) - Malformed header
+    /// - [`IgtlError::CrcMismatch`](crate::error::IgtlError::CrcMismatch) - Data corruption detected
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use openigtlink_rust::io::AsyncIgtlServer;
+    /// use openigtlink_rust::protocol::AnyMessage;
+    ///
+    /// #[tokio::main]
+    /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let server = AsyncIgtlServer::bind("127.0.0.1:18944").await?;
+    ///     let mut conn = server.accept().await?;
+    ///
+    ///     let msg = conn.receive_any().await?;
+    ///     match msg {
+    ///         AnyMessage::Transform(_) => println!("Received transform"),
+    ///         AnyMessage::Status(_) => println!("Received status"),
+    ///         _ => println!("Received other message"),
+    ///     }
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub async fn receive_any(&mut self) -> Result<AnyMessage> {
+        trace!("Waiting for any message type from client (async)");
+
+        let mut header_buf = vec![0u8; Header::SIZE];
+        self.stream.read_exact(&mut header_buf).await?;
+
+        let header = Header::decode(&header_buf)?;
+
+        let msg_type = header.type_name.as_str().unwrap_or("UNKNOWN");
+        let device_name = header.device_name.as_str().unwrap_or("UNKNOWN");
+
+        debug!(
+            msg_type = msg_type,
+            device_name = device_name,
+            body_size = header.body_size,
+            version = header.version,
+            "Received message header from client (async)"
+        );
+
+        let mut body_buf = vec![0u8; header.body_size as usize];
+        self.stream.read_exact(&mut body_buf).await?;
+
+        trace!(
+            msg_type = msg_type,
+            bytes_read = body_buf.len(),
+            "Message body received from client (async)"
+        );
+
+        let mut full_msg = header_buf;
+        full_msg.extend_from_slice(&body_buf);
+
+        let result = AnyMessage::decode_with_options(&full_msg, self.verify_crc);
+
+        match &result {
+            Ok(_) => {
+                debug!(
+                    msg_type = msg_type,
+                    device_name = device_name,
+                    "Message decoded successfully as AnyMessage (async)"
                 );
             }
             Err(e) => {

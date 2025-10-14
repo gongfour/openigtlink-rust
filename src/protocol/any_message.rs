@@ -359,4 +359,99 @@ impl AnyMessage {
     pub fn is_unknown(&self) -> bool {
         matches!(self, AnyMessage::Unknown { .. })
     }
+
+    /// Decode a message from raw bytes with optional CRC verification
+    ///
+    /// This is a lower-level method that attempts to decode the message
+    /// based on its type_name field in the header.
+    ///
+    /// # Arguments
+    ///
+    /// * `data` - Raw message bytes (header + body)
+    /// * `verify_crc` - Whether to verify CRC checksum
+    ///
+    /// # Errors
+    ///
+    /// - [`IgtlError::InvalidHeader`](crate::error::IgtlError::InvalidHeader) - Malformed header
+    /// - [`IgtlError::CrcMismatch`](crate::error::IgtlError::CrcMismatch) - CRC verification failed
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use openigtlink_rust::protocol::AnyMessage;
+    /// # fn example() -> Result<(), openigtlink_rust::error::IgtlError> {
+    /// # let data: Vec<u8> = vec![];
+    /// let msg = AnyMessage::decode_with_options(&data, true)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn decode_with_options(data: &[u8], verify_crc: bool) -> Result<Self> {
+        use crate::error::IgtlError;
+
+        // Decode header first to determine message type
+        let header = Header::decode(&data[..Header::SIZE])?;
+        let type_name = header.type_name.as_str()?;
+
+        // Try to decode as specific message types based on type_name
+        match type_name {
+            "TRANSFORM" => {
+                if let Ok(msg) = IgtlMessage::<TransformMessage>::decode_with_options(data, verify_crc) {
+                    return Ok(AnyMessage::Transform(msg));
+                }
+            }
+            "STATUS" => {
+                if let Ok(msg) = IgtlMessage::<StatusMessage>::decode_with_options(data, verify_crc) {
+                    return Ok(AnyMessage::Status(msg));
+                }
+            }
+            "CAPABILITY" => {
+                if let Ok(msg) = IgtlMessage::<CapabilityMessage>::decode_with_options(data, verify_crc) {
+                    return Ok(AnyMessage::Capability(msg));
+                }
+            }
+            "IMAGE" => {
+                if let Ok(msg) = IgtlMessage::<ImageMessage>::decode_with_options(data, verify_crc) {
+                    return Ok(AnyMessage::Image(msg));
+                }
+            }
+            "POSITION" => {
+                if let Ok(msg) = IgtlMessage::<PositionMessage>::decode_with_options(data, verify_crc) {
+                    return Ok(AnyMessage::Position(msg));
+                }
+            }
+            "STRING" => {
+                if let Ok(msg) = IgtlMessage::<StringMessage>::decode_with_options(data, verify_crc) {
+                    return Ok(AnyMessage::String(msg));
+                }
+            }
+            "QTDATA" => {
+                if let Ok(msg) = IgtlMessage::<QtDataMessage>::decode_with_options(data, verify_crc) {
+                    return Ok(AnyMessage::QtData(msg));
+                }
+            }
+            "TDATA" => {
+                if let Ok(msg) = IgtlMessage::<TDataMessage>::decode_with_options(data, verify_crc) {
+                    return Ok(AnyMessage::TData(msg));
+                }
+            }
+            "SENSOR" => {
+                if let Ok(msg) = IgtlMessage::<SensorMessage>::decode_with_options(data, verify_crc) {
+                    return Ok(AnyMessage::Sensor(msg));
+                }
+            }
+            "POINT" => {
+                if let Ok(msg) = IgtlMessage::<PointMessage>::decode_with_options(data, verify_crc) {
+                    return Ok(AnyMessage::Point(msg));
+                }
+            }
+            _ => {
+                // Unknown message type - store header and body
+                let body = data[Header::SIZE..].to_vec();
+                return Ok(AnyMessage::Unknown { header, body });
+            }
+        }
+
+        // If we get here, the message type matched but decode failed
+        Err(IgtlError::UnknownMessageType(type_name.to_string()))
+    }
 }

@@ -1,16 +1,16 @@
-//! OpenIGTLink Sync Client Example
+//! OpenIGTLink Async Client Example
 //!
-//! This example demonstrates how to create a simple synchronous OpenIGTLink client
+//! This example demonstrates how to create an asynchronous OpenIGTLink client
 //! using ClientBuilder and dynamic message handling (AnyMessage).
 //!
 //! # Usage
 //!
 //! ```bash
-//! # Start server first
-//! cargo run --example server
+//! # Start async server first
+//! cargo run --example async_server
 //!
-//! # Then run client (in another terminal)
-//! cargo run --example client
+//! # Then run async client (in another terminal)
+//! cargo run --example async_client
 //! ```
 
 use openigtlink_rust::error::Result;
@@ -19,19 +19,24 @@ use openigtlink_rust::protocol::message::IgtlMessage;
 use openigtlink_rust::protocol::types::{CapabilityMessage, StatusMessage, TransformMessage};
 use openigtlink_rust::protocol::AnyMessage;
 
-fn main() {
-    if let Err(e) = run() {
+#[tokio::main]
+async fn main() {
+    if let Err(e) = run().await {
         eprintln!("[ERROR] {}", e);
         std::process::exit(1);
     }
 }
 
-fn run() -> Result<()> {
-    println!("=== OpenIGTLink Sync Client (AnyMessage) ===\n");
+async fn run() -> Result<()> {
+    println!("=== OpenIGTLink Async Client (AnyMessage) ===\n");
 
     // Connect to server using ClientBuilder
     println!("[INFO] Connecting to 127.0.0.1:18944...");
-    let mut client = ClientBuilder::new().tcp("127.0.0.1:18944").sync().build()?;
+    let mut client = ClientBuilder::new()
+        .tcp("127.0.0.1:18944")
+        .async_mode()
+        .build()
+        .await?;
     println!("[INFO] Connected to server\n");
 
     // Test 1: Send TRANSFORM message
@@ -39,11 +44,11 @@ fn run() -> Result<()> {
     println!("[TEST 1] Sending TRANSFORM message...");
     let transform = TransformMessage::translation(10.0, 20.0, 30.0);
     println!("[SEND] Translation: (10.0, 20.0, 30.0)");
-    let msg = IgtlMessage::new(transform, "ClientDevice")?;
-    client.send(&msg)?;
+    let msg = IgtlMessage::new(transform, "AsyncClient")?;
+    client.send(&msg).await?;
 
     // Receive response dynamically
-    let response = client.receive_any()?;
+    let response = client.receive_any().await?;
     println!("[RECV] {} from '{}'", response.message_type(), response.device_name()?);
 
     match response {
@@ -57,13 +62,13 @@ fn run() -> Result<()> {
     // Test 2: Send STATUS message
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     println!("[TEST 2] Sending STATUS message...");
-    let status = StatusMessage::ok("Client test message");
+    let status = StatusMessage::ok("Async client test message");
     println!("[SEND] Status: {}", status.status_string);
-    let msg = IgtlMessage::new(status, "ClientDevice")?;
-    client.send(&msg)?;
+    let msg = IgtlMessage::new(status, "AsyncClient")?;
+    client.send(&msg).await?;
 
     // Receive response dynamically
-    let response = client.receive_any()?;
+    let response = client.receive_any().await?;
     println!("[RECV] {} from '{}'", response.message_type(), response.device_name()?);
 
     match response {
@@ -86,8 +91,8 @@ fn run() -> Result<()> {
         "CAPABILITY".to_string(),
     ]);
     println!("[SEND] Client capabilities: {} types", capability.types.len());
-    let msg = IgtlMessage::new(capability, "ClientDevice")?;
-    client.send(&msg)?;
+    let msg = IgtlMessage::new(capability, "AsyncClient")?;
+    client.send(&msg).await?;
     println!("✓ Test 3 completed\n");
 
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
