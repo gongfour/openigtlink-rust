@@ -228,7 +228,9 @@ impl ExtendedHeader {
     }
 
     /// Get the number of metadata entries (deprecated - metadata_header_size is not entry count)
-    #[deprecated(note = "Use get_metadata_header_size() instead - metadata_header_size is size in bytes, not count")]
+    #[deprecated(
+        note = "Use get_metadata_header_size() instead - metadata_header_size is size in bytes, not count"
+    )]
     pub fn get_metadata_count(&self) -> usize {
         self.metadata_header_size as usize
     }
