@@ -68,12 +68,16 @@ fn handle_client(mut conn: IgtlConnection) -> Result<()> {
                 let msg_type = msg.message_type();
                 let device_name = msg.device_name().unwrap_or("Unknown");
 
-                println!("\n[RECV #{}] {} from '{}'", message_count, msg_type, device_name);
+                println!(
+                    "\n[RECV #{}] {} from '{}'",
+                    message_count, msg_type, device_name
+                );
 
                 // Handle different message types
                 match msg {
                     AnyMessage::Transform(transform_msg) => {
-                        println!("       Matrix (first row): [{:.2}, {:.2}, {:.2}, {:.2}]",
+                        println!(
+                            "       Matrix (first row): [{:.2}, {:.2}, {:.2}, {:.2}]",
                             transform_msg.content.matrix[0][0],
                             transform_msg.content.matrix[0][1],
                             transform_msg.content.matrix[0][2],
@@ -88,9 +92,9 @@ fn handle_client(mut conn: IgtlConnection) -> Result<()> {
                     }
 
                     AnyMessage::Status(status_msg) => {
-                        println!("       Code: {}, Message: '{}'",
-                            status_msg.content.code,
-                            status_msg.content.status_string
+                        println!(
+                            "       Code: {}, Message: '{}'",
+                            status_msg.content.code, status_msg.content.status_string
                         );
 
                         // Respond with CAPABILITY
@@ -107,7 +111,10 @@ fn handle_client(mut conn: IgtlConnection) -> Result<()> {
                     }
 
                     AnyMessage::Capability(cap_msg) => {
-                        println!("       Client capabilities ({} types):", cap_msg.content.types.len());
+                        println!(
+                            "       Client capabilities ({} types):",
+                            cap_msg.content.types.len()
+                        );
                         for (i, typ) in cap_msg.content.types.iter().enumerate() {
                             println!("         {}. {}", i + 1, typ);
                         }
@@ -116,7 +123,8 @@ fn handle_client(mut conn: IgtlConnection) -> Result<()> {
                     }
 
                     AnyMessage::Image(img_msg) => {
-                        println!("       Image: {}x{}x{}, {} bytes",
+                        println!(
+                            "       Image: {}x{}x{}, {} bytes",
                             img_msg.content.size[0],
                             img_msg.content.size[1],
                             img_msg.content.size[2],
@@ -130,7 +138,8 @@ fn handle_client(mut conn: IgtlConnection) -> Result<()> {
                     }
 
                     AnyMessage::Position(pos_msg) => {
-                        println!("       Position: ({:.2}, {:.2}, {:.2})",
+                        println!(
+                            "       Position: ({:.2}, {:.2}, {:.2})",
                             pos_msg.content.position[0],
                             pos_msg.content.position[1],
                             pos_msg.content.position[2]

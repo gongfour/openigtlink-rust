@@ -44,11 +44,18 @@ fn run() -> Result<()> {
 
     // Receive response dynamically
     let response = client.receive_any()?;
-    println!("[RECV] {} from '{}'", response.message_type(), response.device_name()?);
+    println!(
+        "[RECV] {} from '{}'",
+        response.message_type(),
+        response.device_name()?
+    );
 
     match response {
         AnyMessage::Status(status_msg) => {
-            println!("       Status: {} - {}", status_msg.content.code, status_msg.content.status_string);
+            println!(
+                "       Status: {} - {}",
+                status_msg.content.code, status_msg.content.status_string
+            );
         }
         _ => println!("       Unexpected message type"),
     }
@@ -64,11 +71,18 @@ fn run() -> Result<()> {
 
     // Receive response dynamically
     let response = client.receive_any()?;
-    println!("[RECV] {} from '{}'", response.message_type(), response.device_name()?);
+    println!(
+        "[RECV] {} from '{}'",
+        response.message_type(),
+        response.device_name()?
+    );
 
     match response {
         AnyMessage::Capability(cap_msg) => {
-            println!("       Server capabilities ({} types):", cap_msg.content.types.len());
+            println!(
+                "       Server capabilities ({} types):",
+                cap_msg.content.types.len()
+            );
             for (i, typ) in cap_msg.content.types.iter().enumerate() {
                 println!("         {}. {}", i + 1, typ);
             }
@@ -85,7 +99,10 @@ fn run() -> Result<()> {
         "STATUS".to_string(),
         "CAPABILITY".to_string(),
     ]);
-    println!("[SEND] Client capabilities: {} types", capability.types.len());
+    println!(
+        "[SEND] Client capabilities: {} types",
+        capability.types.len()
+    );
     let msg = IgtlMessage::new(capability, "ClientDevice")?;
     client.send(&msg)?;
     println!("✓ Test 3 completed\n");

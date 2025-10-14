@@ -395,52 +395,65 @@ impl AnyMessage {
         // Try to decode as specific message types based on type_name
         match type_name {
             "TRANSFORM" => {
-                if let Ok(msg) = IgtlMessage::<TransformMessage>::decode_with_options(data, verify_crc) {
+                if let Ok(msg) =
+                    IgtlMessage::<TransformMessage>::decode_with_options(data, verify_crc)
+                {
                     return Ok(AnyMessage::Transform(msg));
                 }
             }
             "STATUS" => {
-                if let Ok(msg) = IgtlMessage::<StatusMessage>::decode_with_options(data, verify_crc) {
+                if let Ok(msg) = IgtlMessage::<StatusMessage>::decode_with_options(data, verify_crc)
+                {
                     return Ok(AnyMessage::Status(msg));
                 }
             }
             "CAPABILITY" => {
-                if let Ok(msg) = IgtlMessage::<CapabilityMessage>::decode_with_options(data, verify_crc) {
+                if let Ok(msg) =
+                    IgtlMessage::<CapabilityMessage>::decode_with_options(data, verify_crc)
+                {
                     return Ok(AnyMessage::Capability(msg));
                 }
             }
             "IMAGE" => {
-                if let Ok(msg) = IgtlMessage::<ImageMessage>::decode_with_options(data, verify_crc) {
+                if let Ok(msg) = IgtlMessage::<ImageMessage>::decode_with_options(data, verify_crc)
+                {
                     return Ok(AnyMessage::Image(msg));
                 }
             }
             "POSITION" => {
-                if let Ok(msg) = IgtlMessage::<PositionMessage>::decode_with_options(data, verify_crc) {
+                if let Ok(msg) =
+                    IgtlMessage::<PositionMessage>::decode_with_options(data, verify_crc)
+                {
                     return Ok(AnyMessage::Position(msg));
                 }
             }
             "STRING" => {
-                if let Ok(msg) = IgtlMessage::<StringMessage>::decode_with_options(data, verify_crc) {
+                if let Ok(msg) = IgtlMessage::<StringMessage>::decode_with_options(data, verify_crc)
+                {
                     return Ok(AnyMessage::String(msg));
                 }
             }
             "QTDATA" => {
-                if let Ok(msg) = IgtlMessage::<QtDataMessage>::decode_with_options(data, verify_crc) {
+                if let Ok(msg) = IgtlMessage::<QtDataMessage>::decode_with_options(data, verify_crc)
+                {
                     return Ok(AnyMessage::QtData(msg));
                 }
             }
             "TDATA" => {
-                if let Ok(msg) = IgtlMessage::<TDataMessage>::decode_with_options(data, verify_crc) {
+                if let Ok(msg) = IgtlMessage::<TDataMessage>::decode_with_options(data, verify_crc)
+                {
                     return Ok(AnyMessage::TData(msg));
                 }
             }
             "SENSOR" => {
-                if let Ok(msg) = IgtlMessage::<SensorMessage>::decode_with_options(data, verify_crc) {
+                if let Ok(msg) = IgtlMessage::<SensorMessage>::decode_with_options(data, verify_crc)
+                {
                     return Ok(AnyMessage::Sensor(msg));
                 }
             }
             "POINT" => {
-                if let Ok(msg) = IgtlMessage::<PointMessage>::decode_with_options(data, verify_crc) {
+                if let Ok(msg) = IgtlMessage::<PointMessage>::decode_with_options(data, verify_crc)
+                {
                     return Ok(AnyMessage::Point(msg));
                 }
             }
