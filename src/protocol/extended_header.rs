@@ -265,7 +265,7 @@ mod tests {
         assert_eq!(ext_header.metadata_header_size, 5);
         assert_eq!(ext_header.metadata_size, 128);
         assert!(ext_header.has_metadata());
-        assert_eq!(ext_header.get_metadata_count(), 5);
+        assert_eq!(ext_header.get_metadata_header_size(), 5);
         assert_eq!(ext_header.get_metadata_size(), 128);
     }
 
