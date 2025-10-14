@@ -93,8 +93,8 @@ impl Message for TransformMessage {
         // Decode 3x4 matrix from column-major order, big-endian
         // Order: R11, R21, R31, R12, R22, R32, R13, R23, R33, TX, TY, TZ
         for col in 0..4 {
-            for row in 0..3 {
-                matrix[row][col] = cursor.get_f32();
+            for row in matrix.iter_mut().take(3) {
+                row[col] = cursor.get_f32();
             }
         }
 
