@@ -10,6 +10,20 @@ use ui::{render_client_tab, render_server_tab};
 fn main() -> eframe::Result<()> {
     tracing_subscriber::fmt::init();
 
+    // Tokio 런타임 생성 (백그라운드 스레드에서 실행)
+    let runtime = tokio::runtime::Runtime::new().unwrap();
+    let runtime_handle = runtime.handle().clone();
+
+    // 별도 스레드에서 런타임 유지
+    std::thread::spawn(move || {
+        runtime.block_on(async {
+            // 런타임을 계속 유지
+            loop {
+                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+            }
+        });
+    });
+
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([1400.0, 900.0])
@@ -20,7 +34,7 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "OpenIGTLink Inspector",
         options,
-        Box::new(|_cc| Ok(Box::new(InspectorApp::default()))),
+        Box::new(move |_cc| Ok(Box::new(InspectorApp::new(runtime_handle)))),
     )
 }
 
@@ -30,16 +44,18 @@ struct InspectorApp {
     next_tab_id: usize,
     show_new_tab_dialog: bool,
     show_settings: bool,
+    runtime_handle: tokio::runtime::Handle,
 }
 
-impl Default for InspectorApp {
-    fn default() -> Self {
+impl InspectorApp {
+    fn new(runtime_handle: tokio::runtime::Handle) -> Self {
         Self {
             tabs: vec![Tab::new_client(0)],
             active_tab: 0,
             next_tab_id: 1,
             show_new_tab_dialog: false,
             show_settings: false,
+            runtime_handle,
         }
     }
 }
@@ -142,7 +158,7 @@ impl eframe::App for InspectorApp {
             if self.active_tab < self.tabs.len() {
                 let tab = &mut self.tabs[self.active_tab];
                 match tab.tab_type {
-                    TabType::Client => render_client_tab(ui, tab),
+                    TabType::Client => render_client_tab(ui, tab, &self.runtime_handle),
                     TabType::Server => render_server_tab(ui, tab),
                 }
             } else {

@@ -1,8 +1,9 @@
 use eframe::egui;
-use crate::types::Tab;
+use crate::connection::client_handler::run_client_connection;
+use crate::types::{ConnectionCommand, Tab};
 use super::components::{render_received_messages, render_send_panel};
 
-pub fn render_client_tab(ui: &mut egui::Ui, tab: &mut Tab) {
+pub fn render_client_tab(ui: &mut egui::Ui, tab: &mut Tab, runtime_handle: &tokio::runtime::Handle) {
     ui.vertical(|ui| {
         // Connection controls
         ui.horizontal(|ui| {
@@ -17,7 +18,28 @@ pub fn render_client_tab(ui: &mut egui::Ui, tab: &mut Tab) {
                 "Connect"
             };
             if ui.button(button_text).clicked() {
-                tab.is_connected = !tab.is_connected;
+                if !tab.is_connected {
+                    // Create channels for communication
+                    let (msg_tx, msg_rx) = std::sync::mpsc::channel();
+                    let (cmd_tx, cmd_rx) = std::sync::mpsc::channel();
+
+                    tab.message_rx = Some(msg_rx);
+                    tab.command_tx = Some(cmd_tx.clone());
+
+                    let host = tab.host.clone();
+                    let port = tab.port.parse::<u16>().unwrap_or(18944);
+
+                    // Spawn background connection task
+                    runtime_handle.spawn(run_client_connection(host, port, msg_tx, cmd_rx));
+
+                    tab.is_connected = true;
+                } else {
+                    // Disconnect
+                    if let Some(tx) = &tab.command_tx {
+                        let _ = tx.send(ConnectionCommand::Disconnect);
+                    }
+                    tab.is_connected = false;
+                }
             }
 
             if tab.is_connected {
