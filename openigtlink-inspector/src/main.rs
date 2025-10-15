@@ -1,5 +1,6 @@
 use eframe::egui;
 
+mod connection;
 mod types;
 mod ui;
 
