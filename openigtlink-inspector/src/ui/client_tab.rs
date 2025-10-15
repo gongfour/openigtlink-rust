@@ -62,6 +62,7 @@ pub fn render_client_tab(ui: &mut egui::Ui, tab: &mut Tab, runtime_handle: &toki
             messages_height,
             "client_filter",
             false, // Don't show "From" column for client tab
+            &tab.received_messages,
         );
 
         ui.add_space(10.0);

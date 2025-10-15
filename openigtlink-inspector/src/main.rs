@@ -62,6 +62,26 @@ impl InspectorApp {
 
 impl eframe::App for InspectorApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Poll messages from active tab
+        if let Some(tab) = self.tabs.get_mut(self.active_tab) {
+            if let Some(rx) = &tab.message_rx {
+                let mut batch_count = 0;
+                while let Ok(msg) = rx.try_recv() {
+                    tab.received_messages.push_front(msg);
+                    tab.rx_count += 1;
+                    batch_count += 1;
+                    if batch_count >= 100 {
+                        break;
+                    }
+                }
+
+                // Limit buffer size
+                if tab.received_messages.len() > 1000 {
+                    tab.received_messages.truncate(1000);
+                }
+            }
+        }
+
         // Top panel - App title and controls
         egui::TopBottomPanel::top("top_bar").show(ctx, |ui| {
             ui.horizontal(|ui| {

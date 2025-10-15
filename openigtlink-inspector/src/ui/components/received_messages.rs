@@ -1,4 +1,6 @@
 use eframe::egui;
+use std::collections::VecDeque;
+use crate::types::ReceivedMessage;
 
 /// Renders the received messages area with filter, search, and message table
 pub fn render_received_messages(
@@ -6,6 +8,7 @@ pub fn render_received_messages(
     height: f32,
     filter_id: &str,
     show_from_column: bool, // true for Server tab, false for Client tab
+    messages: &VecDeque<ReceivedMessage>,
 ) {
     egui::Frame::group(ui.style()).show(ui, |ui| {
         ui.set_height(height);
@@ -29,7 +32,7 @@ pub fn render_received_messages(
             }
 
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                ui.label("145 messages");
+                ui.label(format!("{} messages", messages.len()));
             });
         });
 
@@ -85,35 +88,44 @@ pub fn render_received_messages(
                     });
                 })
                 .body(|mut body| {
-                    for i in 0..10 {
+                    for (idx, msg) in messages.iter().enumerate() {
                         body.row(18.0, |mut row| {
                             row.col(|ui| {
-                                ui.label(format!("{}", i + 1));
+                                ui.label(format!("{}", idx + 1));
                             });
                             row.col(|ui| {
-                                ui.label("10:23:45");
+                                let time = msg
+                                    .timestamp
+                                    .elapsed()
+                                    .map(|d| format!("{:.1}s ago", d.as_secs_f32()))
+                                    .unwrap_or_else(|_| "?".to_string());
+                                ui.label(time);
                             });
                             if show_from_column {
                                 row.col(|ui| {
-                                    ui.label(format!("Client-{}", (i % 2) + 1));
+                                    ui.label(msg.from_client.as_deref().unwrap_or("-"));
                                 });
                             }
                             row.col(|ui| {
-                                let color = egui::Color32::from_rgb(100, 200, 100);
                                 if show_from_column {
-                                    ui.colored_label(color, "TRANSFORM / TestDevice");
+                                    let msg_type = msg.message.message_type();
+                                    let device = msg.message.device_name().unwrap_or("?");
+                                    let color = egui::Color32::from_rgb(100, 200, 100);
+                                    ui.colored_label(color, format!("{} / {}", msg_type, device));
                                 } else {
-                                    ui.label("Tool01");
+                                    let device = msg.message.device_name().unwrap_or("?");
+                                    ui.label(device);
                                 }
                             });
                             if !show_from_column {
                                 row.col(|ui| {
+                                    let msg_type = msg.message.message_type();
                                     let color = egui::Color32::from_rgb(100, 200, 100);
-                                    ui.colored_label(color, "TRANSFORM");
+                                    ui.colored_label(color, msg_type);
                                 });
                             }
                             row.col(|ui| {
-                                ui.label("72 B");
+                                ui.label(format!("{} B", msg.size_bytes));
                             });
                         });
                     }

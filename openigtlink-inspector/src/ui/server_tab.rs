@@ -46,6 +46,7 @@ pub fn render_server_tab(ui: &mut egui::Ui, tab: &mut Tab) {
             messages_height,
             "server_filter",
             true, // Show "From" column for server tab
+            &tab.received_messages,
         );
 
         ui.add_space(10.0);
