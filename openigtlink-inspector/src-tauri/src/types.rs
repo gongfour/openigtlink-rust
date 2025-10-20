@@ -1,7 +1,5 @@
 use openigtlink_rust::protocol::AnyMessage;
 use serde::{Deserialize, Serialize};
-use std::collections::VecDeque;
-use std::time::SystemTime;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum TabType {
@@ -12,16 +10,16 @@ pub enum TabType {
 /// 수신된 메시지를 저장하는 구조체
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReceivedMessage {
-    pub timestamp: SystemTime,
+    pub timestamp: u64, // milliseconds since UNIX_EPOCH
     pub message_type: String,
     pub device_name: String,
     pub size_bytes: usize,
     pub from_client: Option<String>,
-    pub body: String, // JSON 형식의 메시지 바디
+    pub body: serde_json::Value, // JSON 형식의 메시지 바디
 }
 
 /// 연결 관리를 위한 명령 enum
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 #[allow(dead_code)]
 pub enum ConnectionCommand {
     Connect { host: String, port: u16 },
@@ -31,7 +29,7 @@ pub enum ConnectionCommand {
     StopListening,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[allow(dead_code)]
 pub struct Tab {
     pub id: usize,
