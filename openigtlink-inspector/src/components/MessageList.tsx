@@ -12,6 +12,7 @@ export default function MessageList({ messages, tabIndex }: MessageListProps) {
   const toggleMessageExpanded = useAppStore((state) => state.toggleMessageExpanded);
 
   const expandedMessageKeys = tabs[tabIndex]?.expandedMessageKeys || new Set<string>();
+  const isServerTab = tabs[tabIndex]?.tab_type === "Server";
 
   // 메시지의 고유 키 생성 (타임스탬프 + 장치명 + 타입)
   const getMessageKey = (index: number): string => {
@@ -42,6 +43,60 @@ export default function MessageList({ messages, tabIndex }: MessageListProps) {
     });
   };
 
+  const getMessageData = (msg: ReceivedMessage): string => {
+    const body = msg.body;
+
+    switch (msg.message_type) {
+      case "TRANSFORM":
+        // 변환 행렬의 위치 정보 (translation)
+        if (body.matrix?.data) {
+          const tx = body.matrix.data[0][3];
+          const ty = body.matrix.data[1][3];
+          const tz = body.matrix.data[2][3];
+          return `[${tx?.toFixed(2)}, ${ty?.toFixed(2)}, ${tz?.toFixed(2)}]`;
+        }
+        return "Transform matrix";
+
+      case "POSITION":
+        // 위치 데이터
+        if (body.position) {
+          const { x, y, z } = body.position;
+          return `[${x?.toFixed(2)}, ${y?.toFixed(2)}, ${z?.toFixed(2)}]`;
+        }
+        return "Position data";
+
+      case "STRING":
+        // 문자열 데이터 (최대 30자)
+        const str = body.string || "";
+        return str.length > 30 ? str.substring(0, 30) + "..." : str;
+
+      case "STATUS":
+        // 상태 코드와 메시지
+        return `${body.code || 0}: ${body.status_string || ""}`;
+
+      case "IMAGE":
+        // 이미지 크기
+        if (body.size) {
+          return `${body.size.x}×${body.size.y}×${body.size.z}`;
+        }
+        return "Image data";
+
+      case "SENSOR":
+        // 센서 데이터 길이
+        return `${body.data_length || 0} samples`;
+
+      case "CAPABILITY":
+        // 지원하는 타입들
+        if (body.types && Array.isArray(body.types)) {
+          return body.types.join(", ");
+        }
+        return "Capability";
+
+      default:
+        return "—";
+    }
+  };
+
   const handleRowClick = (index: number) => {
     const key = getMessageKey(index);
     toggleMessageExpanded(tabIndex, key);
@@ -52,16 +107,18 @@ export default function MessageList({ messages, tabIndex }: MessageListProps) {
       <table className="message-table">
         <thead>
           <tr>
+            {isServerTab && <th style={{ width: "100px" }}>From Client</th>}
             <th style={{ width: "120px" }}>Timestamp</th>
             <th style={{ width: "100px" }}>Type</th>
             <th style={{ width: "150px" }}>Device</th>
+            <th style={{ width: "200px" }}>Data</th>
             <th style={{ width: "80px" }}>Size (bytes)</th>
           </tr>
         </thead>
         <tbody>
           {messages.length === 0 ? (
             <tr>
-              <td colSpan={4} className="empty-message">
+              <td colSpan={isServerTab ? 6 : 5} className="empty-message">
                 No messages received yet
               </td>
             </tr>
@@ -73,6 +130,11 @@ export default function MessageList({ messages, tabIndex }: MessageListProps) {
                   className={`message-row ${expandedMessageKeys.has(getMessageKey(index)) ? "selected" : ""}`}
                   onClick={() => handleRowClick(index)}
                 >
+                  {isServerTab && (
+                    <td className="client-cell">
+                      {msg.from_client || "Unknown"}
+                    </td>
+                  )}
                   <td>{formatTimestamp(msg.timestamp)}</td>
                   <td>
                     <span
@@ -86,11 +148,12 @@ export default function MessageList({ messages, tabIndex }: MessageListProps) {
                     </span>
                   </td>
                   <td className="device-cell">{msg.device_name}</td>
+                  <td className="data-cell">{getMessageData(msg)}</td>
                   <td className="size-cell">{msg.size_bytes}</td>
                 </tr>
                 {expandedMessageKeys.has(getMessageKey(index)) && (
                   <tr key={`detail-${index}`} className="message-detail-row">
-                    <td colSpan={4}>
+                    <td colSpan={isServerTab ? 6 : 5}>
                       <div className="inline-message-details">
                         <div className="detail-row">
                           <span className="detail-label">Timestamp:</span>

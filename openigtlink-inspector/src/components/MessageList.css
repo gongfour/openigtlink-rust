@@ -74,6 +74,22 @@
     color: #a0a0a0;
 }
 
+.client-cell {
+    font-family: monospace;
+    color: #88c0d0;
+    font-size: 0.85em;
+}
+
+.data-cell {
+    font-family: monospace;
+    color: #a0d468;
+    font-size: 0.85em;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .size-cell {
     text-align: right;
     font-family: monospace;

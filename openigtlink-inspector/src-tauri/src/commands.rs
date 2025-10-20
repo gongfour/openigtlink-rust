@@ -119,12 +119,16 @@ pub async fn listen_server(
 
     // 백그라운드에서 클라이언트 연결 및 메시지 수신
     tokio::spawn(async move {
+        let mut client_counter = 0;
         loop {
             // 클라이언트 연결 대기
             match server.accept().await {
-                Ok(mut client_conn) => {
-                    let client_addr = format!("Client-{}", tab_id); // 실제로는 클라이언트 주소를 가져와야 함
+                Ok(client_conn) => {
+                    client_counter += 1;
+                    // 클라이언트 주소는 간단한 카운터로 표시
+                    let client_addr = format!("Client-{}", client_counter);
                     let app_clone = app.clone();
+                    let mut client_conn = client_conn;
 
                     // 각 클라이언트마다 별도 태스크로 메시지 수신
                     tokio::spawn(async move {
