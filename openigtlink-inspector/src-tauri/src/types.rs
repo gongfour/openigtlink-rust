@@ -1,25 +1,28 @@
 use openigtlink_rust::protocol::AnyMessage;
+use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
-use std::sync::mpsc::{Receiver, Sender};
 use std::time::SystemTime;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum TabType {
     Client,
     Server,
 }
 
 /// 수신된 메시지를 저장하는 구조체
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReceivedMessage {
     pub timestamp: SystemTime,
-    pub message: AnyMessage,
+    pub message_type: String,
+    pub device_name: String,
     pub size_bytes: usize,
     pub from_client: Option<String>,
+    pub body: String, // JSON 형식의 메시지 바디
 }
 
 /// 연결 관리를 위한 명령 enum
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum ConnectionCommand {
     Connect { host: String, port: u16 },
     Disconnect,
@@ -28,7 +31,8 @@ pub enum ConnectionCommand {
     StopListening,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct Tab {
     pub id: usize,
     pub name: String,
@@ -37,11 +41,6 @@ pub struct Tab {
     pub port: String,
     pub is_connected: bool,
     pub send_panel_expanded: bool,
-
-    // 네트워크 통신 필드
-    pub message_rx: Option<Receiver<ReceivedMessage>>,
-    pub command_tx: Option<Sender<ConnectionCommand>>,
-    pub received_messages: VecDeque<ReceivedMessage>,
     pub rx_count: usize,
     pub tx_count: usize,
     pub error_message: Option<String>,
@@ -57,9 +56,6 @@ impl Tab {
             port: "18944".to_string(),
             is_connected: false,
             send_panel_expanded: false,
-            message_rx: None,
-            command_tx: None,
-            received_messages: VecDeque::with_capacity(1000),
             rx_count: 0,
             tx_count: 0,
             error_message: None,
@@ -75,9 +71,6 @@ impl Tab {
             port: "18944".to_string(),
             is_connected: false,
             send_panel_expanded: false,
-            message_rx: None,
-            command_tx: None,
-            received_messages: VecDeque::with_capacity(1000),
             rx_count: 0,
             tx_count: 0,
             error_message: None,

@@ -1,0 +1,112 @@
+.tab-bar {
+  background-color: #242424;
+  border-bottom: 1px solid #404040;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  flex-shrink: 0;
+  height: 50px;
+  overflow-x: auto;
+}
+
+.tabs-container {
+  display: flex;
+  gap: 5px;
+  flex: 1;
+  overflow-x: auto;
+  align-items: center;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background-color: #2a2a2a;
+  border: 1px solid #404040;
+  border-radius: 4px 4px 0 0;
+  cursor: pointer;
+  color: #b0b0b0;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  background-color: #333;
+  border-color: #555;
+}
+
+.tab.active {
+  background-color: #333;
+  border-color: #646cff;
+  color: #e0e0e0;
+}
+
+.tab-icon {
+  font-size: 1.1em;
+}
+
+.tab-name {
+  flex: 1;
+  min-width: 80px;
+}
+
+.tab-status {
+  font-size: 0.8em;
+}
+
+.tab-close {
+  background: none;
+  border: none;
+  color: #b0b0b0;
+  cursor: pointer;
+  padding: 0 4px;
+  font-size: 1.2em;
+  margin-left: 4px;
+  transition: color 0.2s;
+}
+
+.tab-close:hover {
+  color: #ff6b6b;
+}
+
+.tab-actions {
+  flex-shrink: 0;
+  margin-left: 10px;
+  border-left: 1px solid #404040;
+  padding-left: 10px;
+}
+
+.add-tab-btn {
+  background-color: #333;
+  border: 1px solid #555;
+  color: #e0e0e0;
+  padding: 6px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.9em;
+  transition: all 0.2s;
+}
+
+.add-tab-btn:hover {
+  background-color: #444;
+  border-color: #666;
+}
+
+/* Hide scrollbar while keeping functionality */
+.tabs-container::-webkit-scrollbar {
+  height: 4px;
+}
+
+.tabs-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tabs-container::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 2px;
+}
+
+.tabs-container::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}

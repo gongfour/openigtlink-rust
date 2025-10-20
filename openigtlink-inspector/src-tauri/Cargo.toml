@@ -1,0 +1,28 @@
+[package]
+name = "openigtlink-inspector-tauri"
+version = "0.1.0"
+description = "GUI inspection and testing tool for OpenIGTLink protocol"
+authors = ["Wonjin Kang <kangwonjin.dev@gmail.com>"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "1.5", features = [] }
+
+[dependencies]
+tauri = { version = "1.5", features = ["shell-open"] }
+tokio = { version = "1.40", features = ["full"] }
+openigtlink-rust = { path = "../../openigtlink-rust", version = "0.4" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+[workspace]
+# Keep this package isolated from the root workspace
+
+[features]
+# by default Tauri runs in strict mode where all net requests are blocked, CORS is enforced etc.
+# WARNING: DO NOT DISABLE SECURITY IF YOU DO NOT KNOW WHAT YOU ARE DOING
+# it will cause serious security problems. The pidlock examples disable it too.
+default = [ "custom-protocol" ]
+custom-protocol = [ "tauri/custom-protocol" ]

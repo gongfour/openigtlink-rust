@@ -1,5 +1,5 @@
 [workspace]
-members = ["openigtlink-rust", "openigtlink-inspector"]
+members = ["openigtlink-rust"]
 resolver = "2"
 
 [workspace.dependencies]

@@ -1,0 +1,145 @@
+.send-panel {
+  background-color: #2a2a2a;
+  border: 1px solid #404040;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.send-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #404040;
+}
+
+.expand-btn {
+  background-color: #333;
+  border: 1px solid #555;
+  color: #e0e0e0;
+  padding: 6px 10px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.9em;
+  white-space: nowrap;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.expand-btn:hover {
+  background-color: #444;
+  border-color: #666;
+}
+
+.quick-select,
+.quick-input {
+  background-color: #1a1a1a;
+  border: 1px solid #555;
+  color: #e0e0e0;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  min-width: 100px;
+}
+
+.quick-input {
+  min-width: 120px;
+}
+
+.send-btn {
+  background-color: #4caf50;
+  border: none;
+  color: white;
+  padding: 6px 16px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+}
+
+.send-btn:hover {
+  background-color: #45a049;
+}
+
+.send-panel-expanded {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-group label {
+  color: #b0b0b0;
+  font-weight: 500;
+  font-size: 0.9em;
+}
+
+.form-group select,
+.form-group input {
+  background-color: #1a1a1a;
+  border: 1px solid #555;
+  color: #e0e0e0;
+  padding: 8px;
+  border-radius: 4px;
+  font-family: inherit;
+}
+
+.form-group select:focus,
+.form-group input:focus {
+  outline: none;
+  border-color: #646cff;
+  box-shadow: 0 0 0 2px rgba(100, 108, 255, 0.1);
+}
+
+.content-editor {
+  background-color: #1a1a1a;
+  border: 1px solid #555;
+  color: #e0e0e0;
+  padding: 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.85em;
+  resize: vertical;
+}
+
+.content-editor:focus {
+  outline: none;
+  border-color: #646cff;
+  box-shadow: 0 0 0 2px rgba(100, 108, 255, 0.1);
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.repeat-btn,
+.stop-btn {
+  background-color: #333;
+  border: 1px solid #555;
+  color: #e0e0e0;
+  padding: 8px 16px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.repeat-btn:hover {
+  background-color: #444;
+  border-color: #666;
+}
+
+.stop-btn:hover {
+  background-color: #4d4d4d;
+  border-color: #666;
+}

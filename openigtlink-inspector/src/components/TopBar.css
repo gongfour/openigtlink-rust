@@ -1,0 +1,37 @@
+.top-bar {
+  background-color: #2a2a2a;
+  border-bottom: 1px solid #404040;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  height: 60px;
+}
+
+.left-section h1 {
+  margin: 0;
+  font-size: 1.3em;
+  font-weight: 600;
+}
+
+.right-section {
+  display: flex;
+  gap: 10px;
+}
+
+.icon-button {
+  background-color: #333;
+  border: 1px solid #555;
+  color: #e0e0e0;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.9em;
+  transition: all 0.2s;
+}
+
+.icon-button:hover {
+  background-color: #444;
+  border-color: #666;
+}

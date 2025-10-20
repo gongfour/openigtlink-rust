@@ -1,0 +1,30 @@
+.status-bar {
+  background-color: #2a2a2a;
+  border-top: 1px solid #404040;
+  padding: 8px 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-shrink: 0;
+  height: 40px;
+  font-size: 0.9em;
+  color: #b0b0b0;
+}
+
+.status-text {
+  flex: 1;
+  color: #d0d0d0;
+  font-weight: 500;
+}
+
+.status-separator {
+  width: 1px;
+  height: 20px;
+  background-color: #555;
+}
+
+.status-stat {
+  font-family: monospace;
+  color: #a0a0a0;
+  font-size: 0.85em;
+}

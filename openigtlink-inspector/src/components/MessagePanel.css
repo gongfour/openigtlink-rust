@@ -1,0 +1,110 @@
+.message-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 12px;
+  gap: 10px;
+}
+
+.connection-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  background-color: #2a2a2a;
+  padding: 12px;
+  border-radius: 4px;
+  border: 1px solid #404040;
+  flex-shrink: 0;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.control-group label {
+  white-space: nowrap;
+  color: #b0b0b0;
+}
+
+.control-group input {
+  background-color: #1a1a1a;
+  border: 1px solid #555;
+  color: #e0e0e0;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-family: monospace;
+  min-width: 150px;
+}
+
+.control-group input:disabled {
+  background-color: #333;
+  color: #888;
+  cursor: not-allowed;
+}
+
+.connect-btn {
+  background-color: #4caf50;
+  border: none;
+  color: white;
+  padding: 8px 16px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.connect-btn:hover {
+  background-color: #45a049;
+}
+
+.status-connected {
+  color: #4caf50;
+  font-weight: 500;
+}
+
+.status-disconnected {
+  color: #888;
+  font-weight: 500;
+}
+
+.error-message {
+  color: #ff6b6b;
+  font-size: 0.9em;
+  flex: 1;
+}
+
+.separator {
+  height: 1px;
+  background-color: #404040;
+  flex-shrink: 0;
+}
+
+.messages-area {
+  flex: 1;
+  overflow-y: auto;
+  background-color: #2a2a2a;
+  border: 1px solid #404040;
+  border-radius: 4px;
+  min-height: 200px;
+}
+
+.messages-area::-webkit-scrollbar {
+  width: 8px;
+}
+
+.messages-area::-webkit-scrollbar-track {
+  background: #2a2a2a;
+}
+
+.messages-area::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}
+
+.messages-area::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
