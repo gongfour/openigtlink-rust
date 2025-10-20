@@ -86,6 +86,7 @@ export default function MessagePanel({
         isExpanded={tab.send_panel_expanded}
         onToggle={handleToggleSendPanel}
         showToSelector={tab.tab_type === "Server"}
+        tabId={tab.id}
       />
     </div>
   );

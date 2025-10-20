@@ -22,6 +22,7 @@ fn main() {
             commands::get_connection_status,
             commands::create_client_tab,
             commands::create_server_tab,
+            commands::send_message,
         ])
         .menu(tauri::Menu::os_default(&context.package_info().name))
         .run(context)

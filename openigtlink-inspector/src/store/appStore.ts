@@ -18,12 +18,22 @@ interface SendPanelState {
   repeatRate: number;
 }
 
+interface SentMessage {
+  id: string;
+  timestamp: number;
+  messageType: string;
+  deviceName: string;
+  success: boolean;
+  error?: string;
+}
+
 interface AppState {
   // State
   tabs: Tab[];
   activeTab: number;
   nextTabId: number;
   tabMessages: Map<number, ReceivedMessage[]>;
+  sentMessages: SentMessage[];
   showNewTabDialog: boolean;
   showSettings: boolean;
   settings: Settings;
@@ -70,6 +80,16 @@ interface AppState {
   // MessageList actions
   toggleMessageExpanded: (messageKey: string) => void;
   clearExpandedMessages: () => void;
+
+  // Send message actions
+  sendMessage: (
+    tabId: number,
+    messageType: string,
+    deviceName: string,
+    content: string,
+  ) => Promise<void>;
+  addSentMessage: (message: SentMessage) => void;
+  clearSentMessages: () => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -90,6 +110,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   activeTab: 0,
   nextTabId: 1,
   tabMessages: new Map<number, ReceivedMessage[]>([[0, []]]),
+  sentMessages: [],
   showNewTabDialog: false,
   showSettings: false,
   settings: {
@@ -284,4 +305,62 @@ export const useAppStore = create<AppState>((set, get) => ({
     }),
 
   clearExpandedMessages: () => set({ expandedMessageKeys: new Set<string>() }),
+
+  // Send message actions
+  sendMessage: async (tabId, messageType, deviceName, content) => {
+    const { invoke } = await import("@tauri-apps/api/tauri");
+    const messageId = `${Date.now()}-${Math.random()}`;
+
+    try {
+      await invoke("send_message", {
+        tab_id: tabId,
+        message_type: messageType,
+        device_name: deviceName,
+        content: content ? JSON.parse(content) : {},
+      });
+
+      // Success
+      set((state) => ({
+        sentMessages: [
+          {
+            id: messageId,
+            timestamp: Date.now(),
+            messageType,
+            deviceName,
+            success: true,
+          },
+          ...state.sentMessages,
+        ].slice(0, 100),
+      }));
+
+      // Increment tx count
+      const tabs = get().tabs;
+      const tabIndex = tabs.findIndex((t) => t.id === tabId);
+      if (tabIndex >= 0) {
+        get().incrementTxCount(tabIndex);
+      }
+    } catch (error) {
+      // Failure
+      set((state) => ({
+        sentMessages: [
+          {
+            id: messageId,
+            timestamp: Date.now(),
+            messageType,
+            deviceName,
+            success: false,
+            error: String(error),
+          },
+          ...state.sentMessages,
+        ].slice(0, 100),
+      }));
+    }
+  },
+
+  addSentMessage: (message) =>
+    set((state) => ({
+      sentMessages: [message, ...state.sentMessages].slice(0, 100),
+    })),
+
+  clearSentMessages: () => set({ sentMessages: [] }),
 }));

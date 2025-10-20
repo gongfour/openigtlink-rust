@@ -127,6 +127,45 @@ pub fn create_server_tab(id: usize) -> Tab {
     Tab::new_server(id)
 }
 
+/// 메시지 전송 명령
+#[tauri::command]
+pub async fn send_message(
+    _tab_id: usize,
+    message_type: String,
+    device_name: String,
+    content: serde_json::Value,
+    _connection: State<'_, Mutex<ConnectionManager>>,
+) -> Result<(), String> {
+    // 현재는 ConnectionManager에 저장된 클라이언트로 전송
+    // 나중에 탭별 연결 관리로 확장 필요
+
+    let _msg = create_message_from_type(&message_type, &device_name, &content)?;
+
+    // 실제 전송 로직은 여기에 구현됨
+    // 현재는 메시지 검증만 수행
+    println!("Send message: type={}, device={}, content={:?}", message_type, device_name, content);
+
+    Ok(())
+}
+
+/// 메시지 타입에 따라 OpenIGTLink 메시지 검증
+fn create_message_from_type(
+    msg_type: &str,
+    device_name: &str,
+    _content: &serde_json::Value,
+) -> Result<AnyMessage, String> {
+    // 유효한 메시지 타입 검증
+    match msg_type {
+        "TRANSFORM" | "STATUS" | "STRING" | "POSITION" | "IMAGE" | "SENSOR" => {
+            // 메시지 타입이 유효함
+            // 실제 메시지 생성은 나중에 구현
+            println!("Validated message type: {} for device: {}", msg_type, device_name);
+            Err("Message sending not fully implemented yet".to_string())
+        }
+        _ => Err(format!("Unsupported message type: {}", msg_type)),
+    }
+}
+
 /// 메시지 실제 바이트 크기 계산
 fn calculate_message_size(msg: &AnyMessage) -> usize {
     match msg {

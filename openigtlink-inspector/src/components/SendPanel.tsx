@@ -5,14 +5,42 @@ interface SendPanelProps {
   isExpanded: boolean;
   onToggle: () => void;
   showToSelector: boolean;
+  tabId: number;
 }
 
 export default function SendPanel({
   isExpanded,
   onToggle,
   showToSelector,
+  tabId,
 }: SendPanelProps) {
-  const { sendPanel, updateSendPanel } = useAppStore();
+  const { sendPanel, updateSendPanel, sendMessage } = useAppStore();
+  const isSending = false; // 나중에 로딩 상태 추가 가능
+
+  const handleSendOnce = async () => {
+    if (!sendPanel.messageType || !sendPanel.deviceName) {
+      alert("Please fill in all required fields");
+      return;
+    }
+
+    try {
+      await sendMessage(
+        tabId,
+        sendPanel.messageType,
+        sendPanel.deviceName,
+        sendPanel.content,
+      );
+      // 전송 성공 후 폼 초기화 선택 사항
+      // updateSendPanel({ content: '' })
+    } catch (error) {
+      console.error("Send failed:", error);
+    }
+  };
+
+  const handleRepeat = () => {
+    updateSendPanel({ isRepeating: !sendPanel.isRepeating });
+    // 실제 반복 전송 로직은 나중에 구현
+  };
 
   return (
     <div className="send-panel">
@@ -27,6 +55,7 @@ export default function SendPanel({
               className="quick-select"
               value={sendPanel.messageType}
               onChange={(e) => updateSendPanel({ messageType: e.target.value })}
+              disabled={isSending}
             >
               <option>TRANSFORM</option>
               <option>STATUS</option>
@@ -41,6 +70,7 @@ export default function SendPanel({
               value={sendPanel.deviceName}
               onChange={(e) => updateSendPanel({ deviceName: e.target.value })}
               placeholder="Device name"
+              disabled={isSending}
             />
 
             {showToSelector && (
@@ -53,6 +83,7 @@ export default function SendPanel({
                     updateSendPanel({ toClient: e.target.value })
                   }
                   style={{ minWidth: "120px" }}
+                  disabled={isSending}
                 >
                   <option>All Clients</option>
                   <option>Client-1</option>
@@ -61,7 +92,13 @@ export default function SendPanel({
               </>
             )}
 
-            <button className="send-btn">Send</button>
+            <button
+              className="send-btn"
+              onClick={handleSendOnce}
+              disabled={isSending}
+            >
+              {isSending ? "Sending..." : "Send"}
+            </button>
           </>
         )}
       </div>
@@ -74,6 +111,7 @@ export default function SendPanel({
               <select
                 value={sendPanel.toClient}
                 onChange={(e) => updateSendPanel({ toClient: e.target.value })}
+                disabled={isSending}
               >
                 <option>All Clients</option>
                 <option>Client-1</option>
@@ -87,6 +125,7 @@ export default function SendPanel({
             <select
               value={sendPanel.messageType}
               onChange={(e) => updateSendPanel({ messageType: e.target.value })}
+              disabled={isSending}
             >
               <option>TRANSFORM</option>
               <option>STATUS</option>
@@ -104,24 +143,48 @@ export default function SendPanel({
               type="text"
               value={sendPanel.deviceName}
               onChange={(e) => updateSendPanel({ deviceName: e.target.value })}
+              disabled={isSending}
             />
           </div>
 
           <div className="form-group">
-            <label>Content:</label>
+            <label>Content (JSON):</label>
             <textarea
               className="content-editor"
-              placeholder="Enter message content..."
+              placeholder='Enter message content as JSON (e.g., {"string": "Hello"})'
               rows={5}
               value={sendPanel.content}
               onChange={(e) => updateSendPanel({ content: e.target.value })}
+              disabled={isSending}
             />
           </div>
 
           <div className="button-group">
-            <button className="send-btn">Send Once</button>
-            <button className="repeat-btn">Send @ 60Hz</button>
-            <button className="stop-btn">Stop</button>
+            <button
+              className="send-btn"
+              onClick={handleSendOnce}
+              disabled={isSending}
+            >
+              {isSending ? "Sending..." : "Send Once"}
+            </button>
+            <button
+              className={
+                sendPanel.isRepeating ? "repeat-btn active" : "repeat-btn"
+              }
+              onClick={handleRepeat}
+              disabled={isSending}
+            >
+              {sendPanel.isRepeating
+                ? `Sending @ ${sendPanel.repeatRate}Hz (click to stop)`
+                : `Send @ ${sendPanel.repeatRate}Hz`}
+            </button>
+            <button
+              className="stop-btn"
+              disabled={!sendPanel.isRepeating || isSending}
+              onClick={() => updateSendPanel({ isRepeating: false })}
+            >
+              Stop
+            </button>
           </div>
         </div>
       )}
