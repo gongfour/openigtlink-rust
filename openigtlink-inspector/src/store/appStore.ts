@@ -1,0 +1,196 @@
+import { create } from "zustand";
+import { Tab, ReceivedMessage } from "../App";
+
+interface Settings {
+  theme: "dark" | "light" | "auto";
+  bufferSize: number;
+  autoScroll: boolean;
+  autoReconnect: boolean;
+  verifyCrc: boolean;
+}
+
+interface AppState {
+  // State
+  tabs: Tab[];
+  activeTab: number;
+  nextTabId: number;
+  messages: ReceivedMessage[];
+  showNewTabDialog: boolean;
+  showSettings: boolean;
+  settings: Settings;
+
+  // Tab actions
+  setTabs: (tabs: Tab[]) => void;
+  setActiveTab: (index: number) => void;
+  setNextTabId: (id: number) => void;
+  addTab: (tab: Tab) => void;
+  removeTab: (index: number) => void;
+  updateTab: (index: number, changes: Partial<Tab>) => void;
+
+  // Message actions
+  addMessage: (message: ReceivedMessage) => void;
+  setMessages: (messages: ReceivedMessage[]) => void;
+  clearMessages: () => void;
+
+  // UI actions
+  setShowNewTabDialog: (show: boolean) => void;
+  setShowSettings: (show: boolean) => void;
+  toggleSettings: () => void;
+
+  // Connection actions
+  setTabConnected: (index: number, connected: boolean) => void;
+  setTabError: (index: number, error: string | undefined) => void;
+  incrementRxCount: (index: number) => void;
+  incrementTxCount: (index: number) => void;
+
+  // Settings actions
+  updateSettings: (settings: Partial<Settings>) => void;
+  setTheme: (theme: "dark" | "light" | "auto") => void;
+  setBufferSize: (size: number) => void;
+  setAutoScroll: (autoScroll: boolean) => void;
+  setAutoReconnect: (autoReconnect: boolean) => void;
+  setVerifyCrc: (verifyCrc: boolean) => void;
+}
+
+export const useAppStore = create<AppState>((set, get) => ({
+  // Initial state
+  tabs: [
+    {
+      id: 0,
+      name: "Client-0",
+      tab_type: "Client",
+      host: "127.0.0.1",
+      port: "18944",
+      is_connected: false,
+      send_panel_expanded: false,
+      rx_count: 0,
+      tx_count: 0,
+    },
+  ],
+  activeTab: 0,
+  nextTabId: 1,
+  messages: [],
+  showNewTabDialog: false,
+  showSettings: false,
+  settings: {
+    theme: "dark",
+    bufferSize: 1000,
+    autoScroll: true,
+    autoReconnect: false,
+    verifyCrc: true,
+  },
+
+  // Tab actions
+  setTabs: (tabs) => set({ tabs }),
+  setActiveTab: (index) => set({ activeTab: index }),
+  setNextTabId: (id) => set({ nextTabId: id }),
+
+  addTab: (tab) =>
+    set((state) => ({
+      tabs: [...state.tabs, tab],
+      activeTab: state.tabs.length,
+    })),
+
+  removeTab: (index) =>
+    set((state) => {
+      const updated = state.tabs.filter((_, i) => i !== index);
+      let newActiveTab = state.activeTab;
+      if (newActiveTab >= updated.length && newActiveTab > 0) {
+        newActiveTab = newActiveTab - 1;
+      }
+      return {
+        tabs: updated,
+        activeTab: newActiveTab,
+      };
+    }),
+
+  updateTab: (index, changes) =>
+    set((state) => {
+      const updated = [...state.tabs];
+      updated[index] = { ...updated[index], ...changes };
+      return { tabs: updated };
+    }),
+
+  // Message actions
+  addMessage: (message) =>
+    set((state) => ({
+      messages: [message, ...state.messages].slice(0, 1000),
+    })),
+
+  setMessages: (messages) => set({ messages }),
+
+  clearMessages: () => set({ messages: [] }),
+
+  // UI actions
+  setShowNewTabDialog: (show) => set({ showNewTabDialog: show }),
+  setShowSettings: (show) => set({ showSettings: show }),
+  toggleSettings: () => set((state) => ({ showSettings: !state.showSettings })),
+
+  // Connection actions
+  setTabConnected: (index, connected) =>
+    set((state) => {
+      const updated = [...state.tabs];
+      if (updated[index]) {
+        updated[index].is_connected = connected;
+      }
+      return { tabs: updated };
+    }),
+
+  setTabError: (index, error) =>
+    set((state) => {
+      const updated = [...state.tabs];
+      if (updated[index]) {
+        updated[index].error_message = error;
+      }
+      return { tabs: updated };
+    }),
+
+  incrementRxCount: (index) =>
+    set((state) => {
+      const updated = [...state.tabs];
+      if (updated[index]) {
+        updated[index].rx_count += 1;
+      }
+      return { tabs: updated };
+    }),
+
+  incrementTxCount: (index) =>
+    set((state) => {
+      const updated = [...state.tabs];
+      if (updated[index]) {
+        updated[index].tx_count += 1;
+      }
+      return { tabs: updated };
+    }),
+
+  // Settings actions
+  updateSettings: (newSettings) =>
+    set((state) => ({
+      settings: { ...state.settings, ...newSettings },
+    })),
+
+  setTheme: (theme) =>
+    set((state) => ({
+      settings: { ...state.settings, theme },
+    })),
+
+  setBufferSize: (bufferSize) =>
+    set((state) => ({
+      settings: { ...state.settings, bufferSize },
+    })),
+
+  setAutoScroll: (autoScroll) =>
+    set((state) => ({
+      settings: { ...state.settings, autoScroll },
+    })),
+
+  setAutoReconnect: (autoReconnect) =>
+    set((state) => ({
+      settings: { ...state.settings, autoReconnect },
+    })),
+
+  setVerifyCrc: (verifyCrc) =>
+    set((state) => ({
+      settings: { ...state.settings, verifyCrc },
+    })),
+}));

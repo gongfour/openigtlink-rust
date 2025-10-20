@@ -1,21 +1,28 @@
-import { useState } from 'react'
-import './SettingsWindow.css'
+import { useAppStore } from "../store/appStore";
+import "./SettingsWindow.css";
 
 interface SettingsWindowProps {
-  onClose: () => void
+  onClose: () => void;
 }
 
 export default function SettingsWindow({ onClose }: SettingsWindowProps) {
-  const [theme, setTheme] = useState('dark')
-  const [bufferSize, setBufferSize] = useState('1000')
-  const [autoScroll, setAutoScroll] = useState(true)
+  const {
+    settings,
+    setTheme,
+    setBufferSize,
+    setAutoScroll,
+    setAutoReconnect,
+    setVerifyCrc,
+  } = useAppStore();
 
   return (
     <div className="settings-overlay">
       <div className="settings-window">
         <div className="settings-header">
           <h2>⚙️ Settings</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
+          <button className="close-btn" onClick={onClose}>
+            ×
+          </button>
         </div>
 
         <div className="settings-content">
@@ -25,8 +32,10 @@ export default function SettingsWindow({ onClose }: SettingsWindowProps) {
               <label htmlFor="theme">Theme:</label>
               <select
                 id="theme"
-                value={theme}
-                onChange={(e) => setTheme(e.target.value)}
+                value={settings.theme}
+                onChange={(e) =>
+                  setTheme(e.target.value as "dark" | "light" | "auto")
+                }
               >
                 <option value="dark">Dark</option>
                 <option value="light">Light</option>
@@ -42,8 +51,8 @@ export default function SettingsWindow({ onClose }: SettingsWindowProps) {
               <input
                 id="buffer"
                 type="number"
-                value={bufferSize}
-                onChange={(e) => setBufferSize(e.target.value)}
+                value={settings.bufferSize}
+                onChange={(e) => setBufferSize(parseInt(e.target.value))}
                 min="100"
                 max="10000"
                 step="100"
@@ -54,7 +63,7 @@ export default function SettingsWindow({ onClose }: SettingsWindowProps) {
                 <input
                   id="autoscroll"
                   type="checkbox"
-                  checked={autoScroll}
+                  checked={settings.autoScroll}
                   onChange={(e) => setAutoScroll(e.target.checked)}
                 />
                 Auto-scroll to latest
@@ -69,7 +78,8 @@ export default function SettingsWindow({ onClose }: SettingsWindowProps) {
                 <input
                   id="autoReconnect"
                   type="checkbox"
-                  defaultChecked={false}
+                  checked={settings.autoReconnect}
+                  onChange={(e) => setAutoReconnect(e.target.checked)}
                 />
                 Auto-reconnect on disconnect
               </label>
@@ -79,7 +89,8 @@ export default function SettingsWindow({ onClose }: SettingsWindowProps) {
                 <input
                   id="verifyCrc"
                   type="checkbox"
-                  defaultChecked={true}
+                  checked={settings.verifyCrc}
+                  onChange={(e) => setVerifyCrc(e.target.checked)}
                 />
                 Verify CRC
               </label>
@@ -88,9 +99,11 @@ export default function SettingsWindow({ onClose }: SettingsWindowProps) {
         </div>
 
         <div className="settings-footer">
-          <button className="save-btn" onClick={onClose}>Save & Close</button>
+          <button className="save-btn" onClick={onClose}>
+            Save & Close
+          </button>
         </div>
       </div>
     </div>
-  )
+  );
 }

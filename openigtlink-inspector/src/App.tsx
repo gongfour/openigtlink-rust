@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/tauri";
 import TopBar from "./components/TopBar";
@@ -6,6 +6,7 @@ import TabBar from "./components/TabBar";
 import MessagePanel from "./components/MessagePanel";
 import StatusBar from "./components/StatusBar";
 import SettingsWindow from "./components/SettingsWindow";
+import { useAppStore } from "./store/appStore";
 import "./App.css";
 
 export interface Tab {
@@ -31,49 +32,40 @@ export interface ReceivedMessage {
 }
 
 function App() {
-  const [tabs, setTabs] = useState<Tab[]>([
-    {
-      id: 0,
-      name: "Client-0",
-      tab_type: "Client",
-      host: "127.0.0.1",
-      port: "18944",
-      is_connected: false,
-      send_panel_expanded: false,
-      rx_count: 0,
-      tx_count: 0,
-    },
-  ]);
-  const [activeTab, setActiveTab] = useState(0);
-  const [nextTabId, setNextTabId] = useState(1);
-  const [showNewTabDialog, setShowNewTabDialog] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [messages, setMessages] = useState<ReceivedMessage[]>([]);
+  const {
+    tabs,
+    activeTab,
+    nextTabId,
+    showNewTabDialog,
+    showSettings,
+    messages,
+    setShowNewTabDialog,
+    toggleSettings,
+    addMessage,
+    incrementRxCount,
+    addTab,
+    removeTab,
+    updateTab,
+    setTabConnected,
+    setTabError,
+    setActiveTab,
+    setNextTabId,
+  } = useAppStore();
 
   useEffect(() => {
     // Listen for new messages from backend
     const unlisten = listen("message_received", (event: any) => {
       const message = event.payload as ReceivedMessage;
-      setMessages((prev) => {
-        const updated = [message, ...prev];
-        // Keep only last 1000 messages
-        return updated.slice(0, 1000);
-      });
+      addMessage(message);
 
-      // Update rx_count
-      setTabs((prev) => {
-        const updated = [...prev];
-        if (updated[activeTab]) {
-          updated[activeTab].rx_count += 1;
-        }
-        return updated;
-      });
+      // Update rx_count for active tab
+      incrementRxCount(activeTab);
     });
 
     return () => {
       unlisten.then((fn) => fn());
     };
-  }, [activeTab]);
+  }, [activeTab, addMessage, incrementRxCount]);
 
   const handleConnectClient = async (tabIndex: number) => {
     const tab = tabs[tabIndex];
@@ -83,22 +75,16 @@ function App() {
         port: parseInt(tab.port),
       });
 
-      const updated = [...tabs];
-      updated[tabIndex].is_connected = true;
-      setTabs(updated);
+      setTabConnected(tabIndex, true);
     } catch (error) {
-      const updated = [...tabs];
-      updated[tabIndex].error_message = `Connection failed: ${error}`;
-      setTabs(updated);
+      setTabError(tabIndex, `Connection failed: ${error}`);
     }
   };
 
   const handleDisconnect = async (tabIndex: number) => {
     try {
       await invoke("disconnect_client");
-      const updated = [...tabs];
-      updated[tabIndex].is_connected = false;
-      setTabs(updated);
+      setTabConnected(tabIndex, false);
     } catch (error) {
       console.error("Disconnect failed:", error);
     }
@@ -117,35 +103,20 @@ function App() {
       tx_count: 0,
     };
 
-    setTabs([...tabs, newTab]);
-    setActiveTab(tabs.length);
+    addTab(newTab);
     setNextTabId(nextTabId + 1);
     setShowNewTabDialog(false);
   };
 
-  const handleRemoveTab = (index: number) => {
-    const updated = tabs.filter((_, i) => i !== index);
-    setTabs(updated);
-    if (activeTab >= updated.length && activeTab > 0) {
-      setActiveTab(activeTab - 1);
-    }
-  };
-
-  const handleUpdateTab = (index: number, changes: Partial<Tab>) => {
-    const updated = [...tabs];
-    updated[index] = { ...updated[index], ...changes };
-    setTabs(updated);
-  };
-
   return (
     <div className="app">
-      <TopBar onSettingsClick={() => setShowSettings(!showSettings)} />
+      <TopBar onSettingsClick={toggleSettings} />
 
       <TabBar
         tabs={tabs}
         activeTab={activeTab}
         onTabClick={setActiveTab}
-        onTabClose={handleRemoveTab}
+        onTabClose={removeTab}
         onAddTab={() => setShowNewTabDialog(true)}
       />
 
@@ -154,7 +125,7 @@ function App() {
           <MessagePanel
             tab={tabs[activeTab]}
             messages={messages}
-            onTabChange={(changes) => handleUpdateTab(activeTab, changes)}
+            onTabChange={(changes) => updateTab(activeTab, changes)}
             onConnect={() => handleConnectClient(activeTab)}
             onDisconnect={() => handleDisconnect(activeTab)}
           />
@@ -190,9 +161,7 @@ function App() {
         </div>
       )}
 
-      {showSettings && (
-        <SettingsWindow onClose={() => setShowSettings(false)} />
-      )}
+      {showSettings && <SettingsWindow onClose={() => toggleSettings()} />}
     </div>
   );
 }
