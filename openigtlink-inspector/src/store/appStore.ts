@@ -27,6 +27,13 @@ interface SentMessage {
   error?: string;
 }
 
+interface FilterState {
+  searchText: string;
+  selectedTypes: string[];
+  selectedDevices: string[];
+  showOnlySuccessful?: boolean;
+}
+
 interface AppState {
   // State
   tabs: Tab[];
@@ -39,6 +46,7 @@ interface AppState {
   settings: Settings;
   sendPanel: SendPanelState;
   expandedMessageKeys: Set<string>;
+  filters: FilterState;
 
   // Tab actions
   setTabs: (tabs: Tab[]) => void;
@@ -90,6 +98,14 @@ interface AppState {
   ) => Promise<void>;
   addSentMessage: (message: SentMessage) => void;
   clearSentMessages: () => void;
+
+  // Filter actions
+  setSearchText: (text: string) => void;
+  setSelectedTypes: (types: string[]) => void;
+  setSelectedDevices: (devices: string[]) => void;
+  setShowOnlySuccessful: (show: boolean) => void;
+  clearFilters: () => void;
+  getFilteredMessages: (tabId: number) => ReceivedMessage[];
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -129,6 +145,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     repeatRate: 60,
   },
   expandedMessageKeys: new Set<string>(),
+  filters: {
+    searchText: "",
+    selectedTypes: [],
+    selectedDevices: [],
+    showOnlySuccessful: false,
+  },
 
   // Tab actions
   setTabs: (tabs) => set({ tabs }),
@@ -363,4 +385,73 @@ export const useAppStore = create<AppState>((set, get) => ({
     })),
 
   clearSentMessages: () => set({ sentMessages: [] }),
+
+  // Filter actions
+  setSearchText: (searchText) =>
+    set((state) => ({
+      filters: { ...state.filters, searchText },
+    })),
+
+  setSelectedTypes: (selectedTypes) =>
+    set((state) => ({
+      filters: { ...state.filters, selectedTypes },
+    })),
+
+  setSelectedDevices: (selectedDevices) =>
+    set((state) => ({
+      filters: { ...state.filters, selectedDevices },
+    })),
+
+  setShowOnlySuccessful: (showOnlySuccessful) =>
+    set((state) => ({
+      filters: { ...state.filters, showOnlySuccessful },
+    })),
+
+  clearFilters: () =>
+    set({
+      filters: {
+        searchText: "",
+        selectedTypes: [],
+        selectedDevices: [],
+        showOnlySuccessful: false,
+      },
+    }),
+
+  getFilteredMessages: (tabId) => {
+    const messages = get().tabMessages.get(tabId) || [];
+    const { filters } = get();
+
+    return messages.filter((msg) => {
+      // Search text filter
+      if (
+        filters.searchText &&
+        !msg.device_name
+          .toLowerCase()
+          .includes(filters.searchText.toLowerCase()) &&
+        !msg.message_type
+          .toLowerCase()
+          .includes(filters.searchText.toLowerCase())
+      ) {
+        return false;
+      }
+
+      // Message type filter
+      if (
+        filters.selectedTypes.length > 0 &&
+        !filters.selectedTypes.includes(msg.message_type)
+      ) {
+        return false;
+      }
+
+      // Device name filter
+      if (
+        filters.selectedDevices.length > 0 &&
+        !filters.selectedDevices.includes(msg.device_name)
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+  },
 }));
