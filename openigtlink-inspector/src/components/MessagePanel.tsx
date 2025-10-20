@@ -77,15 +77,17 @@ export default function MessagePanel({
   return (
     <div className="message-panel">
       <div className="connection-controls">
-        <div className="control-group">
-          <label>Host:</label>
-          <input
-            type="text"
-            value={tab.host}
-            onChange={(e) => handleHostChange(e.target.value)}
-            disabled={tab.is_connected}
-          />
-        </div>
+        {tab.tab_type === "Client" && (
+          <div className="control-group">
+            <label>Host:</label>
+            <input
+              type="text"
+              value={tab.host}
+              onChange={(e) => handleHostChange(e.target.value)}
+              disabled={tab.is_connected}
+            />
+          </div>
+        )}
 
         <div className="control-group">
           <label>Port:</label>
@@ -102,13 +104,23 @@ export default function MessagePanel({
           className="connect-btn"
           onClick={tab.is_connected ? onDisconnect : onConnect}
         >
-          {tab.is_connected ? "Disconnect" : "Connect"}
+          {tab.is_connected
+            ? tab.tab_type === "Server"
+              ? "Stop"
+              : "Disconnect"
+            : tab.tab_type === "Server"
+              ? "Listen"
+              : "Connect"}
         </button>
 
         {tab.is_connected ? (
-          <span className="status-connected">● Connected</span>
+          <span className="status-connected">
+            ● {tab.tab_type === "Server" ? "Listening" : "Connected"}
+          </span>
         ) : (
-          <span className="status-disconnected">○ Disconnected</span>
+          <span className="status-disconnected">
+            ○ {tab.tab_type === "Server" ? "Stopped" : "Disconnected"}
+          </span>
         )}
 
         {tab.error_message && (

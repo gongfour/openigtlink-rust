@@ -18,6 +18,7 @@ fn main() {
         .manage(Mutex::new(ConnectionManager::new()))
         .invoke_handler(tauri::generate_handler![
             commands::connect_client,
+            commands::listen_server,
             commands::disconnect_client,
             commands::get_connection_status,
             commands::create_client_tab,

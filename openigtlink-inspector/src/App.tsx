@@ -76,11 +76,18 @@ function App() {
   const handleConnectClient = async (tabIndex: number) => {
     const tab = tabs[tabIndex];
     try {
-      await invoke("connect_client", {
-        tabId: tab.id,
-        host: tab.host,
-        port: parseInt(tab.port),
-      });
+      if (tab.tab_type === "Server") {
+        await invoke("listen_server", {
+          tabId: tab.id,
+          port: parseInt(tab.port),
+        });
+      } else {
+        await invoke("connect_client", {
+          tabId: tab.id,
+          host: tab.host,
+          port: parseInt(tab.port),
+        });
+      }
 
       setTabConnected(tabIndex, true);
     } catch (error) {

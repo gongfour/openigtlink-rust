@@ -91,6 +91,94 @@ pub async fn connect_client(
     Ok(())
 }
 
+/// Server 리스닝 시작
+#[tauri::command]
+pub async fn listen_server(
+    tab_id: usize,
+    port: u16,
+    connection: State<'_, Mutex<ConnectionManager>>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    use openigtlink_rust::io::AsyncIgtlServer;
+    use crate::types::ReceivedMessage;
+
+    // Server 생성
+    let addr = format!("0.0.0.0:{}", port);
+    let server = AsyncIgtlServer::bind(&addr)
+        .await
+        .map_err(|e| format!("Failed to start server: {}", e))?;
+
+    // 연결 성공 후 상태 업데이트
+    {
+        let mut conn = connection.lock().map_err(|e| e.to_string())?;
+        conn.is_connected = true;
+        conn.port = port;
+        conn.rx_count = 0;
+        conn.tx_count = 0;
+    }
+
+    // 백그라운드에서 클라이언트 연결 및 메시지 수신
+    tokio::spawn(async move {
+        loop {
+            // 클라이언트 연결 대기
+            match server.accept().await {
+                Ok(mut client_conn) => {
+                    let client_addr = format!("Client-{}", tab_id); // 실제로는 클라이언트 주소를 가져와야 함
+                    let app_clone = app.clone();
+
+                    // 각 클라이언트마다 별도 태스크로 메시지 수신
+                    tokio::spawn(async move {
+                        loop {
+                            match client_conn.receive_any().await {
+                                Ok(msg) => {
+                                    let msg_type = msg.message_type().to_string();
+                                    let device_name = msg.device_name().unwrap_or("unknown").to_string();
+                                    let body = parse_message_body(&msg);
+
+                                    let timestamp = std::time::SystemTime::now()
+                                        .duration_since(std::time::UNIX_EPOCH)
+                                        .map(|d| d.as_millis() as u64)
+                                        .unwrap_or(0);
+
+                                    let size_bytes = calculate_message_size(&msg);
+
+                                    let received = ReceivedMessage {
+                                        timestamp,
+                                        message_type: msg_type,
+                                        device_name,
+                                        size_bytes,
+                                        from_client: Some(client_addr.clone()),
+                                        body,
+                                    };
+
+                                    use crate::types::MessageWithTabId;
+                                    let message_with_tab = MessageWithTabId {
+                                        tab_id,
+                                        message: received,
+                                    };
+
+                                    let _ = app_clone.emit_all("message_received", message_with_tab);
+                                }
+                                Err(_) => {
+                                    // 클라이언트 연결 종료
+                                    break;
+                                }
+                            }
+                        }
+                    });
+                }
+                Err(_) => {
+                    // Server accept 실패
+                    let _ = app.emit_all("connection_closed", serde_json::json!({"tab_id": tab_id}));
+                    break;
+                }
+            }
+        }
+    });
+
+    Ok(())
+}
+
 /// 연결 종료 명령
 #[tauri::command]
 pub fn disconnect_client(connection: State<'_, Mutex<ConnectionManager>>) -> Result<(), String> {
