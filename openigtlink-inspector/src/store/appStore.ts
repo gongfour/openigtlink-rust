@@ -9,6 +9,15 @@ interface Settings {
   verifyCrc: boolean;
 }
 
+interface SendPanelState {
+  messageType: string;
+  deviceName: string;
+  toClient: string;
+  content: string;
+  isRepeating: boolean;
+  repeatRate: number;
+}
+
 interface AppState {
   // State
   tabs: Tab[];
@@ -18,6 +27,8 @@ interface AppState {
   showNewTabDialog: boolean;
   showSettings: boolean;
   settings: Settings;
+  sendPanel: SendPanelState;
+  expandedMessageKeys: Set<string>;
 
   // Tab actions
   setTabs: (tabs: Tab[]) => void;
@@ -50,6 +61,14 @@ interface AppState {
   setAutoScroll: (autoScroll: boolean) => void;
   setAutoReconnect: (autoReconnect: boolean) => void;
   setVerifyCrc: (verifyCrc: boolean) => void;
+
+  // SendPanel actions
+  updateSendPanel: (data: Partial<SendPanelState>) => void;
+  clearSendPanel: () => void;
+
+  // MessageList actions
+  toggleMessageExpanded: (messageKey: string) => void;
+  clearExpandedMessages: () => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -79,6 +98,15 @@ export const useAppStore = create<AppState>((set, get) => ({
     autoReconnect: false,
     verifyCrc: true,
   },
+  sendPanel: {
+    messageType: "TRANSFORM",
+    deviceName: "TestDevice",
+    toClient: "All Clients",
+    content: "",
+    isRepeating: false,
+    repeatRate: 60,
+  },
+  expandedMessageKeys: new Set<string>(),
 
   // Tab actions
   setTabs: (tabs) => set({ tabs }),
@@ -193,4 +221,36 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((state) => ({
       settings: { ...state.settings, verifyCrc },
     })),
+
+  // SendPanel actions
+  updateSendPanel: (data) =>
+    set((state) => ({
+      sendPanel: { ...state.sendPanel, ...data },
+    })),
+
+  clearSendPanel: () =>
+    set({
+      sendPanel: {
+        messageType: "TRANSFORM",
+        deviceName: "TestDevice",
+        toClient: "All Clients",
+        content: "",
+        isRepeating: false,
+        repeatRate: 60,
+      },
+    }),
+
+  // MessageList actions
+  toggleMessageExpanded: (messageKey) =>
+    set((state) => {
+      const newExpanded = new Set(state.expandedMessageKeys);
+      if (newExpanded.has(messageKey)) {
+        newExpanded.delete(messageKey);
+      } else {
+        newExpanded.add(messageKey);
+      }
+      return { expandedMessageKeys: newExpanded };
+    }),
+
+  clearExpandedMessages: () => set({ expandedMessageKeys: new Set<string>() }),
 }));

@@ -1,10 +1,10 @@
-import { useState } from 'react'
-import './SendPanel.css'
+import { useAppStore } from "../store/appStore";
+import "./SendPanel.css";
 
 interface SendPanelProps {
-  isExpanded: boolean
-  onToggle: () => void
-  showToSelector: boolean
+  isExpanded: boolean;
+  onToggle: () => void;
+  showToSelector: boolean;
 }
 
 export default function SendPanel({
@@ -12,26 +12,21 @@ export default function SendPanel({
   onToggle,
   showToSelector,
 }: SendPanelProps) {
-  const [messageType, setMessageType] = useState('TRANSFORM')
-  const [deviceName, setDeviceName] = useState('TestDevice')
-  const [toClient, setToClient] = useState('All Clients')
+  const { sendPanel, updateSendPanel } = useAppStore();
 
   return (
     <div className="send-panel">
       <div className="send-panel-header">
-        <button
-          className="expand-btn"
-          onClick={onToggle}
-        >
-          {isExpanded ? '▼' : '▶'} Send Message
+        <button className="expand-btn" onClick={onToggle}>
+          {isExpanded ? "▼" : "▶"} Send Message
         </button>
 
         {!isExpanded && (
           <>
             <select
               className="quick-select"
-              value={messageType}
-              onChange={(e) => setMessageType(e.target.value)}
+              value={sendPanel.messageType}
+              onChange={(e) => updateSendPanel({ messageType: e.target.value })}
             >
               <option>TRANSFORM</option>
               <option>STATUS</option>
@@ -43,8 +38,8 @@ export default function SendPanel({
             <input
               type="text"
               className="quick-input"
-              value={deviceName}
-              onChange={(e) => setDeviceName(e.target.value)}
+              value={sendPanel.deviceName}
+              onChange={(e) => updateSendPanel({ deviceName: e.target.value })}
               placeholder="Device name"
             />
 
@@ -53,9 +48,11 @@ export default function SendPanel({
                 <label>To:</label>
                 <select
                   className="quick-select"
-                  value={toClient}
-                  onChange={(e) => setToClient(e.target.value)}
-                  style={{ minWidth: '120px' }}
+                  value={sendPanel.toClient}
+                  onChange={(e) =>
+                    updateSendPanel({ toClient: e.target.value })
+                  }
+                  style={{ minWidth: "120px" }}
                 >
                   <option>All Clients</option>
                   <option>Client-1</option>
@@ -75,8 +72,8 @@ export default function SendPanel({
             <div className="form-group">
               <label>Send to:</label>
               <select
-                value={toClient}
-                onChange={(e) => setToClient(e.target.value)}
+                value={sendPanel.toClient}
+                onChange={(e) => updateSendPanel({ toClient: e.target.value })}
               >
                 <option>All Clients</option>
                 <option>Client-1</option>
@@ -88,8 +85,8 @@ export default function SendPanel({
           <div className="form-group">
             <label>Message Type:</label>
             <select
-              value={messageType}
-              onChange={(e) => setMessageType(e.target.value)}
+              value={sendPanel.messageType}
+              onChange={(e) => updateSendPanel({ messageType: e.target.value })}
             >
               <option>TRANSFORM</option>
               <option>STATUS</option>
@@ -105,8 +102,8 @@ export default function SendPanel({
             <label>Device Name:</label>
             <input
               type="text"
-              value={deviceName}
-              onChange={(e) => setDeviceName(e.target.value)}
+              value={sendPanel.deviceName}
+              onChange={(e) => updateSendPanel({ deviceName: e.target.value })}
             />
           </div>
 
@@ -116,6 +113,8 @@ export default function SendPanel({
               className="content-editor"
               placeholder="Enter message content..."
               rows={5}
+              value={sendPanel.content}
+              onChange={(e) => updateSendPanel({ content: e.target.value })}
             />
           </div>
 
@@ -127,5 +126,5 @@ export default function SendPanel({
         </div>
       )}
     </div>
-  )
+  );
 }

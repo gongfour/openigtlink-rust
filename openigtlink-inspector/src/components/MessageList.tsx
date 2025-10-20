@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { ReceivedMessage } from "../App";
+import { useAppStore } from "../store/appStore";
 import "./MessageList.css";
 
 interface MessageListProps {
@@ -7,13 +7,14 @@ interface MessageListProps {
 }
 
 export default function MessageList({ messages }: MessageListProps) {
-  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
+  const { expandedMessageKeys, toggleMessageExpanded } = useAppStore();
 
   // 메시지의 고유 키 생성 (타임스탬프 + 장치명 + 타입)
   const getMessageKey = (index: number): string => {
     const msg = messages[index];
     return `${msg.timestamp}-${msg.device_name}-${msg.message_type}-${index}`;
   };
+
   const getMessageColor = (type: string): string => {
     const colors: { [key: string]: string } = {
       TRANSFORM: "#4caf50",
@@ -38,17 +39,8 @@ export default function MessageList({ messages }: MessageListProps) {
   };
 
   const handleRowClick = (index: number) => {
-    // 클릭된 메시지만 토글 (다른 메시지는 영향 없음)
     const key = getMessageKey(index);
-    setExpandedKeys((prev) => {
-      const newExpanded = new Set(prev);
-      if (newExpanded.has(key)) {
-        newExpanded.delete(key);
-      } else {
-        newExpanded.add(key);
-      }
-      return newExpanded;
-    });
+    toggleMessageExpanded(key);
   };
 
   return (
@@ -74,7 +66,7 @@ export default function MessageList({ messages }: MessageListProps) {
               <>
                 <tr
                   key={`row-${index}`}
-                  className={`message-row ${expandedKeys.has(getMessageKey(index)) ? "selected" : ""}`}
+                  className={`message-row ${expandedMessageKeys.has(getMessageKey(index)) ? "selected" : ""}`}
                   onClick={() => handleRowClick(index)}
                 >
                   <td>{formatTimestamp(msg.timestamp)}</td>
@@ -92,7 +84,7 @@ export default function MessageList({ messages }: MessageListProps) {
                   <td className="device-cell">{msg.device_name}</td>
                   <td className="size-cell">{msg.size_bytes}</td>
                 </tr>
-                {expandedKeys.has(getMessageKey(index)) && (
+                {expandedMessageKeys.has(getMessageKey(index)) && (
                   <tr key={`detail-${index}`} className="message-detail-row">
                     <td colSpan={4}>
                       <div className="inline-message-details">
