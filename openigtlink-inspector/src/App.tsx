@@ -38,10 +38,9 @@ function App() {
     nextTabId,
     showNewTabDialog,
     showSettings,
-    messages,
     setShowNewTabDialog,
     toggleSettings,
-    addMessage,
+    addTabMessage,
     incrementRxCount,
     addTab,
     removeTab,
@@ -55,22 +54,29 @@ function App() {
   useEffect(() => {
     // Listen for new messages from backend
     const unlisten = listen("message_received", (event: any) => {
-      const message = event.payload as ReceivedMessage;
-      addMessage(message);
+      const { tabId, message } = event.payload as {
+        tabId: number;
+        message: ReceivedMessage;
+      };
+      addTabMessage(tabId, message);
 
-      // Update rx_count for active tab
-      incrementRxCount(activeTab);
+      // Update rx_count for the tab that received the message
+      const tabIndex = tabs.findIndex((tab) => tab.id === tabId);
+      if (tabIndex >= 0) {
+        incrementRxCount(tabIndex);
+      }
     });
 
     return () => {
       unlisten.then((fn) => fn());
     };
-  }, [activeTab, addMessage, incrementRxCount]);
+  }, [tabs, addTabMessage, incrementRxCount]);
 
   const handleConnectClient = async (tabIndex: number) => {
     const tab = tabs[tabIndex];
     try {
       await invoke("connect_client", {
+        tab_id: tab.id,
         host: tab.host,
         port: parseInt(tab.port),
       });
@@ -124,7 +130,6 @@ function App() {
         {activeTab < tabs.length ? (
           <MessagePanel
             tab={tabs[activeTab]}
-            messages={messages}
             onTabChange={(changes) => updateTab(activeTab, changes)}
             onConnect={() => handleConnectClient(activeTab)}
             onDisconnect={() => handleDisconnect(activeTab)}

@@ -8,6 +8,7 @@ use tauri::{Manager, State};
 /// Client 연결 명령
 #[tauri::command]
 pub async fn connect_client(
+    tab_id: usize,
     host: String,
     port: u16,
     connection: State<'_, Mutex<ConnectionManager>>,
@@ -71,10 +72,16 @@ pub async fn connect_client(
                         body,
                     };
 
-                    let _ = app.emit_all("message_received", received);
+                    use crate::types::MessageWithTabId;
+                    let message_with_tab = MessageWithTabId {
+                        tab_id,
+                        message: received,
+                    };
+
+                    let _ = app.emit_all("message_received", message_with_tab);
                 }
                 Err(_e) => {
-                    let _ = app.emit_all("connection_closed", ());
+                    let _ = app.emit_all("connection_closed", serde_json::json!({"tab_id": tab_id}));
                     break;
                 }
             }

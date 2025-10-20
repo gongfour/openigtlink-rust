@@ -1,34 +1,36 @@
-import { Tab, ReceivedMessage } from '../App'
-import MessageList from './MessageList'
-import SendPanel from './SendPanel'
-import './MessagePanel.css'
+import { Tab } from "../App";
+import MessageList from "./MessageList";
+import SendPanel from "./SendPanel";
+import { useAppStore } from "../store/appStore";
+import "./MessagePanel.css";
 
 interface MessagePanelProps {
-  tab: Tab
-  messages: ReceivedMessage[]
-  onTabChange: (changes: Partial<Tab>) => void
-  onConnect: () => void
-  onDisconnect: () => void
+  tab: Tab;
+  onTabChange: (changes: Partial<Tab>) => void;
+  onConnect: () => void;
+  onDisconnect: () => void;
 }
 
 export default function MessagePanel({
   tab,
-  messages,
   onTabChange,
   onConnect,
   onDisconnect,
 }: MessagePanelProps) {
+  // Get messages for this specific tab
+  const messages = useAppStore((state) => state.getTabMessages(tab.id));
+
   const handleHostChange = (host: string) => {
-    onTabChange({ host })
-  }
+    onTabChange({ host });
+  };
 
   const handlePortChange = (port: string) => {
-    onTabChange({ port })
-  }
+    onTabChange({ port });
+  };
 
   const handleToggleSendPanel = () => {
-    onTabChange({ send_panel_expanded: !tab.send_panel_expanded })
-  }
+    onTabChange({ send_panel_expanded: !tab.send_panel_expanded });
+  };
 
   return (
     <div className="message-panel">
@@ -50,7 +52,7 @@ export default function MessagePanel({
             value={tab.port}
             onChange={(e) => handlePortChange(e.target.value)}
             disabled={tab.is_connected}
-            style={{ width: '80px' }}
+            style={{ width: "80px" }}
           />
         </div>
 
@@ -58,7 +60,7 @@ export default function MessagePanel({
           className="connect-btn"
           onClick={tab.is_connected ? onDisconnect : onConnect}
         >
-          {tab.is_connected ? 'Disconnect' : 'Connect'}
+          {tab.is_connected ? "Disconnect" : "Connect"}
         </button>
 
         {tab.is_connected ? (
@@ -83,8 +85,8 @@ export default function MessagePanel({
       <SendPanel
         isExpanded={tab.send_panel_expanded}
         onToggle={handleToggleSendPanel}
-        showToSelector={tab.tab_type === 'Server'}
+        showToSelector={tab.tab_type === "Server"}
       />
     </div>
-  )
+  );
 }

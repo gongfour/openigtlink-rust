@@ -18,6 +18,13 @@ pub struct ReceivedMessage {
     pub body: serde_json::Value, // JSON 형식의 메시지 바디
 }
 
+/// 탭 ID와 함께 전송되는 메시지
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MessageWithTabId {
+    pub tab_id: usize,
+    pub message: ReceivedMessage,
+}
+
 /// 연결 관리를 위한 명령 enum
 #[derive(Debug)]
 #[allow(dead_code)]

@@ -23,7 +23,7 @@ interface AppState {
   tabs: Tab[];
   activeTab: number;
   nextTabId: number;
-  messages: ReceivedMessage[];
+  tabMessages: Map<number, ReceivedMessage[]>;
   showNewTabDialog: boolean;
   showSettings: boolean;
   settings: Settings;
@@ -39,9 +39,10 @@ interface AppState {
   updateTab: (index: number, changes: Partial<Tab>) => void;
 
   // Message actions
-  addMessage: (message: ReceivedMessage) => void;
-  setMessages: (messages: ReceivedMessage[]) => void;
-  clearMessages: () => void;
+  addTabMessage: (tabId: number, message: ReceivedMessage) => void;
+  setTabMessages: (tabId: number, messages: ReceivedMessage[]) => void;
+  clearTabMessages: (tabId: number) => void;
+  getTabMessages: (tabId: number) => ReceivedMessage[];
 
   // UI actions
   setShowNewTabDialog: (show: boolean) => void;
@@ -88,7 +89,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   ],
   activeTab: 0,
   nextTabId: 1,
-  messages: [],
+  tabMessages: new Map<number, ReceivedMessage[]>([[0, []]]),
   showNewTabDialog: false,
   showSettings: false,
   settings: {
@@ -114,21 +115,33 @@ export const useAppStore = create<AppState>((set, get) => ({
   setNextTabId: (id) => set({ nextTabId: id }),
 
   addTab: (tab) =>
-    set((state) => ({
-      tabs: [...state.tabs, tab],
-      activeTab: state.tabs.length,
-    })),
+    set((state) => {
+      const newMap = new Map(state.tabMessages);
+      newMap.set(tab.id, []);
+      return {
+        tabs: [...state.tabs, tab],
+        activeTab: state.tabs.length,
+        tabMessages: newMap,
+      };
+    }),
 
   removeTab: (index) =>
     set((state) => {
+      const tabToRemove = state.tabs[index];
       const updated = state.tabs.filter((_, i) => i !== index);
       let newActiveTab = state.activeTab;
       if (newActiveTab >= updated.length && newActiveTab > 0) {
         newActiveTab = newActiveTab - 1;
       }
+
+      // Remove messages for this tab
+      const newMap = new Map(state.tabMessages);
+      newMap.delete(tabToRemove.id);
+
       return {
         tabs: updated,
         activeTab: newActiveTab,
+        tabMessages: newMap,
       };
     }),
 
@@ -140,14 +153,32 @@ export const useAppStore = create<AppState>((set, get) => ({
     }),
 
   // Message actions
-  addMessage: (message) =>
-    set((state) => ({
-      messages: [message, ...state.messages].slice(0, 1000),
-    })),
+  addTabMessage: (tabId, message) =>
+    set((state) => {
+      const messages = state.tabMessages.get(tabId) || [];
+      const updated = [message, ...messages].slice(0, 1000);
+      const newMap = new Map(state.tabMessages);
+      newMap.set(tabId, updated);
+      return { tabMessages: newMap };
+    }),
 
-  setMessages: (messages) => set({ messages }),
+  setTabMessages: (tabId, messages) =>
+    set((state) => {
+      const newMap = new Map(state.tabMessages);
+      newMap.set(tabId, messages);
+      return { tabMessages: newMap };
+    }),
 
-  clearMessages: () => set({ messages: [] }),
+  clearTabMessages: (tabId) =>
+    set((state) => {
+      const newMap = new Map(state.tabMessages);
+      newMap.set(tabId, []);
+      return { tabMessages: newMap };
+    }),
+
+  getTabMessages: (tabId) => {
+    return get().tabMessages.get(tabId) || [];
+  },
 
   // UI actions
   setShowNewTabDialog: (show) => set({ showNewTabDialog: show }),
