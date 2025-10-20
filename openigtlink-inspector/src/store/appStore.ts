@@ -45,7 +45,6 @@ interface AppState {
   showSettings: boolean;
   settings: Settings;
   sendPanel: SendPanelState;
-  expandedMessageKeys: Set<string>;
   filters: FilterState;
 
   // Tab actions
@@ -86,8 +85,7 @@ interface AppState {
   clearSendPanel: () => void;
 
   // MessageList actions
-  toggleMessageExpanded: (messageKey: string) => void;
-  clearExpandedMessages: () => void;
+  toggleMessageExpanded: (tabIndex: number, messageKey: string) => void;
 
   // Send message actions
   sendMessage: (
@@ -121,6 +119,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       send_panel_expanded: false,
       rx_count: 0,
       tx_count: 0,
+      expandedMessageKeys: new Set<string>(),
     },
   ],
   activeTab: 0,
@@ -144,7 +143,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     isRepeating: false,
     repeatRate: 60,
   },
-  expandedMessageKeys: new Set<string>(),
   filters: {
     searchText: "",
     selectedTypes: [],
@@ -315,18 +313,23 @@ export const useAppStore = create<AppState>((set, get) => ({
     }),
 
   // MessageList actions
-  toggleMessageExpanded: (messageKey) =>
+  toggleMessageExpanded: (tabIndex, messageKey) =>
     set((state) => {
-      const newExpanded = new Set(state.expandedMessageKeys);
-      if (newExpanded.has(messageKey)) {
-        newExpanded.delete(messageKey);
-      } else {
-        newExpanded.add(messageKey);
+      const updated = [...state.tabs];
+      if (updated[tabIndex]) {
+        const newExpanded = new Set(updated[tabIndex].expandedMessageKeys);
+        if (newExpanded.has(messageKey)) {
+          newExpanded.delete(messageKey);
+        } else {
+          newExpanded.add(messageKey);
+        }
+        updated[tabIndex] = {
+          ...updated[tabIndex],
+          expandedMessageKeys: newExpanded,
+        };
       }
-      return { expandedMessageKeys: newExpanded };
+      return { tabs: updated };
     }),
-
-  clearExpandedMessages: () => set({ expandedMessageKeys: new Set<string>() }),
 
   // Send message actions
   sendMessage: async (tabId, messageType, deviceName, content) => {

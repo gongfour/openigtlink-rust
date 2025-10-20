@@ -4,10 +4,14 @@ import "./MessageList.css";
 
 interface MessageListProps {
   messages: ReceivedMessage[];
+  tabIndex: number;
 }
 
-export default function MessageList({ messages }: MessageListProps) {
-  const { expandedMessageKeys, toggleMessageExpanded } = useAppStore();
+export default function MessageList({ messages, tabIndex }: MessageListProps) {
+  const tabs = useAppStore((state) => state.tabs);
+  const toggleMessageExpanded = useAppStore((state) => state.toggleMessageExpanded);
+
+  const expandedMessageKeys = tabs[tabIndex]?.expandedMessageKeys || new Set<string>();
 
   // 메시지의 고유 키 생성 (타임스탬프 + 장치명 + 타입)
   const getMessageKey = (index: number): string => {
@@ -40,7 +44,7 @@ export default function MessageList({ messages }: MessageListProps) {
 
   const handleRowClick = (index: number) => {
     const key = getMessageKey(index);
-    toggleMessageExpanded(key);
+    toggleMessageExpanded(tabIndex, key);
   };
 
   return (

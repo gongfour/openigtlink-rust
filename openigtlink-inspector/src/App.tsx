@@ -20,6 +20,7 @@ export interface Tab {
   rx_count: number;
   tx_count: number;
   error_message?: string;
+  expandedMessageKeys: Set<string>;
 }
 
 export interface ReceivedMessage {
@@ -54,14 +55,14 @@ function App() {
   useEffect(() => {
     // Listen for new messages from backend
     const unlisten = listen("message_received", (event: any) => {
-      const { tabId, message } = event.payload as {
-        tabId: number;
+      const { tab_id, message } = event.payload as {
+        tab_id: number;
         message: ReceivedMessage;
       };
-      addTabMessage(tabId, message);
+      addTabMessage(tab_id, message);
 
       // Update rx_count for the tab that received the message
-      const tabIndex = tabs.findIndex((tab) => tab.id === tabId);
+      const tabIndex = tabs.findIndex((tab) => tab.id === tab_id);
       if (tabIndex >= 0) {
         incrementRxCount(tabIndex);
       }
@@ -76,7 +77,7 @@ function App() {
     const tab = tabs[tabIndex];
     try {
       await invoke("connect_client", {
-        tab_id: tab.id,
+        tabId: tab.id,
         host: tab.host,
         port: parseInt(tab.port),
       });
@@ -107,6 +108,7 @@ function App() {
       send_panel_expanded: false,
       rx_count: 0,
       tx_count: 0,
+      expandedMessageKeys: new Set<string>(),
     };
 
     addTab(newTab);
@@ -130,6 +132,7 @@ function App() {
         {activeTab < tabs.length ? (
           <MessagePanel
             tab={tabs[activeTab]}
+            tabIndex={activeTab}
             onTabChange={(changes) => updateTab(activeTab, changes)}
             onConnect={() => handleConnectClient(activeTab)}
             onDisconnect={() => handleDisconnect(activeTab)}
