@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Documentation Updates**
+  - Updated README to reflect actual example files (renamed examples with `client_`, `server_`, `demo_` prefixes)
+  - Updated all example references to match current file structure
+  - Corrected example count from 27 to 17
+
+### Removed
+
+- **Advanced Features** (previously removed in commit 20220d5)
+  - Removed `message_queue` module and related documentation
+  - Removed `partial_transfer` module and related documentation
+  - Removed `session_manager` module and related documentation
+  - These advanced features added complexity without providing value to most users
+  - Core functionality (reconnect, TLS, async/sync, UDP) remains fully supported
+
 ## [0.4.0] - 2025-10-14
 
 ### Added
@@ -240,7 +256,6 @@ loop {
 - **Asynchronous I/O**
   - Tokio-based async client (`AsyncIgtlClient`)
   - Tokio-based async server
-  - Multi-client session management (`SessionManager`)
   - High-concurrency support (100+ simultaneous clients)
 
 - **UDP Protocol**
@@ -271,15 +286,6 @@ loop {
   - C++ library binary compatibility
   - Selective verification mode
 
-- **Message Queue**
-  - Buffering for high-throughput scenarios
-  - Backpressure management
-  - Configurable queue depth
-
-- **Partial Transfer**
-  - Resume capability for large messages
-  - Network interruption recovery
-
 - **Advanced TCP Options**
   - TCP_NODELAY for low latency
   - SO_KEEPALIVE for connection monitoring
@@ -298,21 +304,17 @@ loop {
 
 #### Developer Experience
 
-- **Comprehensive Examples** (27 total)
-  - `client.rs`, `server.rs` - Basic client/server communication
-  - `image_streaming.rs` - Medical imaging workflows (CT/MRI/Ultrasound)
-  - `video_streaming.rs` - Video streaming with multiple codecs
-  - `tracking_server.rs` - Surgical tool tracking
-  - `udp_tracking.rs` - High-speed UDP tracking (120+ Hz)
-  - `point_navigation.rs` - Fiducial point registration
-  - `sensor_logger.rs` - Sensor data integration
-  - `tls_communication.rs` - TLS secure communication
-  - `reconnect.rs` - Auto-reconnection example
-  - `session_manager.rs` - Multi-client server
-  - `query_streaming.rs` - Query and streaming control
-  - `compression.rs` - Image compression
-  - `message_queue.rs` - High-throughput buffering
-  - And many more...
+- **Comprehensive Examples** (17 total)
+  - `client.rs`, `server.rs`, `async_client.rs`, `async_server.rs` - Basic client/server communication
+  - `client_image_streaming.rs` - Medical imaging workflows (CT/MRI/Ultrasound)
+  - `server_tracking.rs` - Surgical tool tracking
+  - `client_udp_tracking.rs` - High-speed UDP tracking (120+ Hz)
+  - `demo_tls_communication.rs` - TLS secure communication
+  - `client_query_helpers.rs` - Query and streaming control
+  - `demo_compression.rs` - Image compression
+  - `client_async_dynamic_receiver.rs`, `client_dynamic_receiver.rs` - Dynamic message receiving
+  - `demo_version3_extended_header.rs`, `demo_version3_metadata.rs` - OpenIGTLink v3 features
+  - And more...
 
 - **Performance Benchmarks**
   - `throughput.rs` - Message throughput testing (10,000+ msg/sec)

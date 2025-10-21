@@ -61,7 +61,7 @@ match msg {
 cargo run --example async_server
 
 # Terminal 2: Receive and handle messages dynamically
-cargo run --example async_dynamic_receiver
+cargo run --example client_async_dynamic_receiver
 ```
 
 For **sending specific message types**, use the type-safe API:
@@ -108,7 +108,7 @@ match msg {
 - Protocol debugging and testing tools
 - Applications receiving unknown or custom message types
 
-See [dynamic_receiver.rs](./examples/dynamic_receiver.rs) and [async_dynamic_receiver.rs](./examples/async_dynamic_receiver.rs) for complete examples.
+See [client_dynamic_receiver.rs](./examples/client_dynamic_receiver.rs) and [client_async_dynamic_receiver.rs](./examples/client_async_dynamic_receiver.rs) for complete examples.
 
 ### 🏗️ Flexible Client Builder
 
@@ -179,12 +179,10 @@ let client = ClientBuilder::new()
 - **UDP Support** - Low-latency tracking data transmission (120+ Hz)
 - **TLS/SSL Encryption** - Secure medical data transfer with certificate validation
 - **Auto-reconnection** - Robust network error handling with exponential backoff
-- **Multi-client Server** - Built-in session management for concurrent connections
 
 ### ⚡ Performance & Reliability
 - **Zero-copy Parsing** - Minimal overhead for real-time applications
 - **Image Compression** - 98-99% reduction for medical images (Deflate/Gzip)
-- **Message Queuing** - Backpressure control for high-throughput scenarios
 - **CRC-64 Validation** - Optional integrity checking
 - **Structured Logging** - Production-ready tracing integration
 
@@ -393,17 +391,17 @@ let client = ClientBuilder::new()
 
 ```bash
 # 1. Dynamic message receiver (recommended - works with any message type)
-cargo run --example async_server          # Terminal 1
-cargo run --example async_dynamic_receiver # Terminal 2
+cargo run --example async_server                   # Terminal 1
+cargo run --example client_async_dynamic_receiver  # Terminal 2
 
 # 2. Basic client/server (specific message types)
-cargo run --example server                 # Terminal 1
-cargo run --example client                 # Terminal 2
+cargo run --example server                         # Terminal 1
+cargo run --example client                         # Terminal 2
 ```
 
 **Key examples:**
-- [async_dynamic_receiver.rs](./examples/async_dynamic_receiver.rs) - **Start here!** Receive any message type dynamically (v0.3.0+)
-- [dynamic_receiver.rs](./examples/dynamic_receiver.rs) - Sync version of dynamic receiver
+- [client_async_dynamic_receiver.rs](./examples/client_async_dynamic_receiver.rs) - **Start here!** Receive any message type dynamically (v0.3.0+)
+- [client_dynamic_receiver.rs](./examples/client_dynamic_receiver.rs) - Sync version of dynamic receiver
 - [client.rs](./examples/client.rs) - Basic client with specific message types
 - [server.rs](./examples/server.rs) - Basic server example
 
@@ -414,11 +412,7 @@ cargo run --example client                 # Terminal 2
 
 ```bash
 # CT/MRI/Ultrasound streaming
-cargo run --example image_streaming ct
-cargo run --example image_streaming ultrasound
-
-# Real-time video
-cargo run --example video_streaming h264
+cargo run --example client_image_streaming
 ```
 </details>
 
@@ -427,23 +421,8 @@ cargo run --example video_streaming h264
 
 ```bash
 # Tool tracking at 60-120 Hz
-cargo run --example tracking_server
-cargo run --example udp_tracking
-
-# Fiducial registration
-cargo run --example point_navigation
-```
-</details>
-
-<details>
-<summary><b>Sensor Integration</b></summary>
-
-```bash
-# Force/torque sensors
-cargo run --example sensor_logger force
-
-# IMU data
-cargo run --example sensor_logger imu
+cargo run --example server_tracking
+cargo run --example client_udp_tracking
 ```
 </details>
 
@@ -455,13 +434,7 @@ cargo run --example sensor_logger imu
 ```bash
 # TLS encryption
 ./examples/generate_test_certs.sh
-cargo run --example tls_communication
-
-# Auto-reconnection
-cargo run --example reconnect
-
-# Multi-client server
-cargo run --example session_manager
+cargo run --example demo_tls_communication
 ```
 </details>
 
@@ -470,13 +443,10 @@ cargo run --example session_manager
 
 ```bash
 # Image compression (98-99% ratio)
-cargo run --example compression
+cargo run --example demo_compression
 
-# UDP low-latency
-cargo run --example udp_tracking compare
-
-# Message queuing
-cargo run --example message_queue
+# UDP low-latency tracking
+cargo run --example client_udp_tracking
 ```
 </details>
 
@@ -484,11 +454,8 @@ cargo run --example message_queue
 <summary><b>3D Slicer Integration</b></summary>
 
 ```bash
-# Query & streaming control
-cargo run --example query_streaming
-
-# Connect to remote Slicer
-cargo run --example query_streaming -- 192.168.1.100:18944
+# Query & streaming control helpers
+cargo run --example client_query_helpers
 ```
 </details>
 
@@ -496,7 +463,6 @@ cargo run --example query_streaming -- 192.168.1.100:18944
 ```bash
 cargo test           # 102 tests
 cargo bench          # Performance benchmarks
-RUST_LOG=debug cargo run --example logging
 ```
 
 ## Performance
