@@ -78,11 +78,6 @@ Measures message serialization performance (encoding without network I/O).
 cargo bench --bench serialization
 ```
 
-**For real network performance testing:**
-```bash
-cargo run --example performance_test --release
-```
-
 ## Viewing Results
 
 ### Terminal Output
@@ -198,8 +193,7 @@ sudo pacman -S gnuplot
 ### Network Performance Testing
 
 Network benchmarks are disabled in the Criterion suite. For network performance:
-- Use `cargo run --example performance_test --release`
-- Or implement custom integration tests with realistic workloads
+- Implement custom integration tests with realistic workloads
 - Criterion's tight iteration loops don't work well with socket lifecycle
 
 ## CI/CD Integration
