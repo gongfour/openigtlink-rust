@@ -9,7 +9,7 @@ edition = "2021"
 tauri-build = { version = "1.5", features = [] }
 
 [dependencies]
-tauri = { version = "1.5", features = ["shell-open"] }
+tauri = { version = "1.5", features = [ "api-all"] }
 tokio = { version = "1.40", features = ["full"] }
 openigtlink-rust = { path = "../../openigtlink-rust", version = "0.4" }
 serde = { version = "1.0", features = ["derive"] }

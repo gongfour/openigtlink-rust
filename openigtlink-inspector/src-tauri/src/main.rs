@@ -20,7 +20,6 @@ fn main() {
             commands::connect_client,
             commands::listen_server,
             commands::disconnect_client,
-            commands::get_connection_status,
             commands::create_client_tab,
             commands::create_server_tab,
             commands::send_message,

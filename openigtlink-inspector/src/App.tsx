@@ -96,8 +96,11 @@ function App() {
   };
 
   const handleDisconnect = async (tabIndex: number) => {
+    const tab = tabs[tabIndex];
     try {
-      await invoke("disconnect_client");
+      await invoke("disconnect_client", {
+        tabId: tab.id,
+      });
       setTabConnected(tabIndex, false);
     } catch (error) {
       console.error("Disconnect failed:", error);

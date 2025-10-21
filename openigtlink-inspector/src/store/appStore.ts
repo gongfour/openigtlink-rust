@@ -337,11 +337,17 @@ export const useAppStore = create<AppState>((set, get) => ({
     const messageId = `${Date.now()}-${Math.random()}`;
 
     try {
+      // Get current tab to check if it's a Server tab
+      const tabs = get().tabs;
+      const tab = tabs.find((t) => t.id === tabId);
+      const toClient = tab?.tab_type === "Server" ? get().sendPanel.toClient : null;
+
       await invoke("send_message", {
-        tab_id: tabId,
-        message_type: messageType,
-        device_name: deviceName,
-        content: content ? JSON.parse(content) : {},
+        tabId: tabId,
+        messageType: messageType,
+        deviceName: deviceName,
+        content: content || "",
+        toClient: toClient,
       });
 
       // Success
@@ -359,7 +365,6 @@ export const useAppStore = create<AppState>((set, get) => ({
       }));
 
       // Increment tx count
-      const tabs = get().tabs;
       const tabIndex = tabs.findIndex((t) => t.id === tabId);
       if (tabIndex >= 0) {
         get().incrementTxCount(tabIndex);
@@ -379,6 +384,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           ...state.sentMessages,
         ].slice(0, 100),
       }));
+      throw error;
     }
   },
 
