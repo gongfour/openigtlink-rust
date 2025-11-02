@@ -1,7 +1,9 @@
 use crate::cli::ServerArgs;
 use crate::msg_loader;
+use crate::msg_saver;
 use openigtlink_rust::error::Result;
-use openigtlink_rust::io::IgtlServer;
+use openigtlink_rust::io::AsyncIgtlServer;
+use openigtlink_rust::protocol::types::TransformMessage;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
@@ -9,8 +11,8 @@ use tracing::{info, error, warn};
 
 /// Run OpenIGTLink server
 pub async fn run_server(args: ServerArgs) -> Result<()> {
-    // Create and bind server
-    let server = IgtlServer::bind(&args.listen)?;
+    // Create and bind server (async)
+    let server = AsyncIgtlServer::bind(&args.listen).await?;
 
     info!("✓ Server listening on {}", args.listen);
     println!("✓ Server listening on {}", args.listen);
@@ -58,7 +60,7 @@ pub async fn run_server(args: ServerArgs) -> Result<()> {
             break;
         }
 
-        match server.accept() {
+        match server.accept().await {
             Ok(mut conn) => {
                 info!("✓ Client connected");
                 println!("✓ Client connected");
@@ -66,7 +68,7 @@ pub async fn run_server(args: ServerArgs) -> Result<()> {
                 // Send message if enabled
                 if let Some(ref msg) = send_msg {
                     for i in 1..=args.send_repeat_count {
-                        match conn.send(msg) {
+                        match conn.send(msg).await {
                             Ok(_) => {
                                 info!("✓ Message sent ({}/{})", i, args.send_repeat_count);
                                 if i % 10 == 0 || i == args.send_repeat_count {
@@ -86,11 +88,79 @@ pub async fn run_server(args: ServerArgs) -> Result<()> {
                     }
                 }
 
-                // RECEIVE functionality reserved for Phase 3+
-                // TODO: Implement async receive loop with proper message handling
+                // Receive messages if enabled
                 if args.receive_enable {
-                    warn!("⚠ RECEIVE functionality not yet implemented for server");
-                    eprintln!("⚠ RECEIVE functionality not yet implemented for server");
+                    let timeout = Duration::from_secs(args.receive_timeout_sec);
+                    let max_count = if args.receive_max_count == 0 {
+                        u32::MAX
+                    } else {
+                        args.receive_max_count
+                    };
+                    let mut received_messages: Vec<openigtlink_rust::protocol::message::IgtlMessage<TransformMessage>> = Vec::new();
+
+                    info!("✓ Waiting to receive messages (timeout: {}s, max: {})",
+                        args.receive_timeout_sec,
+                        if args.receive_max_count == 0 { "unlimited".to_string() } else { args.receive_max_count.to_string() });
+                    println!("✓ Waiting to receive messages (timeout: {}s, max: {})",
+                        args.receive_timeout_sec,
+                        if args.receive_max_count == 0 { "unlimited".to_string() } else { args.receive_max_count.to_string() });
+
+                    let start_time = std::time::Instant::now();
+                    loop {
+                        // Check if we should stop based on max_count
+                        if received_messages.len() >= max_count as usize {
+                            break;
+                        }
+
+                        // Check if timeout exceeded
+                        if start_time.elapsed() > timeout {
+                            info!("✓ Receive timeout reached");
+                            println!("✓ Receive timeout reached");
+                            break;
+                        }
+
+                        // Try to receive a message with a short timeout to allow graceful shutdown
+                        match tokio::time::timeout(
+                            Duration::from_secs(1),
+                            conn.receive::<TransformMessage>()
+                        ).await {
+                            Ok(Ok(msg)) => {
+                                // Check if message type matches filter
+                                if msg_saver::matches_filter("TRANSFORM", &args.receive_message_types) {
+                                    received_messages.push(msg);
+                                    let count = received_messages.len();
+                                    info!("✓ Received message ({}/{})", count, max_count);
+                                    if count % 10 == 0 || count == max_count as usize {
+                                        println!("✓ Received message ({}/{})", count, max_count);
+                                    }
+                                }
+                            }
+                            Ok(Err(e)) => {
+                                info!("✓ Receive completed or connection closed: {}", e);
+                                break;
+                            }
+                            Err(_) => {
+                                // Timeout on individual receive, check if we should continue
+                                if !running.load(Ordering::SeqCst) {
+                                    break;
+                                }
+                                continue;
+                            }
+                        }
+                    }
+
+                    // Save received messages if output file specified
+                    if let Some(ref output_file) = args.receive_output_file {
+                        if !received_messages.is_empty() {
+                            if let Err(e) = msg_saver::save_transform_messages(&received_messages, output_file) {
+                                error!("✗ Failed to save received messages: {}", e);
+                                eprintln!("✗ Failed to save received messages: {}", e);
+                            }
+                        }
+                    }
+
+                    info!("✓ Received {} message(s)", received_messages.len());
+                    println!("✓ Received {} message(s)", received_messages.len());
                 }
             }
             Err(e) => {

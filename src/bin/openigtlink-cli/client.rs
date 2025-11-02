@@ -1,7 +1,9 @@
 use crate::cli::ClientArgs;
 use crate::msg_loader;
+use crate::msg_saver;
 use openigtlink_rust::error::Result;
 use openigtlink_rust::io::unified_async_client::UnifiedAsyncClient;
+use openigtlink_rust::protocol::types::TransformMessage;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
@@ -71,19 +73,92 @@ pub async fn run_client(args: ClientArgs) -> Result<()> {
         }
     }
 
-    // RECEIVE functionality reserved for Phase 3+
+    // Receive messages if enabled
     if args.receive_enable {
-        warn!("⚠ RECEIVE functionality not yet implemented for client");
-        eprintln!("⚠ RECEIVE functionality not yet implemented for client");
-    }
+        let timeout = Duration::from_secs(args.receive_timeout_sec);
+        let max_count = if args.receive_max_count == 0 {
+            u32::MAX
+        } else {
+            args.receive_max_count
+        };
+        let mut received_messages: Vec<openigtlink_rust::protocol::message::IgtlMessage<TransformMessage>> = Vec::new();
 
-    // Keep connection alive while not interrupted
-    loop {
-        if !running.load(Ordering::SeqCst) {
-            break;
+        info!("✓ Waiting to receive messages (timeout: {}s, max: {})",
+            args.receive_timeout_sec,
+            if args.receive_max_count == 0 { "unlimited".to_string() } else { args.receive_max_count.to_string() });
+        println!("✓ Waiting to receive messages (timeout: {}s, max: {})",
+            args.receive_timeout_sec,
+            if args.receive_max_count == 0 { "unlimited".to_string() } else { args.receive_max_count.to_string() });
+
+        let start_time = std::time::Instant::now();
+        loop {
+            // Check if we should stop based on max_count
+            if received_messages.len() >= max_count as usize {
+                break;
+            }
+
+            // Check if timeout exceeded
+            if start_time.elapsed() > timeout {
+                info!("✓ Receive timeout reached");
+                println!("✓ Receive timeout reached");
+                break;
+            }
+
+            // Check if interrupted
+            if !running.load(Ordering::SeqCst) {
+                info!("✓ Receive interrupted by user");
+                println!("✓ Receive interrupted");
+                break;
+            }
+
+            // Try to receive a message with a short timeout to allow graceful shutdown
+            match tokio::time::timeout(
+                Duration::from_secs(1),
+                client.receive::<TransformMessage>()
+            ).await {
+                Ok(Ok(msg)) => {
+                    // Check if message type matches filter
+                    if msg_saver::matches_filter("TRANSFORM", &args.receive_message_types) {
+                        received_messages.push(msg);
+                        let count = received_messages.len();
+                        info!("✓ Received message ({}/{})", count, max_count);
+                        if count % 10 == 0 || count == max_count as usize {
+                            println!("✓ Received message ({}/{})", count, max_count);
+                        }
+                    }
+                }
+                Ok(Err(e)) => {
+                    info!("✓ Receive completed or connection closed: {}", e);
+                    break;
+                }
+                Err(_) => {
+                    // Timeout on individual receive, check if we should continue
+                    continue;
+                }
+            }
         }
 
-        tokio::time::sleep(Duration::from_secs(1)).await;
+        // Save received messages if output file specified
+        if let Some(ref output_file) = args.receive_output_file {
+            if !received_messages.is_empty() {
+                if let Err(e) = msg_saver::save_transform_messages(&received_messages, output_file) {
+                    error!("✗ Failed to save received messages: {}", e);
+                    eprintln!("✗ Failed to save received messages: {}", e);
+                }
+            }
+        }
+
+        info!("✓ Received {} message(s)", received_messages.len());
+        println!("✓ Received {} message(s)", received_messages.len());
+    } else {
+        // Keep connection alive while not interrupted
+        loop {
+            if !running.load(Ordering::SeqCst) {
+                break;
+            }
+
+            tokio::time::sleep(Duration::from_secs(1)).await;
+        }
     }
 
     info!("✓ Client disconnected");
