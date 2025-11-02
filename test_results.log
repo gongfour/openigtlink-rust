@@ -1,0 +1,205 @@
+[1;34m================================[0m
+[1;34mOpenIGTLink Bidirectional Tests[0m
+[1;34mTesting 40 message types[0m
+[1;34m================================[0m
+
+[ 1/40] Testing transform            ... warning: unused import: `std::sync::Arc`
+   --> src/io/builder.rs:172:5
+    |
+172 | use std::sync::Arc;
+    |     ^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `std::sync::Arc`
+   --> src/io/unified_async_client.rs:142:5
+    |
+142 | use std::sync::Arc;
+    |     ^^^^^^^^^^^^^^
+
+warning: function `parse_addr` is never used
+   --> src/io/builder.rs:565:4
+    |
+565 | fn parse_addr(addr: &str) -> Result<(String, u16)> {
+    |    ^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: fields `hostname`, `port`, and `tls_config` are never read
+   --> src/io/unified_async_client.rs:206:5
+    |
+204 | struct ConnectionParams {
+    |        ---------------- fields in this struct
+205 |     addr: String,
+206 |     hostname: Option<String>,
+    |     ^^^^^^^^
+207 |     port: Option<u16>,
+    |     ^^^^
+...
+211 |     tls_config: Option<()>,
+    |     ^^^^^^^^^^
+
+warning: unnecessary parentheses around function argument
+   --> src/bin/openigtlink-cli/msg_loader.rs:727:34
+    |
+727 |             let data = vec![0u8; (size[0] as usize * size[1] as usize * size[2] as usize * 3 * scalar_type.size())];
+    |                                  ^                                                                               ^
+    |
+    = note: `#[warn(unused_parens)]` on by default
+help: remove these parentheses
+    |
+727 -             let data = vec![0u8; (size[0] as usize * size[1] as usize * size[2] as usize * 3 * scalar_type.size())];
+727 +             let data = vec![0u8; size[0] as usize * size[1] as usize * size[2] as usize * 3 * scalar_type.size()];
+    |
+
+warning: unreachable pattern
+   --> src/bin/openigtlink-cli/msg_saver.rs:375:9
+    |
+375 |         _ => {
+    |         ^ no value can reach this
+    |
+note: multiple earlier patterns match some of the same values
+   --> src/bin/openigtlink-cli/msg_saver.rs:375:9
+    |
+ 15 |         AnyMessage::Transform(msg) => {
+    |         -------------------------- matches some of the same values
+...
+ 28 |         AnyMessage::Status(msg) => {
+    |         ----------------------- matches some of the same values
+...
+ 42 |         AnyMessage::Capability(msg) => {
+    |         --------------------------- matches some of the same values
+...
+ 55 |         AnyMessage::String(msg) => {
+    |         ----------------------- matches some of the same values
+...
+375 |         _ => {
+    |         ^ ...and 37 other patterns collectively make this unreachable
+    = note: `#[warn(unreachable_patterns)]` on by default
+
+warning: function `parse_addr` is never used
+ --> src/bin/openigtlink-cli/config.rs:6:8
+  |
+6 | pub fn parse_addr(addr_str: &str) -> Result<SocketAddr> {
+  |        ^^^^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` on by default
+
+warning: function `parse_message_types` is never used
+  --> src/bin/openigtlink-cli/config.rs:16:8
+   |
+16 | pub fn parse_message_types(types_str: &str) -> Vec<String> {
+   |        ^^^^^^^^^^^^^^^^^^^
+
+warning: function `save_message` is never used
+ --> src/bin/openigtlink-cli/msg_saver.rs:8:8
+  |
+8 | pub fn save_message(
+  |        ^^^^^^^^^^^^
+
+✓ Server listening on 127.0.0.1:9001
+✓ Loaded TRANSFORM message from: examples/messages/transform.json
+warning: unused import: `std::sync::Arc`
+   --> src/io/builder.rs:172:5
+    |
+172 | use std::sync::Arc;
+    |     ^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `std::sync::Arc`
+   --> src/io/unified_async_client.rs:142:5
+    |
+142 | use std::sync::Arc;
+    |     ^^^^^^^^^^^^^^
+
+warning: function `parse_addr` is never used
+   --> src/io/builder.rs:565:4
+    |
+565 | fn parse_addr(addr: &str) -> Result<(String, u16)> {
+    |    ^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: fields `hostname`, `port`, and `tls_config` are never read
+   --> src/io/unified_async_client.rs:206:5
+    |
+204 | struct ConnectionParams {
+    |        ---------------- fields in this struct
+205 |     addr: String,
+206 |     hostname: Option<String>,
+    |     ^^^^^^^^
+207 |     port: Option<u16>,
+    |     ^^^^
+...
+211 |     tls_config: Option<()>,
+    |     ^^^^^^^^^^
+
+warning: unnecessary parentheses around function argument
+   --> src/bin/openigtlink-cli/msg_loader.rs:727:34
+    |
+727 |             let data = vec![0u8; (size[0] as usize * size[1] as usize * size[2] as usize * 3 * scalar_type.size())];
+    |                                  ^                                                                               ^
+    |
+    = note: `#[warn(unused_parens)]` on by default
+help: remove these parentheses
+    |
+727 -             let data = vec![0u8; (size[0] as usize * size[1] as usize * size[2] as usize * 3 * scalar_type.size())];
+727 +             let data = vec![0u8; size[0] as usize * size[1] as usize * size[2] as usize * 3 * scalar_type.size()];
+    |
+
+warning: unreachable pattern
+   --> src/bin/openigtlink-cli/msg_saver.rs:375:9
+    |
+375 |         _ => {
+    |         ^ no value can reach this
+    |
+note: multiple earlier patterns match some of the same values
+   --> src/bin/openigtlink-cli/msg_saver.rs:375:9
+    |
+ 15 |         AnyMessage::Transform(msg) => {
+    |         -------------------------- matches some of the same values
+...
+ 28 |         AnyMessage::Status(msg) => {
+    |         ----------------------- matches some of the same values
+...
+ 42 |         AnyMessage::Capability(msg) => {
+    |         --------------------------- matches some of the same values
+...
+ 55 |         AnyMessage::String(msg) => {
+    |         ----------------------- matches some of the same values
+...
+375 |         _ => {
+    |         ^ ...and 37 other patterns collectively make this unreachable
+    = note: `#[warn(unreachable_patterns)]` on by default
+
+warning: function `parse_addr` is never used
+ --> src/bin/openigtlink-cli/config.rs:6:8
+  |
+6 | pub fn parse_addr(addr_str: &str) -> Result<SocketAddr> {
+  |        ^^^^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` on by default
+
+warning: function `parse_message_types` is never used
+  --> src/bin/openigtlink-cli/config.rs:16:8
+   |
+16 | pub fn parse_message_types(types_str: &str) -> Vec<String> {
+   |        ^^^^^^^^^^^^^^^^^^^
+
+warning: function `save_message` is never used
+ --> src/bin/openigtlink-cli/msg_saver.rs:8:8
+  |
+8 | pub fn save_message(
+  |        ^^^^^^^^^^^^
+
+✓ Client connected
+✓ Message sent (1/1)
+✓ Waiting to receive messages (timeout: 5s, max: 1)
+✓ Received message (1/1)
+[2m2025-11-02T12:55:29.197176Z[0m [31mERROR[0m [2mopenigtlink::client[0m[2m:[0m ✗ Failed to save received messages: I/O error: No such file or directory (os error 2)
+✗ Failed to save received messages: I/O error: No such file or directory (os error 2)
+[2m2025-11-02T12:55:29.197366Z[0m [31mERROR[0m [2mopenigtlink::server[0m[2m:[0m ✗ Failed to save received messages: I/O error: No such file or directory (os error 2)
+✗ Failed to save received messages: I/O error: No such file or directory (os error 2)
+✓ Received 1 message(s)
+[0;31m✗ FAIL[0m
