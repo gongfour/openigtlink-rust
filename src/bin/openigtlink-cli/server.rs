@@ -29,21 +29,14 @@ pub async fn run_server(args: ServerArgs) -> Result<()> {
         println!("\n✓ Shutting down gracefully...");
     });
 
-    // Load send message if enabled (TRANSFORM only)
+    // Load send message if enabled (all message types supported)
     let send_msg = if args.send_enable {
         if let Some(ref file_path) = args.send_message_file {
             match msg_loader::load_message_from_file(file_path) {
                 Ok(msg) => {
-                    // For now, only TRANSFORM is supported for sending via server
-                    if msg.message_type() == "TRANSFORM" {
-                        info!("✓ Loaded TRANSFORM message from: {}", file_path);
-                        println!("✓ Loaded TRANSFORM message from: {}", file_path);
-                        Some(msg)
-                    } else {
-                        error!("✗ Server SEND only supports TRANSFORM messages");
-                        eprintln!("✗ Server SEND only supports TRANSFORM messages");
-                        None
-                    }
+                    info!("✓ Loaded {} message from: {}", msg.message_type(), file_path);
+                    println!("✓ Loaded {} message from: {}", msg.message_type(), file_path);
+                    Some(msg)
                 }
                 Err(e) => {
                     error!("✗ Failed to load message: {}", e);
@@ -72,28 +65,39 @@ pub async fn run_server(args: ServerArgs) -> Result<()> {
                 info!("✓ Client connected");
                 println!("✓ Client connected");
 
-                // Send message if enabled
+                // Send message if enabled (all message types supported)
                 if let Some(ref msg) = send_msg {
-                    // Extract TRANSFORM message if available
-                    if let AnyMessage::Transform(transform_msg) = msg {
-                        for i in 1..=args.send_repeat_count {
-                            match conn.send(transform_msg).await {
-                                Ok(_) => {
-                                    info!("✓ Message sent ({}/{})", i, args.send_repeat_count);
-                                    if i % 10 == 0 || i == args.send_repeat_count {
-                                        println!("✓ Message sent ({}/{})", i, args.send_repeat_count);
-                                    }
-                                }
-                                Err(e) => {
-                                    error!("✗ Failed to send message: {}", e);
-                                    eprintln!("✗ Failed to send message: {}", e);
-                                    break;
-                                }
+                    for i in 1..=args.send_repeat_count {
+                        let send_result = match msg {
+                            AnyMessage::Transform(transform_msg) => conn.send(transform_msg).await,
+                            AnyMessage::Status(status_msg) => conn.send(status_msg).await,
+                            AnyMessage::Capability(capability_msg) => conn.send(capability_msg).await,
+                            AnyMessage::String(string_msg) => conn.send(string_msg).await,
+                            AnyMessage::Position(position_msg) => conn.send(position_msg).await,
+                            AnyMessage::Sensor(sensor_msg) => conn.send(sensor_msg).await,
+                            _ => {
+                                error!("✗ Message type not supported for sending");
+                                eprintln!("✗ Message type not supported for sending");
+                                break;
                             }
+                        };
 
-                            if i < args.send_repeat_count {
-                                tokio::time::sleep(Duration::from_millis(args.send_interval_ms)).await;
+                        match send_result {
+                            Ok(_) => {
+                                info!("✓ Message sent ({}/{})", i, args.send_repeat_count);
+                                if i % 10 == 0 || i == args.send_repeat_count {
+                                    println!("✓ Message sent ({}/{})", i, args.send_repeat_count);
+                                }
                             }
+                            Err(e) => {
+                                error!("✗ Failed to send message: {}", e);
+                                eprintln!("✗ Failed to send message: {}", e);
+                                break;
+                            }
+                        }
+
+                        if i < args.send_repeat_count {
+                            tokio::time::sleep(Duration::from_millis(args.send_interval_ms)).await;
                         }
                     }
                 }
