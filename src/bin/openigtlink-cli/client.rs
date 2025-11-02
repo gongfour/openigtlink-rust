@@ -3,7 +3,7 @@ use crate::msg_loader;
 use crate::msg_saver;
 use openigtlink_rust::error::Result;
 use openigtlink_rust::io::unified_async_client::UnifiedAsyncClient;
-use openigtlink_rust::protocol::types::TransformMessage;
+use openigtlink_rust::protocol::AnyMessage;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
@@ -29,51 +29,68 @@ pub async fn run_client(args: ClientArgs) -> Result<()> {
         println!("\n✓ Disconnecting...");
     });
 
-    // Load send message if enabled (TRANSFORM only in Phase 2)
-    if args.send_enable {
+    // Load send message if enabled (TRANSFORM only)
+    let send_msg = if args.send_enable {
         if let Some(ref file_path) = args.send_message_file {
-            match msg_loader::load_transform_from_file(file_path) {
+            match msg_loader::load_message_from_file(file_path) {
                 Ok(msg) => {
-                    info!("✓ Loaded TRANSFORM message from: {}", file_path);
-                    println!("✓ Loaded TRANSFORM message from: {}", file_path);
-
-                    // Send messages
-                    for i in 1..=args.send_repeat_count {
-                        match client.send(&msg).await {
-                            Ok(_) => {
-                                info!("✓ Message sent ({}/{})", i, args.send_repeat_count);
-                                if i % 10 == 0 || i == args.send_repeat_count {
-                                    println!("✓ Message sent ({}/{})", i, args.send_repeat_count);
-                                }
-                            }
-                            Err(e) => {
-                                error!("✗ Failed to send message: {}", e);
-                                eprintln!("✗ Failed to send message: {}", e);
-                                break;
-                            }
-                        }
-
-                        if i < args.send_repeat_count && running.load(Ordering::SeqCst) {
-                            tokio::time::sleep(Duration::from_millis(args.send_interval_ms)).await;
-                        }
-
-                        if !running.load(Ordering::SeqCst) {
-                            break;
-                        }
+                    // For now, only TRANSFORM is supported for sending via client
+                    if msg.message_type() == "TRANSFORM" {
+                        info!("✓ Loaded TRANSFORM message from: {}", file_path);
+                        println!("✓ Loaded TRANSFORM message from: {}", file_path);
+                        Some(msg)
+                    } else {
+                        error!("✗ Client SEND only supports TRANSFORM messages");
+                        eprintln!("✗ Client SEND only supports TRANSFORM messages");
+                        None
                     }
                 }
                 Err(e) => {
                     error!("✗ Failed to load message: {}", e);
                     eprintln!("✗ Failed to load message: {}", e);
+                    None
                 }
             }
         } else {
             warn!("--send-enable specified but no --send-message-file provided");
             eprintln!("⚠ --send-enable specified but no --send-message-file provided");
+            None
+        }
+    } else {
+        None
+    };
+
+    // Send messages if enabled
+    if let Some(ref msg) = send_msg {
+        // Extract TRANSFORM message if available
+        if let AnyMessage::Transform(transform_msg) = msg {
+            for i in 1..=args.send_repeat_count {
+                match client.send(transform_msg).await {
+                    Ok(_) => {
+                        info!("✓ Message sent ({}/{})", i, args.send_repeat_count);
+                        if i % 10 == 0 || i == args.send_repeat_count {
+                            println!("✓ Message sent ({}/{})", i, args.send_repeat_count);
+                        }
+                    }
+                    Err(e) => {
+                        error!("✗ Failed to send message: {}", e);
+                        eprintln!("✗ Failed to send message: {}", e);
+                        break;
+                    }
+                }
+
+                if i < args.send_repeat_count && running.load(Ordering::SeqCst) {
+                    tokio::time::sleep(Duration::from_millis(args.send_interval_ms)).await;
+                }
+
+                if !running.load(Ordering::SeqCst) {
+                    break;
+                }
+            }
         }
     }
 
-    // Receive messages if enabled
+    // Receive messages if enabled (all message types supported)
     if args.receive_enable {
         let timeout = Duration::from_secs(args.receive_timeout_sec);
         let max_count = if args.receive_max_count == 0 {
@@ -81,7 +98,7 @@ pub async fn run_client(args: ClientArgs) -> Result<()> {
         } else {
             args.receive_max_count
         };
-        let mut received_messages: Vec<openigtlink_rust::protocol::message::IgtlMessage<TransformMessage>> = Vec::new();
+        let mut received_messages: Vec<AnyMessage> = Vec::new();
 
         info!("✓ Waiting to receive messages (timeout: {}s, max: {})",
             args.receive_timeout_sec,
@@ -114,11 +131,11 @@ pub async fn run_client(args: ClientArgs) -> Result<()> {
             // Try to receive a message with a short timeout to allow graceful shutdown
             match tokio::time::timeout(
                 Duration::from_secs(1),
-                client.receive::<TransformMessage>()
+                client.receive_any()
             ).await {
                 Ok(Ok(msg)) => {
                     // Check if message type matches filter
-                    if msg_saver::matches_filter("TRANSFORM", &args.receive_message_types) {
+                    if msg_saver::matches_filter(msg.message_type(), &args.receive_message_types) {
                         received_messages.push(msg);
                         let count = received_messages.len();
                         info!("✓ Received message ({}/{})", count, max_count);
@@ -141,7 +158,7 @@ pub async fn run_client(args: ClientArgs) -> Result<()> {
         // Save received messages if output file specified
         if let Some(ref output_file) = args.receive_output_file {
             if !received_messages.is_empty() {
-                if let Err(e) = msg_saver::save_transform_messages(&received_messages, output_file) {
+                if let Err(e) = msg_saver::save_messages(&received_messages, output_file) {
                     error!("✗ Failed to save received messages: {}", e);
                     eprintln!("✗ Failed to save received messages: {}", e);
                 }
