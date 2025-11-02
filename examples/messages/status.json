@@ -1,0 +1,8 @@
+{
+  "message_type": "STATUS",
+  "device_name": "StatusDevice",
+  "content": {
+    "code": 0,
+    "message": "Device operating normally"
+  }
+}

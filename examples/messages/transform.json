@@ -1,5 +1,6 @@
 {
-  "device_name": "Tool1",
+  "message_type": "TRANSFORM",
+  "device_name": "TransformDevice",
   "transform": {
     "matrix": [
       [1.0, 0.0, 0.0, 100.0],

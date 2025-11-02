@@ -1,0 +1,7 @@
+{
+  "message_type": "CAPABILITY",
+  "device_name": "CapabilityDevice",
+  "content": {
+    "types": ["TRANSFORM", "STATUS", "POSITION", "SENSOR"]
+  }
+}

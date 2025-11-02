@@ -1,0 +1,9 @@
+{
+  "message_type": "SENSOR",
+  "device_name": "SensorDevice",
+  "content": {
+    "status": 0,
+    "unit": 0,
+    "data": [25.5, 60.2, 1013.25, 45.8]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "message_type": "STRING",
+  "device_name": "StringDevice",
+  "content": {
+    "encoding": 3,
+    "data": "Hello from OpenIGTLink"
+  }
+}

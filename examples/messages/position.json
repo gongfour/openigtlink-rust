@@ -1,0 +1,17 @@
+{
+  "message_type": "POSITION",
+  "device_name": "PositionDevice",
+  "content": {
+    "position": {
+      "x": 10.5,
+      "y": 20.3,
+      "z": 30.7
+    },
+    "quaternion": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.7071,
+      "w": 0.7071
+    }
+  }
+}
