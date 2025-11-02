@@ -1,6 +1,10 @@
 //! TLS-encrypted OpenIGTLink server implementation
 //!
 //! Provides secure server with TLS/SSL encryption.
+//!
+//! This module is only available when the `tls` feature is enabled.
+
+#![cfg(feature = "tls")]
 
 use crate::error::{IgtlError, Result};
 use crate::protocol::header::Header;

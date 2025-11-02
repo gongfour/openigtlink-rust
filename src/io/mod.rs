@@ -27,6 +27,7 @@ mod common;
 pub mod reconnect;
 pub mod server;
 mod sync_client;
+#[cfg(feature = "tls")]
 pub mod tls_server;
 pub mod udp;
 pub mod unified_async_client;
@@ -42,6 +43,7 @@ pub use async_server::{
     AsyncIgtlConnection, AsyncIgtlConnectionReader, AsyncIgtlConnectionWriter, AsyncIgtlServer,
 };
 pub use server::{IgtlConnection, IgtlServer};
+#[cfg(feature = "tls")]
 pub use tls_server::{TlsIgtlConnection, TlsIgtlServer};
 
 // UDP

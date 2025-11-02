@@ -170,6 +170,7 @@ use crate::io::unified_client::{AsyncIgtlClient, SyncIgtlClient};
 use crate::io::UdpClient;
 use std::marker::PhantomData;
 use std::sync::Arc;
+#[cfg(feature = "tls")]
 use tokio_rustls::rustls;
 
 // ============================================================================
@@ -231,7 +232,10 @@ pub struct AsyncMode;
 pub struct ClientBuilder<Protocol = Unspecified, Mode = Unspecified> {
     protocol: Protocol,
     mode: PhantomData<Mode>,
+    #[cfg(feature = "tls")]
     tls_config: Option<Arc<rustls::ClientConfig>>,
+    #[cfg(not(feature = "tls"))]
+    tls_config: Option<()>,
     reconnect_config: Option<ReconnectConfig>,
     verify_crc: bool,
 }
@@ -431,6 +435,7 @@ impl ClientBuilder<TcpConfigured, AsyncMode> {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "tls")]
     pub fn with_tls(mut self, config: Arc<rustls::ClientConfig>) -> Self {
         self.tls_config = Some(config);
         self
@@ -493,6 +498,7 @@ impl ClientBuilder<TcpConfigured, AsyncMode> {
         let addr = self.protocol.addr;
 
         // Create base client (with or without TLS)
+        #[cfg(feature = "tls")]
         let mut client = if let Some(tls_config) = self.tls_config {
             // TLS connection
             let (hostname, port) = parse_addr(&addr)?;
@@ -501,6 +507,9 @@ impl ClientBuilder<TcpConfigured, AsyncMode> {
             // Plain TCP connection
             UnifiedAsyncClient::connect(&addr).await?
         };
+
+        #[cfg(not(feature = "tls"))]
+        let mut client = UnifiedAsyncClient::connect(&addr).await?;
 
         // Add reconnection if configured
         if let Some(reconnect_config) = self.reconnect_config {

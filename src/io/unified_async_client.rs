@@ -137,18 +137,22 @@ use crate::protocol::any_message::AnyMessage;
 use crate::protocol::factory::MessageFactory;
 use crate::protocol::header::Header;
 use crate::protocol::message::{IgtlMessage, Message};
+#[cfg(feature = "tls")]
 use rustls::pki_types::ServerName;
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio::time::sleep;
+#[cfg(feature = "tls")]
 use tokio_rustls::client::TlsStream;
+#[cfg(feature = "tls")]
 use tokio_rustls::{rustls, TlsConnector};
 use tracing::{debug, info, trace, warn};
 
 /// Transport type for the async client
 enum Transport {
     Plain(TcpStream),
+    #[cfg(feature = "tls")]
     Tls(Box<TlsStream<TcpStream>>),
 }
 
@@ -159,6 +163,7 @@ impl Transport {
                 stream.write_all(data).await?;
                 Ok(())
             }
+            #[cfg(feature = "tls")]
             Transport::Tls(stream) => {
                 stream.write_all(data).await?;
                 Ok(())
@@ -172,6 +177,7 @@ impl Transport {
                 stream.flush().await?;
                 Ok(())
             }
+            #[cfg(feature = "tls")]
             Transport::Tls(stream) => {
                 stream.flush().await?;
                 Ok(())
@@ -185,6 +191,7 @@ impl Transport {
                 stream.read_exact(buf).await?;
                 Ok(())
             }
+            #[cfg(feature = "tls")]
             Transport::Tls(stream) => {
                 stream.read_exact(buf).await?;
                 Ok(())
@@ -198,7 +205,10 @@ struct ConnectionParams {
     addr: String,
     hostname: Option<String>,
     port: Option<u16>,
+    #[cfg(feature = "tls")]
     tls_config: Option<Arc<rustls::ClientConfig>>,
+    #[cfg(not(feature = "tls"))]
+    tls_config: Option<()>,
 }
 
 /// Unified async OpenIGTLink client
@@ -270,6 +280,7 @@ impl UnifiedAsyncClient {
     /// * `hostname` - Server hostname (for SNI)
     /// * `port` - Server port
     /// * `tls_config` - TLS client configuration
+    #[cfg(feature = "tls")]
     pub async fn connect_with_tls(
         hostname: &str,
         port: u16,
@@ -393,6 +404,7 @@ impl UnifiedAsyncClient {
                 sleep(delay).await;
             }
 
+            #[cfg(feature = "tls")]
             let result = if let Some(ref tls_config) = self.conn_params.tls_config {
                 // TLS reconnection
                 let hostname = self.conn_params.hostname.as_ref().unwrap();
@@ -402,6 +414,9 @@ impl UnifiedAsyncClient {
                 // Plain TCP reconnection
                 Self::connect(&self.conn_params.addr).await
             };
+
+            #[cfg(not(feature = "tls"))]
+            let result = Self::connect(&self.conn_params.addr).await;
 
             match result {
                 Ok(new_client) => {
