@@ -85,6 +85,13 @@ pub async fn run_server(args: ServerArgs) -> Result<()> {
                         }
                     }
                 }
+
+                // RECEIVE functionality reserved for Phase 3+
+                // TODO: Implement async receive loop with proper message handling
+                if args.receive_enable {
+                    warn!("⚠ RECEIVE functionality not yet implemented for server");
+                    eprintln!("⚠ RECEIVE functionality not yet implemented for server");
+                }
             }
             Err(e) => {
                 error!("✗ Error accepting connection: {}", e);

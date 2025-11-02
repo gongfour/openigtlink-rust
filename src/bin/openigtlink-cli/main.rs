@@ -5,6 +5,7 @@ mod config;
 mod server;
 mod client;
 mod msg_loader;
+mod msg_saver;
 
 use cli::{Args, Commands};
 use openigtlink_rust::error::Result;

@@ -1,9 +1,7 @@
 use crate::cli::ClientArgs;
 use crate::msg_loader;
 use openigtlink_rust::error::Result;
-use openigtlink_rust::io::ClientBuilder;
 use openigtlink_rust::io::unified_async_client::UnifiedAsyncClient;
-use openigtlink_rust::protocol::types::TransformMessage;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
@@ -71,6 +69,12 @@ pub async fn run_client(args: ClientArgs) -> Result<()> {
             warn!("--send-enable specified but no --send-message-file provided");
             eprintln!("⚠ --send-enable specified but no --send-message-file provided");
         }
+    }
+
+    // RECEIVE functionality reserved for Phase 3+
+    if args.receive_enable {
+        warn!("⚠ RECEIVE functionality not yet implemented for client");
+        eprintln!("⚠ RECEIVE functionality not yet implemented for client");
     }
 
     // Keep connection alive while not interrupted
