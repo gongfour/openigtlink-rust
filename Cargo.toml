@@ -17,12 +17,14 @@ rustdoc-args = ["--cfg", "docsrs"]
 [dependencies]
 tokio = { version = "1.40", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 bytes = "1.7"
 thiserror = "1.0"
 libc = "0.2"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 flate2 = "1.0"
+clap = { version = "4.4", features = ["derive"] }
 tokio-rustls = { version = "0.26", optional = true }
 rustls = { version = "0.23", optional = true }
 rustls-pemfile = { version = "2.0", optional = true }
@@ -31,6 +33,10 @@ rustls-native-certs = { version = "0.8", optional = true }
 [features]
 default = []
 tls = ["tokio-rustls", "rustls", "rustls-pemfile", "rustls-native-certs"]
+
+[[bin]]
+name = "openigtlink"
+path = "src/bin/openigtlink-cli/main.rs"
 
 [dev-dependencies]
 tokio-test = "0.4"
