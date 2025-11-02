@@ -1,9 +1,11 @@
 use crate::cli::ServerArgs;
+use crate::msg_loader;
 use openigtlink_rust::error::Result;
 use openigtlink_rust::io::IgtlServer;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use tracing::{info, error};
+use std::time::Duration;
+use tracing::{info, error, warn};
 
 /// Run OpenIGTLink server
 pub async fn run_server(args: ServerArgs) -> Result<()> {
@@ -25,6 +27,30 @@ pub async fn run_server(args: ServerArgs) -> Result<()> {
         println!("\n✓ Shutting down gracefully...");
     });
 
+    // Load send message if enabled (TRANSFORM only in Phase 2)
+    let send_msg = if args.send_enable {
+        if let Some(ref file_path) = args.send_message_file {
+            match msg_loader::load_transform_from_file(file_path) {
+                Ok(msg) => {
+                    info!("✓ Loaded TRANSFORM message from: {}", file_path);
+                    println!("✓ Loaded TRANSFORM message from: {}", file_path);
+                    Some(msg)
+                }
+                Err(e) => {
+                    error!("✗ Failed to load message: {}", e);
+                    eprintln!("✗ Failed to load message: {}", e);
+                    None
+                }
+            }
+        } else {
+            warn!("--send-enable specified but no --send-message-file provided");
+            eprintln!("⚠ --send-enable specified but no --send-message-file provided");
+            None
+        }
+    } else {
+        None
+    };
+
     // Accept connections loop
     loop {
         // Check if we should shutdown
@@ -33,12 +59,32 @@ pub async fn run_server(args: ServerArgs) -> Result<()> {
         }
 
         match server.accept() {
-            Ok(_conn) => {
+            Ok(mut conn) => {
                 info!("✓ Client connected");
                 println!("✓ Client connected");
 
-                // Basic Phase 1: Just accept and keep connection
-                // Actual send/receive functionality will be in Phase 2-3
+                // Send message if enabled
+                if let Some(ref msg) = send_msg {
+                    for i in 1..=args.send_repeat_count {
+                        match conn.send(msg) {
+                            Ok(_) => {
+                                info!("✓ Message sent ({}/{})", i, args.send_repeat_count);
+                                if i % 10 == 0 || i == args.send_repeat_count {
+                                    println!("✓ Message sent ({}/{})", i, args.send_repeat_count);
+                                }
+                            }
+                            Err(e) => {
+                                error!("✗ Failed to send message: {}", e);
+                                eprintln!("✗ Failed to send message: {}", e);
+                                break;
+                            }
+                        }
+
+                        if i < args.send_repeat_count {
+                            tokio::time::sleep(Duration::from_millis(args.send_interval_ms)).await;
+                        }
+                    }
+                }
             }
             Err(e) => {
                 error!("✗ Error accepting connection: {}", e);
