@@ -21,7 +21,6 @@ OpenIGTLink Rust 구현이 C++ 구현과 호환 가능한지 검증하고,
 - **Server 모드**: 클라이언트 연결 수락, 메시지 송수신
 - **Client 모드**: 서버에 연결, 메시지 송수신
 - **모든 메시지 타입 지원**: TRANSFORM, IMAGE, STATUS, SENSOR 등 21가지
-- **TLS 지원**: 암호화된 통신
 - **유연한 설정**: 반복, 간격, 타임아웃 등 커스터마이징
 
 ---
@@ -159,29 +158,6 @@ openigtlink info [OPTIONS]
   기본값: json
   가능한 값: json, raw, text
   예시: --receive-output-format json
-```
-
----
-
-### TLS 옵션
-
-```
---tls-enable
-  설명: TLS 암호화 활성화
-  타입: boolean flag
-  필수: No (기본값: false)
-
---tls-cert-file <PATH>
-  설명: 인증서 파일 경로 (PEM 형식)
-  타입: file path
-  필수: server에서 --tls-enable일 때 필수
-  예시: --tls-cert-file cert.pem
-
---tls-key-file <PATH>
-  설명: 개인 키 파일 경로 (PEM 형식)
-  타입: file path
-  필수: server에서 --tls-enable일 때 필수
-  예시: --tls-key-file key.pem
 ```
 
 ---
@@ -342,33 +318,9 @@ openigtlink client \
 
 ---
 
-### TLS 예제
-
-#### 예제 10: TLS 서버 시작
-```bash
-openigtlink server \
-  --listen 0.0.0.0:18945 \
-  --tls-enable \
-  --tls-cert-file cert.pem \
-  --tls-key-file key.pem \
-  --receive-enable \
-  --receive-message-types all
-```
-
-#### 예제 11: TLS 클라이언트 연결
-```bash
-openigtlink client \
-  --connect localhost:18945 \
-  --tls-enable \
-  --send-enable \
-  --send-message-file examples/transform.json
-```
-
----
-
 ### 디버깅 예제
 
-#### 예제 12: DEBUG 로그로 서버 실행
+#### 예제 10: DEBUG 로그로 서버 실행
 ```bash
 openigtlink server \
   --listen 0.0.0.0:18944 \
@@ -505,16 +457,6 @@ openigtlink client --connect localhost:18944 \
 # 검증: 데이터 무결성 확인
 ```
 
-#### 2.3 TLS 테스트
-```bash
-# 테스트 5: TLS 서버-클라이언트 통신
-# 1. TLS 인증서 생성
-# 2. TLS 서버 시작
-# 3. TLS 클라이언트 연결
-# 4. 메시지 송수신
-# ✓ PASS/FAIL
-```
-
 ---
 
 ### 3. 호환성 테스트 (C++ 구현)
@@ -626,25 +568,7 @@ openigtlink server \
 
 ---
 
-### Phase 4: TLS 지원 (1주)
-- [ ] `--tls-enable` 구현
-- [ ] `--tls-cert-file` 구현
-- [ ] `--tls-key-file` 구현
-- [ ] TLS 서버 구현
-- [ ] TLS 클라이언트 구현
-
-**완료 조건:**
-```bash
-openigtlink server \
-  --listen 0.0.0.0:18945 \
-  --tls-enable \
-  --tls-cert-file cert.pem \
-  --tls-key-file key.pem
-```
-
----
-
-### Phase 5: 로깅 및 디버깅 (3일)
+### Phase 4: 로깅 및 디버깅 (3일)
 - [ ] `--log-level` 구현
 - [ ] `--log-file` 구현
 - [ ] 상세한 로그 메시지 추가
@@ -656,7 +580,7 @@ openigtlink server --log-level debug --log-file app.log
 
 ---
 
-### Phase 6: 테스트 및 문서 (1주)
+### Phase 5: 테스트 및 문서 (1주)
 - [ ] 단위 테스트 작성
 - [ ] 통합 테스트 작성
 - [ ] 호환성 테스트 실행
@@ -672,7 +596,7 @@ cargo test
 
 ---
 
-### Phase 7: INFO 명령어 (향후)
+### Phase 6: INFO 명령어 (향후)
 - [ ] `openigtlink info --version` 구현
 - [ ] `openigtlink info --supported-types` 구현
 - [ ] 도움말 개선
@@ -740,9 +664,8 @@ examples/messages/
 - 메시지 타입은 대소문자 구분 (TRANSFORM, not transform)
 - 동시에 send와 receive 모두 활성화 가능
 - 타임아웃은 초 단위, 간격은 밀리초 단위
-- TLS 인증서는 PEM 형식만 지원
 
 ---
 
 **마지막 수정**: 2025-11-02
-**버전**: 1.0 (설계 단계)
+**버전**: 1.1 (TLS 제외, 설계 단계)
