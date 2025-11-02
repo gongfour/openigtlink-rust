@@ -69,15 +69,55 @@ pub async fn run_server(args: ServerArgs) -> Result<()> {
                 if let Some(ref msg) = send_msg {
                     for i in 1..=args.send_repeat_count {
                         let send_result = match msg {
+                            // Core message types
                             AnyMessage::Transform(transform_msg) => conn.send(transform_msg).await,
                             AnyMessage::Status(status_msg) => conn.send(status_msg).await,
                             AnyMessage::Capability(capability_msg) => conn.send(capability_msg).await,
                             AnyMessage::String(string_msg) => conn.send(string_msg).await,
                             AnyMessage::Position(position_msg) => conn.send(position_msg).await,
                             AnyMessage::Sensor(sensor_msg) => conn.send(sensor_msg).await,
-                            _ => {
-                                error!("✗ Message type not supported for sending");
-                                eprintln!("✗ Message type not supported for sending");
+                            // Complex message types
+                            AnyMessage::Image(image_msg) => conn.send(image_msg).await,
+                            AnyMessage::QtData(qtdata_msg) => conn.send(qtdata_msg).await,
+                            AnyMessage::TData(tdata_msg) => conn.send(tdata_msg).await,
+                            AnyMessage::Point(point_msg) => conn.send(point_msg).await,
+                            AnyMessage::Trajectory(traj_msg) => conn.send(traj_msg).await,
+                            AnyMessage::NdArray(ndarray_msg) => conn.send(ndarray_msg).await,
+                            AnyMessage::Bind(bind_msg) => conn.send(bind_msg).await,
+                            AnyMessage::ColorTable(ct_msg) => conn.send(ct_msg).await,
+                            AnyMessage::ImgMeta(imgmeta_msg) => conn.send(imgmeta_msg).await,
+                            AnyMessage::LbMeta(lbmeta_msg) => conn.send(lbmeta_msg).await,
+                            AnyMessage::PolyData(polydata_msg) => conn.send(polydata_msg).await,
+                            AnyMessage::Video(video_msg) => conn.send(video_msg).await,
+                            AnyMessage::VideoMeta(videometa_msg) => conn.send(videometa_msg).await,
+                            AnyMessage::Command(cmd_msg) => conn.send(cmd_msg).await,
+                            // Query messages
+                            AnyMessage::GetTransform(get_msg) => conn.send(get_msg).await,
+                            AnyMessage::GetStatus(get_msg) => conn.send(get_msg).await,
+                            AnyMessage::GetCapability(get_msg) => conn.send(get_msg).await,
+                            AnyMessage::GetImage(get_msg) => conn.send(get_msg).await,
+                            AnyMessage::GetImgMeta(get_msg) => conn.send(get_msg).await,
+                            AnyMessage::GetLbMeta(get_msg) => conn.send(get_msg).await,
+                            AnyMessage::GetPoint(get_msg) => conn.send(get_msg).await,
+                            AnyMessage::GetTData(get_msg) => conn.send(get_msg).await,
+                            // Response messages
+                            AnyMessage::RtsTransform(rts_msg) => conn.send(rts_msg).await,
+                            AnyMessage::RtsStatus(rts_msg) => conn.send(rts_msg).await,
+                            AnyMessage::RtsCapability(rts_msg) => conn.send(rts_msg).await,
+                            AnyMessage::RtsImage(rts_msg) => conn.send(rts_msg).await,
+                            AnyMessage::RtsTData(rts_msg) => conn.send(rts_msg).await,
+                            // Streaming control messages
+                            AnyMessage::StartTData(stt_msg) => conn.send(stt_msg).await,
+                            AnyMessage::StopTransform(stp_msg) => conn.send(stp_msg).await,
+                            AnyMessage::StopPosition(stp_msg) => conn.send(stp_msg).await,
+                            AnyMessage::StopQtData(stp_msg) => conn.send(stp_msg).await,
+                            AnyMessage::StopTData(stp_msg) => conn.send(stp_msg).await,
+                            AnyMessage::StopImage(stp_msg) => conn.send(stp_msg).await,
+                            AnyMessage::StopNdArray(stp_msg) => conn.send(stp_msg).await,
+                            // Unknown message type
+                            AnyMessage::Unknown { .. } => {
+                                error!("✗ Cannot send unknown message type");
+                                eprintln!("✗ Cannot send unknown message type");
                                 break;
                             }
                         };

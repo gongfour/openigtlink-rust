@@ -5,6 +5,7 @@ use openigtlink_rust::error::{Result, IgtlError};
 use serde_json::Value;
 use std::fs;
 use tracing::info;
+use base64::{engine::general_purpose, Engine as _};
 
 /// Load an OpenIGTLink message from a JSON file (supports all message types)
 pub fn load_message_from_file(file_path: &str) -> Result<AnyMessage> {
@@ -36,6 +37,7 @@ pub fn load_message_from_json(json_str: &str) -> Result<AnyMessage> {
     let content = &value["content"];
 
     match message_type {
+        // Core message types - fully supported
         "TRANSFORM" => {
             let matrix_arr = &value["transform"]["matrix"];
             let mut matrix = [[0.0f32; 4]; 4];
@@ -141,10 +143,51 @@ pub fn load_message_from_json(json_str: &str) -> Result<AnyMessage> {
             Ok(AnyMessage::Sensor(msg))
         }
 
+        // Complex message types - returning "not implemented" for now
+        // These require deeper API knowledge to properly construct
+        "IMAGE" | "QTDATA" | "TDATA" | "POINT" | "TRAJECTORY" | "NDARRAY" |
+        "BIND" | "COLORTABLE" | "IMGMETA" | "LBMETA" | "POLYDATA" | "VIDEO" |
+        "VIDEOMETA" | "COMMAND" => {
+            info!("⚠ Message type '{}' loading not yet implemented", message_type);
+            Err(IgtlError::Io(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!("Loading '{}' messages from JSON not yet implemented. Supported types: TRANSFORM, STATUS, CAPABILITY, STRING, POSITION, SENSOR", message_type),
+            )))
+        }
+
+        // Query messages
+        "GET_TRANSFORM" | "GET_STATUS" | "GET_CAPABILITY" | "GET_IMAGE" |
+        "GET_IMGMETA" | "GET_LBMETA" | "GET_POINT" | "GET_TDATA" => {
+            info!("⚠ Query message type '{}' loading not yet implemented", message_type);
+            Err(IgtlError::Io(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!("Loading query '{}' messages not yet implemented", message_type),
+            )))
+        }
+
+        // Response messages
+        "RTS_TRANSFORM" | "RTS_STATUS" | "RTS_CAPABILITY" | "RTS_IMAGE" | "RTS_TDATA" => {
+            info!("⚠ Response message type '{}' loading not yet implemented", message_type);
+            Err(IgtlError::Io(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!("Loading response '{}' messages not yet implemented", message_type),
+            )))
+        }
+
+        // Streaming control messages
+        "STT_TDATA" | "STP_TRANSFORM" | "STP_POSITION" | "STP_QTDATA" |
+        "STP_TDATA" | "STP_IMAGE" | "STP_NDARRAY" => {
+            info!("⚠ Streaming control message type '{}' loading not yet implemented", message_type);
+            Err(IgtlError::Io(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!("Loading streaming control '{}' messages not yet implemented", message_type),
+            )))
+        }
+
         _ => {
             Err(IgtlError::Io(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
-                format!("Unsupported message type: {}", message_type),
+                format!("Unknown message type: {}", message_type),
             )))
         }
     }
