@@ -1,0 +1,17 @@
+{
+  "device_name": "TDataDevice",
+  "message_type": "TDATA",
+  "content": {
+    "elements": [
+      {
+        "name": "Tracker1",
+        "instrument_type": 1,
+        "matrix": [
+          [1.0, 0.0, 0.0, 0.0],
+          [0.0, 1.0, 0.0, 0.0],
+          [0.0, 0.0, 1.0, 0.0]
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "device_name": "TrajectoryDevice",
+  "message_type": "TRAJECTORY",
+  "content": {
+    "trajectories": [
+      {
+        "name": "Trajectory1",
+        "group_name": "Surgery",
+        "trajectory_type": 1,
+        "rgba": [255, 255, 0, 255],
+        "entry_point": [0.0, 0.0, 0.0],
+        "target_point": [10.0, 10.0, 10.0],
+        "diameter": 2.0,
+        "owner_image": "Image1"
+      }
+    ]
+  }
+}

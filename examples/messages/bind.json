@@ -1,0 +1,16 @@
+{
+  "device_name": "BindDevice",
+  "message_type": "BIND",
+  "content": {
+    "entries": [
+      {
+        "message_type": "TRANSFORM",
+        "device_name": "Device1"
+      },
+      {
+        "message_type": "IMAGE",
+        "device_name": "Camera1"
+      }
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "device_name": "StreamDevice",
+  "message_type": "STT_TDATA",
+  "resolution": 50,
+  "coordinate_name": "Patient"
+}

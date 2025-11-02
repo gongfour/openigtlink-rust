@@ -1,0 +1,4 @@
+{
+  "device_name": "QueryDevice",
+  "message_type": "GET_TDATA"
+}

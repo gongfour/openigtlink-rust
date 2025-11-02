@@ -1,0 +1,7 @@
+{
+  "device_name": "ResponseDevice",
+  "message_type": "RTS_TDATA",
+  "content": {
+    "status": 1
+  }
+}

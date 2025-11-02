@@ -1,0 +1,9 @@
+{
+  "device_name": "VideoDevice",
+  "message_type": "VIDEO",
+  "content": {
+    "codec": 1,
+    "width": 1920,
+    "height": 1080
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "device_name": "CommandDevice",
+  "message_type": "COMMAND",
+  "content": {
+    "command_id": 1,
+    "command_name": "StartAcquisition",
+    "encoding": 3,
+    "command": "START_RECORDING"
+  }
+}

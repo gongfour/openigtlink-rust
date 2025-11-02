@@ -1,0 +1,8 @@
+{
+  "device_name": "NdArrayDevice",
+  "message_type": "NDARRAY",
+  "content": {
+    "scalar_type": 3,
+    "size": [100, 100, 50]
+  }
+}

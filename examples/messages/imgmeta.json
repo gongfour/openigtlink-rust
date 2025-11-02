@@ -1,0 +1,18 @@
+{
+  "device_name": "ImageMetaDevice",
+  "message_type": "IMGMETA",
+  "content": {
+    "images": [
+      {
+        "name": "Image1",
+        "id": "IMG001",
+        "modality": "US",
+        "patient_name": "Patient001",
+        "patient_id": "P001",
+        "timestamp": 1667350000,
+        "size": [640, 480, 1],
+        "scalar_type": 3
+      }
+    ]
+  }
+}

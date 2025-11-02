@@ -1,0 +1,8 @@
+{
+  "device_name": "ImageDevice",
+  "message_type": "IMAGE",
+  "content": {
+    "scalar_type": 3,
+    "size": [512, 512, 1]
+  }
+}

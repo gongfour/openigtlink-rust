@@ -1,0 +1,13 @@
+{
+  "device_name": "ColorTableDevice",
+  "message_type": "COLORTABLE",
+  "content": {
+    "index_type": 3,
+    "colors": [
+      {"rgba": [255, 0, 0, 255]},
+      {"rgba": [0, 255, 0, 255]},
+      {"rgba": [0, 0, 255, 255]},
+      {"rgba": [255, 255, 0, 255]}
+    ]
+  }
+}

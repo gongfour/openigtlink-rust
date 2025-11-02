@@ -1,0 +1,11 @@
+{
+  "device_name": "VideoMetaDevice",
+  "message_type": "VIDEOMETA",
+  "content": {
+    "codec": 1,
+    "width": 1920,
+    "height": 1080,
+    "framerate": 30,
+    "bitrate": 5000000
+  }
+}

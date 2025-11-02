@@ -1,0 +1,24 @@
+{
+  "device_name": "PointDevice",
+  "message_type": "POINT",
+  "content": {
+    "points": [
+      {
+        "name": "Point1",
+        "group": "Fiducial",
+        "rgba": [255, 0, 0, 255],
+        "position": [10.0, 20.0, 30.0],
+        "diameter": 5.0,
+        "owner": "User1"
+      },
+      {
+        "name": "Point2",
+        "group": "Fiducial",
+        "rgba": [0, 255, 0, 255],
+        "position": [15.0, 25.0, 35.0],
+        "diameter": 5.0,
+        "owner": "User1"
+      }
+    ]
+  }
+}

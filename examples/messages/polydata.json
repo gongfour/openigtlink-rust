@@ -1,0 +1,16 @@
+{
+  "device_name": "PolyDataDevice",
+  "message_type": "POLYDATA",
+  "content": {
+    "points": [
+      [0.0, 0.0, 0.0],
+      [1.0, 0.0, 0.0],
+      [0.0, 1.0, 0.0],
+      [1.0, 1.0, 0.0]
+    ],
+    "vertices": [0, 1, 2, 1, 3, 2],
+    "lines": [],
+    "polygons": [],
+    "triangle_strips": []
+  }
+}
